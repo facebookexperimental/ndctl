@@ -3,6 +3,7 @@
 #ifndef _LIBCXL_H_
 #define _LIBCXL_H_
 
+#include <stdbool.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -57,7 +58,7 @@ int cxl_memdev_set_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
 int cxl_memdev_cmd_identify(struct cxl_memdev *memdev);
 int cxl_memdev_device_info_get(struct cxl_memdev *memdev);
-int cxl_memdev_get_fw_info(struct cxl_memdev *memdev);
+int cxl_memdev_get_fw_info(struct cxl_memdev *memdev, bool is_os_img);
 int cxl_memdev_transfer_fw(struct cxl_memdev *memdev, u8 action,
 	u8 slot, u32 offset, int size, unsigned char *data, u32 transfer_fw_opcode);
 int cxl_memdev_activate_fw(struct cxl_memdev *memdev, u8 action,

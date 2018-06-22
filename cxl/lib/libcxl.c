@@ -2342,6 +2342,7 @@ out:
 
 #define CXL_MEM_COMMAND_ID_GET_FW_INFO CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE 512
+#define CXL_MEM_COMMAND_ID_GET_OS_INFO_OPCODE 0xcd03
 #define CXL_MEM_COMMAND_ID_GET_FW_INFO_PAYLOAD_OUT_SIZE 80
 
 
@@ -2356,7 +2357,7 @@ struct cxl_mbox_get_fw_info_out {
 	char slot_4_fw_rev[16];
 }  __attribute__((packed));
 
-CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
+CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev, bool is_os_img)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_get_fw_info_out *get_fw_info_out;
@@ -2365,8 +2366,19 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 	u8 active_slot;
 	u8 staged_slot_mask;
 	u8 staged_slot;
+	int opcode;
+	char *fw_name;
 
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE);
+	//select vendor cci command if os image is specified, else default to cxl FW_INFO command
+	if (is_os_img) {
+		opcode = CXL_MEM_COMMAND_ID_GET_OS_INFO_OPCODE;
+		fw_name = "OS";
+	} else {
+		opcode = CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE;
+		fw_name = "FW";
+	}
+
+	cmd = cxl_cmd_new_raw(memdev, opcode);
 	if (!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
 				cxl_memdev_get_devname(memdev));
@@ -2401,17 +2413,17 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 	staged_slot = get_fw_info_out->fw_slot_info & staged_slot_mask;
 	staged_slot = staged_slot>>3;
 	fprintf(stdout, "================================= get fw info ==================================\n");
-	fprintf(stdout, "FW Slots Supported: %x\n", get_fw_info_out->fw_slots_supp);
-	fprintf(stdout, "Active FW Slot: %x\n", active_slot);
+	fprintf(stdout, "%s Slots Supported: %x\n", fw_name, get_fw_info_out->fw_slots_supp);
+	fprintf(stdout, "Active %s Slot: %x\n", fw_name, active_slot);
 	if (staged_slot)
 	{
-		fprintf(stdout, "Staged FW Slot: %x\n", staged_slot);
+		fprintf(stdout, "Staged %s Slot: %x\n", fw_name, staged_slot);
 	}
-	fprintf(stdout, "FW Activation Capabilities: %x\n", get_fw_info_out->fw_activation_capas);
-	fprintf(stdout, "Slot 1 FW Revision: %s\n", get_fw_info_out->slot_1_fw_rev);
-	fprintf(stdout, "Slot 2 FW Revision: %s\n", get_fw_info_out->slot_2_fw_rev);
-	fprintf(stdout, "Slot 3 FW Revision: %s\n", get_fw_info_out->slot_3_fw_rev);
-	fprintf(stdout, "Slot 4 FW Revision: %s\n", get_fw_info_out->slot_4_fw_rev);
+	fprintf(stdout, "%s Activation Capabilities: %x\n", fw_name, get_fw_info_out->fw_activation_capas);
+	fprintf(stdout, "Slot 1 %s Revision: %s\n", fw_name, get_fw_info_out->slot_1_fw_rev);
+	fprintf(stdout, "Slot 2 %s Revision: %s\n", fw_name, get_fw_info_out->slot_2_fw_rev);
+	fprintf(stdout, "Slot 3 %s Revision: %s\n", fw_name, get_fw_info_out->slot_3_fw_rev);
+	fprintf(stdout, "Slot 4 %s Revision: %s\n", fw_name, get_fw_info_out->slot_4_fw_rev);
 
 out:
 	cxl_cmd_unref(cmd);
