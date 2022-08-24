@@ -161,6 +161,8 @@ int cxl_memdev_health_counters_clear(struct cxl_memdev *memdev,
 	u32 bitmask);
 int cxl_memdev_health_counters_get(struct cxl_memdev *memdev);
 int cxl_memdev_hct_get_plat_param(struct cxl_memdev *memdev);
+int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev, u8 ch_id,
+	u8 duration, u8 inj_mode, u16 address);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
