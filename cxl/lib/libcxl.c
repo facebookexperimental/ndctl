@@ -6161,7 +6161,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, stderror(-rc));
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
 		goto out;
 	}
 	rc = cxl_cmd_get_mbox_status(cmd);
