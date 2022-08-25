@@ -6128,6 +6128,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_err_inj_hif_poison_in *err_inj_hif_poison_in;
+	int rc = 0;
 
 	__le64 leaddress;
 
