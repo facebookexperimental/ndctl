@@ -6130,13 +6130,11 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	struct cxl_mbox_err_inj_hif_poison_in *err_inj_hif_poison_in;
 
 	__le64 leaddress;
-	leaddress = cpu_to_le64(address);
-	memcpy(err_inj_hif_poison_in->address, leaddress, size_of(address));
 
 	cmd = cxl_cmd_new_raw(memdev,
 	CXL_MEM_COMMAND_ID_GET_EVENT_INTERRUPT_POLICY_OPCODE);
 	if(!cmd) {
-		fprintf(strerr, "%s: cxl_cmd_new_raw returned Null output\n",
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
 				cxl_memdev_get_devname(memdev));
 		return -ENOMEM;
 	}
@@ -6159,11 +6157,11 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	err_inj_hif_poison_in->address = leaddress;
+	memcpy(err_inj_hif_poison_in->address, leaddress, size_of(address));
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+				cxl_memdev_get_devname(memdev), rc, stderror(-rc));
 		goto out;
 	}
 	rc = cxl_cmd_get_mbox_status(cmd);
@@ -6173,15 +6171,15 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 		rc = -ENXIO;
 		goto out;
 	}
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_<NAME>) {
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON) {
 		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
-	CXL_MEM_COMMAND_ID_<NAME>);
+	CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON);
 		return -EINVAL;
 	}
 	fprintf(stdout, "command completed successfully\n");
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
-	return 0
+	return 0;
 }
