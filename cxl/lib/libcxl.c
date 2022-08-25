@@ -6109,7 +6109,7 @@ out:
 }
 
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_OPCODE 0X51968
+#define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_OPCODE 0XCB00
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_PAYLOAD_IN_SIZE 9
 
 
@@ -6158,7 +6158,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	memcpy(err_inj_hif_poison_in->address, leaddress, sizeof(address));
+	memcpy(err_inj_hif_poison_in->address, leaddress, sizeof(err_inj_hif_poison_in->address));
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
