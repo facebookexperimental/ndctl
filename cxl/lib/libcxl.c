@@ -6158,7 +6158,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	memcpy(err_inj_hif_poison_in->address, leaddress, size_of(address));
+	memcpy(err_inj_hif_poison_in->address, leaddress, sizeof(address));
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
