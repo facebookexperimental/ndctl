@@ -6117,15 +6117,21 @@ struct cxl_mbox_err_inj_hif_poison_in {
 	u8 ch_id;
 	u8 duration;
 	u8 inj_mode;
-	__le16 address;
+	u8 rsvd;
+	char *address[5];
 } __attribute__((packed));
 
-CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev)
+CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
+	u8 ch_id, u8 duration, u8 inj_mode, u64 address)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_err_inj_hif_poison_in *err_inj_hif_poison_in;
+
+	__le64 leaddress;
+	leaddress = cpu_to_le64(address);
+	memcpy(err_inj_hif_poison_in->address, leaddress, size_of(address));
 
 	cmd = cxl_cmd_new_raw(memdev,
 	CXL_MEM_COMMAND_ID_GET_EVENT_INTERRUPT_POLICY_OPCODE);
@@ -6153,8 +6159,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev)
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	err_inj_hif_poison_in->address = cpu_to_le16(address);
-	rc = cxl_cmd_submit(cmd);
+	err_inj_hif_poison_in->address = leaddress;
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
@@ -6163,8 +6168,8 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev)
 	}
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}

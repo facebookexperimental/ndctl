@@ -1254,7 +1254,7 @@ OPT_BOOLEAN('v',"verbose", &err_inj_hif_poison_params.verbose, "turn on debug")
 OPT_UINTEGER('c', "ch_id", &err_inj_hif_poison_params.ch_id, "HIF channel"), \
 OPT_UINTEGER('d', "duration", &err_inj_hif_poison_params.duration, "Duration"), \
 OPT_UINTEGER('i', "inj_mode", &err_inj_hif_poison_params.inj_mode, "Injection mode"), \
-OPT_UINTEGER('a', "address", &err_inj_hif_poison_params.address, "Address")
+OPT_LONG('a', "address", &err_inj_hif_poison_params.address, "Address")
 
 static const struct option cmd_err_inj_hif_poison_options[] = {
 	ERR_INJ_HIF_POISON_BASE_OPTIONS(),
