@@ -6131,9 +6131,10 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	int rc = 0;
 
 	__le64 leaddress;
+	leaddress = cpu_to_le64(address);
 
 	cmd = cxl_cmd_new_raw(memdev,
-	CXL_MEM_COMMAND_ID_GET_EVENT_INTERRUPT_POLICY_OPCODE);
+	CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_OPCODE);
 	if(!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
 				cxl_memdev_get_devname(memdev));
@@ -6158,7 +6159,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	memcpy(err_inj_hif_poison_in->address, leaddress, sizeof(err_inj_hif_poison_in->address));
+	memcpy(err_inj_hif_poison_in->address, &leaddress, sizeof(err_inj_hif_poison_in->address));
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
