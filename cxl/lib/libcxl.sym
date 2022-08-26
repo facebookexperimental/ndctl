@@ -130,4 +130,5 @@ global:
 	cxl_memdev_health_counters_get;
 	cxl_memdev_hct_get_plat_param;
 	cxl_memdev_err_inj_hif_poison;
+	cxl_memdev_err_inj_hif_ecc;
 } LIBCXL_3;

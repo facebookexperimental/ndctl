@@ -66,6 +66,7 @@ int cmd_err_inj_rxflit_crc(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_txflit_crc(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_viral(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_hif_poison(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_err_inj_hif_ecc(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_eye_cap_run(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_eye_cap_read(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_adapt_get(int argc, const char **argv, struct cxl_ctx *ctx);

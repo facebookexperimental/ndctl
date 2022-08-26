@@ -6111,6 +6111,7 @@ out:
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_OPCODE 0XCB00
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON_PAYLOAD_IN_SIZE 9
+#define HIF_POISON_ADDRESS_SIZE 5
 
 
 struct cxl_mbox_err_inj_hif_poison_in {
@@ -6118,7 +6119,7 @@ struct cxl_mbox_err_inj_hif_poison_in {
 	u8 duration;
 	u8 inj_mode;
 	u8 rsvd;
-	char *address[5];
+	char *address[HIF_POISON_ADDRESS_SIZE];
 } __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
@@ -6159,7 +6160,7 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 	err_inj_hif_poison_in->ch_id = ch_id;
 	err_inj_hif_poison_in->duration = duration;
 	err_inj_hif_poison_in->inj_mode = inj_mode;
-	memcpy(err_inj_hif_poison_in->address, &leaddress, sizeof(err_inj_hif_poison_in->address));
+	memcpy(err_inj_hif_poison_in->address, &leaddress, HIF_POISON_ADDRESS_SIZE);
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
@@ -6177,6 +6178,85 @@ CXL_EXPORT int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev,
 		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
 	CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC_OPCODE 0XCB01
+#define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC_PAYLOAD_IN_SIZE 9
+#define HIF_ECC_ADDRESS_SIZE 5
+
+
+struct cxl_mbox_err_inj_hif_ecc_in {
+	u8 ch_id;
+	u8 duration;
+	u8 inj_mode;
+	u8 rsvd;
+	char *address[HIF_ECC_ADDRESS_SIZE];
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_err_inj_hif_ecc(struct cxl_memdev *memdev,
+	u8 ch_id, u8 duration, u8 inj_mode, u64 address)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_err_inj_hif_ecc_in *err_inj_hif_ecc_in;
+	int rc = 0;
+
+	__le64 leaddress;
+	leaddress = cpu_to_le64(address);
+
+	cmd = cxl_cmd_new_raw(memdev,
+	CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	err_inj_hif_ecc_in = (void *) cmd->send_cmd->in.payload;
+
+	err_inj_hif_ecc_in->ch_id = ch_id;
+	err_inj_hif_ecc_in->duration = duration;
+	err_inj_hif_ecc_in->inj_mode = inj_mode;
+	memcpy(err_inj_hif_ecc_in->address, &leaddress, HIF_ECC_ADDRESS_SIZE);
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_ERR_INJ_HIF_ECC);
 		return -EINVAL;
 	}
 	fprintf(stdout, "command completed successfully\n");
