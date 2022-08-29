@@ -134,6 +134,8 @@ int cxl_memdev_perfcnt_mta_hif_cnt_val_latch(struct cxl_memdev *memdev,
 	u32 counter);
 int cxl_memdev_perfcnt_ddr_generic_select(struct cxl_memdev *memdev,
 	u8 ddr_id, u8 cid, u8 rank, u8 bank, u8 bankgroup, u8 *event);
+int cxl_memdev_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev,
+	u8 ddr_id, u32 poll_period_ms);
 int cxl_memdev_err_inj_drs_poison(struct cxl_memdev *memdev, u8 ch_id,
 	u8 duration, u8 inj_mode, u16 tag);
 int cxl_memdev_err_inj_drs_ecc(struct cxl_memdev *memdev, u8 ch_id,

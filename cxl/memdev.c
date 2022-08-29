@@ -926,6 +926,25 @@ static const struct option cmd_perfcnt_ddr_generic_select_options[] = {
 	OPT_END(),
 };
 
+static struct _perfcnt_ddr_generic_capture_params {
+	u32 ddr_id;
+	u32 poll_period_ms;
+	bool verbose;
+} perfcnt_ddr_generic_capture_params;
+
+#define PERFCNT_DDR_GENERIC_CAPTURE_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &perfcnt_ddr_generic_capture_params.verbose, "turn on debug")
+
+#define PERFCNT_DDR_GENERIC_CAPTURE_OPTIONS() \
+OPT_UINTEGER('d', "ddr_id", &perfcnt_ddr_generic_capture_params.ddr_id, "DDR instance"), \
+OPT_UINTEGER('c', "poll_period_ms", &perfcnt_ddr_generic_capture_params.poll_period_ms, "Capture-time in ms")
+
+static const struct option cmd_perfcnt_ddr_generic_capture_options[] = {
+	PERFCNT_DDR_GENERIC_CAPTURE_BASE_OPTIONS(),
+	PERFCNT_DDR_GENERIC_CAPTURE_OPTIONS(),
+	OPT_END(),
+};
+
 static struct _err_inj_drs_poison_params {
 	u32 ch_id;
 	u32 duration;
@@ -1984,6 +2003,19 @@ static int action_cmd_perfcnt_ddr_generic_select(struct cxl_memdev *memdev, stru
 		(void *) perfcnt_ddr_generic_select_params.event);
 }
 
+static int action_cmd_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort perfcnt_ddr_generic_capture\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_perfcnt_ddr_generic_capture(memdev, perfcnt_ddr_generic_capture_params.ddr_id,
+		perfcnt_ddr_generic_capture_params.poll_period_ms
+	);
+}
+
 static int action_cmd_err_inj_drs_poison(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
@@ -2837,6 +2869,13 @@ int cmd_perfcnt_ddr_generic_select(int argc, const char **argv, struct cxl_ctx *
 	int rc = memdev_action(argc, argv, ctx, action_cmd_perfcnt_ddr_generic_select, cmd_perfcnt_ddr_generic_select_options,
 			"cxl perfcnt_ddr_generic_select <mem0> [<mem1>..<memN>] [<options>]");
 
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_perfcnt_ddr_generic_capture(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_perfcnt_ddr_generic_capture, cmd_perfcnt_ddr_generic_capture_options,
+			"cxl perfcnt_ddr_generic_capture <mem0> [<mem1>..<memN>] [<options>]");
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
