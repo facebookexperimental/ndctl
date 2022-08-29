@@ -1239,6 +1239,52 @@ static const struct option cmd_hct_get_plat_param_options[] = {
 	OPT_END(),
 };
 
+static struct _err_inj_hif_poison_params {
+	u32 ch_id;
+	u32 duration;
+	u32 inj_mode;
+	u64 address;
+	bool verbose;
+} err_inj_hif_poison_params;
+
+#define ERR_INJ_HIF_POISON_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &err_inj_hif_poison_params.verbose, "turn on debug")
+
+#define ERR_INJ_HIF_POISON_OPTIONS() \
+OPT_UINTEGER('c', "ch_id", &err_inj_hif_poison_params.ch_id, "HIF channel"), \
+OPT_UINTEGER('d', "duration", &err_inj_hif_poison_params.duration, "Duration"), \
+OPT_UINTEGER('i', "inj_mode", &err_inj_hif_poison_params.inj_mode, "Injection mode"), \
+OPT_U64('a', "address", &err_inj_hif_poison_params.address, "Address")
+
+static const struct option cmd_err_inj_hif_poison_options[] = {
+	ERR_INJ_HIF_POISON_BASE_OPTIONS(),
+	ERR_INJ_HIF_POISON_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _err_inj_hif_ecc_params {
+	u32 ch_id;
+	u32 duration;
+	u32 inj_mode;
+	u64 address;
+	bool verbose;
+} err_inj_hif_ecc_params;
+
+#define ERR_INJ_HIF_ECC_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &err_inj_hif_ecc_params.verbose, "turn on debug")
+
+#define ERR_INJ_HIF_ECC_OPTIONS() \
+OPT_UINTEGER('c', "ch_id", &err_inj_hif_ecc_params.ch_id, "HIF channel"), \
+OPT_UINTEGER('d', "duration", &err_inj_hif_ecc_params.duration, "Duration"), \
+OPT_UINTEGER('i', "inj_mode", &err_inj_hif_ecc_params.inj_mode, "Injection mode"), \
+OPT_U64('a', "address", &err_inj_hif_ecc_params.address, "Address")
+
+static const struct option cmd_err_inj_hif_ecc_options[] = {
+	ERR_INJ_HIF_ECC_BASE_OPTIONS(),
+	ERR_INJ_HIF_ECC_OPTIONS(),
+	OPT_END(),
+};
+
 
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -2130,6 +2176,32 @@ static int action_cmd_hct_get_plat_param(struct cxl_memdev *memdev, struct actio
 	return cxl_memdev_hct_get_plat_param(memdev);
 }
 
+static int action_cmd_err_inj_hif_poison(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort err_inj_hif_poison\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_err_inj_hif_poison(memdev, err_inj_hif_poison_params.ch_id,
+		err_inj_hif_poison_params.duration, err_inj_hif_poison_params.inj_mode,
+		err_inj_hif_poison_params.address);
+}
+
+static int action_cmd_err_inj_hif_ecc(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort err_inj_hif_ecc\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_err_inj_hif_poison(memdev, err_inj_hif_ecc_params.ch_id,
+		err_inj_hif_ecc_params.duration, err_inj_hif_ecc_params.inj_mode,
+		err_inj_hif_ecc_params.address);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	int rc;
@@ -2892,6 +2964,22 @@ int cmd_hct_get_plat_param(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_get_plat_param, cmd_hct_get_plat_param_options,
 			"cxl hct-get-plat-params <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_err_inj_hif_poison(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_hif_poison, cmd_err_inj_hif_poison_options,
+			"cxl err_inj_hif_poison <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_err_inj_hif_ecc(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_hif_ecc, cmd_err_inj_hif_ecc_options,
+			"cxl err_inj_hif_ecc <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
