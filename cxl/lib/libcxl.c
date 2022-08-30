@@ -2122,9 +2122,9 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 
 	get_fw_info_out = (void *)cmd->send_cmd->out.payload;
 	active_slot_mask = 0b00000111;
-	active_slot = get_fw_info_out->fw_slot_info && active_slot_mask;
+	active_slot = get_fw_info_out->fw_slot_info & active_slot_mask;
 	staged_slot_mask = 0b00111000;
-	staged_slot = get_fw_info_out->fw_slot_info && staged_slot_mask;
+	staged_slot = get_fw_info_out->fw_slot_info & staged_slot_mask;
 	staged_slot = staged_slot>>3;
 	fprintf(stdout, "================================= get fw info ==================================\n");
 	fprintf(stdout, "FW Slots Supported: %x\n", get_fw_info_out->fw_slots_supp);
