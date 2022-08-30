@@ -61,6 +61,7 @@ int cmd_perfcnt_mta_hif_counter_clear(int argc, const char **argv, struct cxl_ct
 int cmd_perfcnt_mta_hif_cnt_val_latch(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_perfcnt_ddr_generic_select(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_perfcnt_ddr_generic_capture(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_perfcnt_ddr_dfi_capture(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_drs_poison(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_drs_ecc(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_rxflit_crc(int argc, const char **argv, struct cxl_ctx *ctx);
