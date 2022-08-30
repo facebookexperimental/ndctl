@@ -6339,7 +6339,7 @@ CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev,
 	perfcnt_ddr_generic_capture_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "=========================== PERFCNT DDR Generic Capture ============================\n");
 	fprintf(stdout, "Generic Counter Readings:\n");
-	for(int i=0; i<8; i=i+4) {
+	for(int i=0; i<8; i++) {
 		fprintf(stdout, "%x\n", le32_to_cpu(perfcnt_ddr_generic_capture_out->result[i]));
 	}
 out:
