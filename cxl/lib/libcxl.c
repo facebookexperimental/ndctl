@@ -6366,7 +6366,7 @@ struct cxl_mbox_perfcnt_ddr_dfi_capture_out {
 	__le32 dfi_ch1_counter17;
 	__le32 dfi_ch1_counter20;
 	__le32 dfi_ch1_counter21;
-}
+} __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_perfcnt_ddr_dfi_capture(struct cxl_memdev *memdev,
 	u8 ddr_id, u32 poll_period_ms)
@@ -6435,5 +6435,4 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 	return 0;
-}
 }

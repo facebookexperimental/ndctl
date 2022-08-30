@@ -949,7 +949,7 @@ static struct _perfcnt_ddr_dfi_capture_params {
 	u32 ddr_id;
 	u32 poll_period_ms;
 	bool verbose;
-}
+} perfcnt_ddr_dfi_capture_params;
 
 #define PERFCNT_DDR_DFI_CAPTURE_BASE_OPTIONS() \
 OPT_BOOLEAN('v',"verbose", &perfcnt_ddr_dfi_capture_params.verbose, "turn on debug")
