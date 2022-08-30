@@ -82,6 +82,31 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev);
 }
 
+static void hexdump_mbox(struct cxl_cmd *cmd)
+{
+	u8 *buf;
+	buf = (u8*) cmd->send_cmd->in.payload;
+	printf("\n============== SEND_CMD HEXDUMP =============\n");
+	printf("id (u32):\nHex: %x\tDec: %d\n", cmd->send_cmd->id, cmd->send_cmd->id);
+	printf("flags (u32):\nHex: %x\tDec: %d\n", cmd->send_cmd->flags, cmd->send_cmd->flags);
+	printf("raw.opcode (u16):\nHex: %x\tDec: %d\n", cmd->send_cmd->raw.opcode, cmd->send_cmd->raw.opcode);
+	printf("in.size (s32):\nHex: %x\tDec: %d\n", cmd->send_cmd->in.size, cmd->send_cmd->in.size);
+	printf("in.payload (u64, pointer to buffer):\nHex: %llx\tDec: %lld\n", cmd->send_cmd->in.payload, cmd->send_cmd->in.payload);
+	printf("Input payload:");
+	for (int i = 0; i < cmd->send_cmd->in.size; i++) {
+		if (i % 16 == 0)
+		{
+			printf("\n%08x  %02x ", i, buf[i]);
+		}
+		else
+		{
+			printf("%02x ", buf[i]);
+		}
+	}
+	printf("\n============== END SEND_CMD HEXDUMP =============\n");
+
+}
+
 /**
  * cxl_get_userdata - retrieve stored data pointer from library context
  * @ctx: cxl library context
@@ -464,11 +489,14 @@ static int __do_cmd(struct cxl_cmd *cmd, int ioctl_cmd, int fd)
 		break;
 	case CXL_MEM_SEND_COMMAND:
 		cmd_buf = cmd->send_cmd;
+		if (cxl_get_log_priority(cmd->memdev->ctx) == LOG_DEBUG)
+		{
+			hexdump_mbox(cmd);
+		}
 		break;
 	default:
 		return -EINVAL;
 	}
-
 	rc = ioctl(fd, ioctl_cmd, cmd_buf);
 	if (rc < 0)
 		rc = -errno;
@@ -2094,9 +2122,9 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 
 	get_fw_info_out = (void *)cmd->send_cmd->out.payload;
 	active_slot_mask = 0b00000111;
-	active_slot = get_fw_info_out->fw_slot_info && active_slot_mask;
+	active_slot = get_fw_info_out->fw_slot_info & active_slot_mask;
 	staged_slot_mask = 0b00111000;
-	staged_slot = get_fw_info_out->fw_slot_info && staged_slot_mask;
+	staged_slot = get_fw_info_out->fw_slot_info & staged_slot_mask;
 	staged_slot = staged_slot>>3;
 	fprintf(stdout, "================================= get fw info ==================================\n");
 	fprintf(stdout, "FW Slots Supported: %x\n", get_fw_info_out->fw_slots_supp);
@@ -2132,13 +2160,16 @@ struct cxl_mbox_transfer_fw_in {
 
 
 CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
-	u8 action, u8 slot, u32 offset, unsigned char *data, u32 transfer_fw_opcode)
+	u8 action, u8 slot, u32 offset, int size,
+    unsigned char *data, u32 transfer_fw_opcode)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_transfer_fw_in *transfer_fw_in;
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 	int rc = 0;
+	u8 *input_inspection_ptr;
 
 	cmd = cxl_cmd_new_raw(memdev, transfer_fw_opcode);
 	if (!cmd) {
@@ -2151,7 +2182,7 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	cinfo = &query->commands[cmd->query_idx];
 
 	/* used to force correct payload size */
-	cinfo->size_in = CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE;
+	cinfo->size_in = 128 + size;
 	if (cinfo->size_in > 0) {
 		 cmd->input_payload = calloc(1, cinfo->size_in);
 		if (!cmd->input_payload)
@@ -2164,7 +2195,43 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	transfer_fw_in->action = action;
 	transfer_fw_in->slot = slot;
 	transfer_fw_in->offset = cpu_to_le32(offset);
-	memcpy(transfer_fw_in->data, data, sizeof(fwblock));
+	memcpy(transfer_fw_in->data, data, size);
+
+	// Begin manual payload inspection for debugging purposes
+	input_inspection_ptr = (u8*) cmd->send_cmd->in.payload;
+	if (cxl_get_log_priority(ctx) == LOG_DEBUG)
+	{
+		printf("\n===== INPUT PAYLOAD PARSED =====\n");
+		printf("Byte 0 (Action):\n%02x ", input_inspection_ptr[0]);
+		printf("\nByte 1 (Slot):\n%02x\n", input_inspection_ptr[1]);
+		printf("Bytes 2-3 (Reserved):\n%02x %02x\n", input_inspection_ptr[2], input_inspection_ptr[3]);
+		printf("Bytes 4-7 (Offset):\n");
+		for (int i = 4; i < 8; i++) {
+			printf("%02x ", input_inspection_ptr[i]);
+		}
+		printf("\nBytes 8-127 (Reserved):");
+		for (int i = 8; i < 128; i++) {
+			if ((i-8) % 16 == 0)
+			{
+				printf("\n");
+			}
+			printf("%02x ", input_inspection_ptr[i]);
+		}
+		printf("\nBytes 128-%d (Data): ", 127+FW_BLOCK_SIZE);
+		for (int i = 128; i < CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE; i++) {
+			if (i % 16 == 0)
+			{
+				printf("\n%08x  %02x ", i-128, input_inspection_ptr[i]);
+			}
+			else
+			{
+				printf("%02x ", input_inspection_ptr[i]);
+			}
+		}
+		printf("\n===== END INPUT PAYLOAD PARSING =====\n");
+		// End manual payload inspection
+	}
+
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
@@ -2195,7 +2262,7 @@ out:
 
 
 #define CXL_MEM_COMMAND_ID_ACTIVATE_FW CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_ACTIVATE_FW_OPCODE 514
+#define CXL_MEM_COMMAND_ID_ACTIVATE_FW_OPCODE 52482
 #define CXL_MEM_COMMAND_ID_ACTIVATE_FW_PAYLOAD_IN_SIZE 2
 
 struct cxl_mbox_activate_fw_in {
@@ -5807,6 +5874,9 @@ CXL_EXPORT int cxl_memdev_hbo_status(struct cxl_memdev *memdev)
 	fprintf(stdout, " - Return code: %d\n", status_fields->return_code);
 	fprintf(stdout, " - Extended status: %x\n", status_fields->extended_status);
 
+    if (status_fields->is_running) {
+        rc = 1;
+    }
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
