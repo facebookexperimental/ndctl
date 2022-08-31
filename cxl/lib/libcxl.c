@@ -6274,7 +6274,7 @@ out:
 struct cxl_mbox_perfcnt_ddr_generic_capture_in {
 	u8 ddr_id;
 	u8 rsvd[3];
-	u32 poll_period_ms;
+	__le32 poll_period_ms;
 } __attribute__((packed));
 
 struct cxl_mbox_perfcnt_ddr_generic_capture_out {
@@ -6313,7 +6313,7 @@ CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev,
 
 	perfcnt_ddr_generic_capture_in = (void *) cmd->send_cmd->in.payload;
 	perfcnt_ddr_generic_capture_in->ddr_id = ddr_id;
-	perfcnt_ddr_generic_capture_in->poll_period_ms = poll_period_ms;
+	perfcnt_ddr_generic_capture_in->poll_period_ms = cpu_to_le32(poll_period_ms);
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
@@ -6356,7 +6356,7 @@ out:
 struct cxl_mbox_perfcnt_ddr_dfi_capture_in {
 	u8 ddr_id;
 	u8 rsvd[3];
-	u32 poll_period_ms;
+	__le32 poll_period_ms;
 } __attribute__((packed));
 
 struct cxl_mbox_perfcnt_ddr_dfi_capture_out {
@@ -6400,7 +6400,7 @@ CXL_EXPORT int cxl_memdev_perfcnt_ddr_dfi_capture(struct cxl_memdev *memdev,
 
 	perfcnt_ddr_dfi_capture_in = (void *) cmd->send_cmd->in.payload;
 	perfcnt_ddr_dfi_capture_in->ddr_id = ddr_id;
-	perfcnt_ddr_dfi_capture_in->poll_period_ms = poll_period_ms;
+	perfcnt_ddr_dfi_capture_in->poll_period_ms = cpu_to_le32(poll_period_ms);
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
