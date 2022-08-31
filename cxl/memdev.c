@@ -168,6 +168,7 @@ static const struct option cmd_get_fw_info_options[] = {
 
 static struct _activate_fw_params {
   u32 action;
+  bool hbo;
   u32 slot;
   bool verbose;
 } activate_fw_params;
@@ -175,6 +176,7 @@ static struct _activate_fw_params {
 
 #define ACTIVATE_FW_OPTIONS() \
 OPT_UINTEGER('a', "action", &activate_fw_params.action, "Action"), \
+OPT_BOOLEAN('b', "background", &activate_fw_params.hbo, "runs as hidden background option"), \
 OPT_UINTEGER('s', "slot", &activate_fw_params.slot, "Slot")
 
 static const struct option cmd_activate_fw_options[] = {
@@ -1055,20 +1057,6 @@ static const struct option cmd_hbo_status_options[] = {
   OPT_END(),
 };
 
-
-
-static const struct option cmd_hbo_transfer_fw_options[] = {
-  BASE_OPTIONS(),
-  OPT_END(),
-};
-
-
-
-static const struct option cmd_hbo_activate_fw_options[] = {
-  BASE_OPTIONS(),
-  OPT_END(),
-};
-
 static struct _health_counters_clear_params {
   u32 bitmask;
   bool verbose;
@@ -1535,10 +1523,17 @@ static int action_cmd_get_fw_info(struct cxl_memdev *memdev, struct action_conte
 
 static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
-    int rc;
-    const int max_retries = 300;
+  int rc;
+  const int max_retries = 300;
   int retry_count;
   int sleep_time = 60;
+  u32 opcode;
+
+  if (activate_fw_params.hbo) {
+    opcode = 0xCD02; // Pioneer vendor opcode for hbo-transfer-fw
+  } else {
+    opcode = 0x0202; // Spec defined transfer-fw
+  }
 
   if (cxl_memdev_is_active(memdev)) {
     fprintf(stderr, "%s: memdev active, abort activate_fw",
@@ -1546,7 +1541,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
     return -EBUSY;
   }
 
-    rc = cxl_memdev_activate_fw(memdev, activate_fw_params.action, activate_fw_params.slot);
+    rc = cxl_memdev_activate_fw(memdev, activate_fw_params.action, activate_fw_params.slot, opcode);
     retry_count = 0;
   while (rc != 0) {
         if (retry_count > max_retries) {
@@ -1555,7 +1550,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
     }
     printf("Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
     sleep(sleep_time);
-    rc = cxl_memdev_activate_fw(memdev, activate_fw_params.action, activate_fw_params.slot);
+    rc = cxl_memdev_activate_fw(memdev, activate_fw_params.action, activate_fw_params.slot, opcode);
     retry_count++;
     }
 
@@ -2032,28 +2027,6 @@ static int action_cmd_hbo_status(struct cxl_memdev *memdev, struct action_contex
   }
 
   return cxl_memdev_hbo_status(memdev);
-}
-
-static int action_cmd_hbo_transfer_fw(struct cxl_memdev *memdev, struct action_context *actx)
-{
-  if (cxl_memdev_is_active(memdev)) {
-    fprintf(stderr, "%s: memdev active, abort hbo_transfer_fw\n",
-      cxl_memdev_get_devname(memdev));
-    return -EBUSY;
-  }
-
-  return cxl_memdev_hbo_transfer_fw(memdev);
-}
-
-static int action_cmd_hbo_activate_fw(struct cxl_memdev *memdev, struct action_context *actx)
-{
-  if (cxl_memdev_is_active(memdev)) {
-    fprintf(stderr, "%s: memdev active, abort hbo_activate_fw\n",
-      cxl_memdev_get_devname(memdev));
-    return -EBUSY;
-  }
-
-  return cxl_memdev_hbo_activate_fw(memdev);
 }
 
 static int action_cmd_health_counters_clear(struct cxl_memdev *memdev, struct action_context *actx)
@@ -2813,22 +2786,6 @@ int cmd_hbo_status(int argc, const char **argv, struct cxl_ctx *ctx)
                        "cxl hbo_status <mem0> [<mem1>..<memN>] [<options>]");
 
        return rc >= 0 ? 0 : EXIT_FAILURE;
-}
-
-int cmd_hbo_transfer_fw(int argc, const char **argv, struct cxl_ctx *ctx)
-{
-       int rc = memdev_action(argc, argv, ctx, action_cmd_hbo_transfer_fw, cmd_hbo_transfer_fw_options,
-                       "cxl hbo_transfer_fw <mem0> [<mem1>..<memN>] [<options>]");
-
-       return rc >= 0 ? 0 : EXIT_FAILURE;
-}
-
-int cmd_hbo_activate_fw(int argc, const char **argv, struct cxl_ctx *ctx)
-{
-  int rc = memdev_action(argc, argv, ctx, action_cmd_hbo_activate_fw, cmd_hbo_activate_fw_options,
-      "cxl hbo_activate_fw <mem0> [<mem1>..<memN>] [<options>]");
-
-  return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
 int cmd_health_counters_clear(int argc, const char **argv, struct cxl_ctx *ctx)

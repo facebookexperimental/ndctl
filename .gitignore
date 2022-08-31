@@ -69,3 +69,4 @@ cligen/gen/libcxl.c
 cligen/gen/libcxl.h
 cligen/gen/libcxl.sym
 cligen/gen/memdev.c
+cxl/lib/libcxlmemfix.c

@@ -2272,7 +2272,7 @@ struct cxl_mbox_activate_fw_in {
 
 
 CXL_EXPORT int cxl_memdev_activate_fw(struct cxl_memdev *memdev,
-	u8 action, u8 slot)
+	u8 action, u8 slot, u32 activate_fw_opcode)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -2280,7 +2280,7 @@ CXL_EXPORT int cxl_memdev_activate_fw(struct cxl_memdev *memdev,
 	struct cxl_mbox_activate_fw_in *activate_fw_in;
 	int rc = 0;
 
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_ACTIVATE_FW_OPCODE);
+	cmd = cxl_cmd_new_raw(memdev, activate_fw_opcode);
 	if (!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
 				cxl_memdev_get_devname(memdev));
@@ -5882,99 +5882,6 @@ out:
 	return rc;
 	return 0;
 }
-
-
-#define CXL_MEM_COMMAND_ID_HBO_TRANSFER_FW CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_HBO_TRANSFER_FW_OPCODE 52481
-
-
-
-CXL_EXPORT int cxl_memdev_hbo_transfer_fw(struct cxl_memdev *memdev)
-{
-	struct cxl_cmd *cmd;
-	int rc = 0;
-
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HBO_TRANSFER_FW_OPCODE);
-	if (!cmd) {
-		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
-				cxl_memdev_get_devname(memdev));
-		return -ENOMEM;
-	}
-
-	rc = cxl_cmd_submit(cmd);
-	if (rc < 0) {
-		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
-		 goto out;
-	}
-
-	rc = cxl_cmd_get_mbox_status(cmd);
-	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
-				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
-		rc = -ENXIO;
-		goto out;
-	}
-
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HBO_TRANSFER_FW) {
-		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HBO_TRANSFER_FW);
-		return -EINVAL;
-	}
-
-
-out:
-	cxl_cmd_unref(cmd);
-	return rc;
-	return 0;
-}
-
-
-#define CXL_MEM_COMMAND_ID_HBO_ACTIVATE_FW CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_HBO_ACTIVATE_FW_OPCODE 52482
-
-
-
-CXL_EXPORT int cxl_memdev_hbo_activate_fw(struct cxl_memdev *memdev)
-{
-	struct cxl_cmd *cmd;
-	int rc = 0;
-
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HBO_ACTIVATE_FW_OPCODE);
-	if (!cmd) {
-		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
-				cxl_memdev_get_devname(memdev));
-		return -ENOMEM;
-	}
-
-	rc = cxl_cmd_submit(cmd);
-	if (rc < 0) {
-		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
-		 goto out;
-	}
-
-	rc = cxl_cmd_get_mbox_status(cmd);
-	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
-				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
-		rc = -ENXIO;
-		goto out;
-	}
-
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HBO_ACTIVATE_FW) {
-		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HBO_ACTIVATE_FW);
-		return -EINVAL;
-	}
-
-
-out:
-	cxl_cmd_unref(cmd);
-	return rc;
-	return 0;
-}
-
 
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_CLEAR CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_CLEAR_OPCODE 52736
