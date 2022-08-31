@@ -6335,3 +6335,174 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE_OPCODE 0XCA11
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE_PAYLOAD_IN_SIZE 8
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE_PAYLOAD_OUT_SIZE 32
+
+struct cxl_mbox_perfcnt_ddr_generic_capture_in {
+	u8 ddr_id;
+	u8 rsvd[3];
+	__le32 poll_period_ms;
+} __attribute__((packed));
+
+struct cxl_mbox_perfcnt_ddr_generic_capture_out {
+	__le32 result[32];
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev,
+	u8 ddr_id, u32 poll_period_ms)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_perfcnt_ddr_generic_capture_in *perfcnt_ddr_generic_capture_in;
+	struct cxl_mbox_perfcnt_ddr_generic_capture_out *perfcnt_ddr_generic_capture_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev,
+	CXL_MEM_COMMAND_ID_GET_EVENT_INTERRUPT_POLICY_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+	cinfo->size_in = CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	perfcnt_ddr_generic_capture_in = (void *) cmd->send_cmd->in.payload;
+	perfcnt_ddr_generic_capture_in->ddr_id = ddr_id;
+	perfcnt_ddr_generic_capture_in->poll_period_ms = cpu_to_le32(poll_period_ms);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_PERFCNT_DDR_GENERIC_CAPTURE);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+
+	perfcnt_ddr_generic_capture_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== PERFCNT DDR Generic Capture ============================\n");
+	fprintf(stdout, "Generic Counter Readings:\n");
+	for(int i=0; i<8; i++) {
+		fprintf(stdout, "%x\n", le32_to_cpu(perfcnt_ddr_generic_capture_out->result[i]));
+	}
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE_OPCODE 0XCA12
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE_PAYLOAD_IN_SIZE 8
+#define CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE_PAYLOAD_OUT_SIZE 24
+
+struct cxl_mbox_perfcnt_ddr_dfi_capture_in {
+	u8 ddr_id;
+	u8 rsvd[3];
+	__le32 poll_period_ms;
+} __attribute__((packed));
+
+struct cxl_mbox_perfcnt_ddr_dfi_capture_out {
+	__le32 dfi_counter17;
+	__le32 dfi_counter20;
+	__le32 dfi_counter21;
+	__le32 dfi_ch1_counter17;
+	__le32 dfi_ch1_counter20;
+	__le32 dfi_ch1_counter21;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_perfcnt_ddr_dfi_capture(struct cxl_memdev *memdev,
+	u8 ddr_id, u32 poll_period_ms)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_perfcnt_ddr_dfi_capture_in *perfcnt_ddr_dfi_capture_in;
+	struct cxl_mbox_perfcnt_ddr_dfi_capture_out *perfcnt_ddr_dfi_capture_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev,
+	CXL_MEM_COMMAND_ID_GET_EVENT_INTERRUPT_POLICY_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+	cinfo->size_in = CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	perfcnt_ddr_dfi_capture_in = (void *) cmd->send_cmd->in.payload;
+	perfcnt_ddr_dfi_capture_in->ddr_id = ddr_id;
+	perfcnt_ddr_dfi_capture_in->poll_period_ms = cpu_to_le32(poll_period_ms);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_PERFCNT_DDR_DFI_CAPTURE);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+	perfcnt_ddr_dfi_capture_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== PERFCNT DDR DFI Capture ============================\n");
+	fprintf(stdout, "DFI Counter Readings:\n");
+	fprintf(stdout, "DFI Counter 17: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_counter17));
+	fprintf(stdout, "DFI Counter 20: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_counter20));
+	fprintf(stdout, "DFI Counter 21: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_counter21));
+	fprintf(stdout, "DFI CH1 Counter 17: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_ch1_counter17));
+	fprintf(stdout, "DFI CH1 Counter 20: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_ch1_counter20));
+	fprintf(stdout, "DFI CH1 Counter 21: %x\n", le32_to_cpu(perfcnt_ddr_dfi_capture_out->dfi_ch1_counter21));
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}

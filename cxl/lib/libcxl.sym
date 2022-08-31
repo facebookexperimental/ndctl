@@ -113,6 +113,8 @@ global:
 	cxl_memdev_perfcnt_mta_hif_counter_clear;
 	cxl_memdev_perfcnt_mta_hif_cnt_val_latch;
 	cxl_memdev_perfcnt_ddr_generic_select;
+	cxl_memdev_perfcnt_ddr_generic_capture;
+	cxl_memdev_perfcnt_ddr_dfi_capture;
 	cxl_memdev_err_inj_drs_poison;
 	cxl_memdev_err_inj_drs_ecc;
 	cxl_memdev_err_inj_rxflit_crc;
