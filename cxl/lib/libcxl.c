@@ -6127,55 +6127,57 @@ struct cxl_mbox_hct_get_plat_param_out {
 	u8* type;
 }  __attribute__((packed));
 
+const char *TRACE_BUF_INST_TYPE[2] = {
+	"FLIT",
+	"HIF",
+};
+
 CXL_EXPORT int cxl_memdev_hct_get_plat_param(struct cxl_memdev *memdev)
 {
-	u8 num;
-	u8* instances;
+	u8 *out_ptr;
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_hct_get_plat_param_out *hct_get_plat_param_out;
 	int rc = 0;
 
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_GET_PLAT_PARAMS);
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_GET_PLAT_PARAMS_OPCODE);
 	if (!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
-				cxl_memdev_get_devname(memdev));
+			cxl_memdev_get_devname(memdev));
 		return -ENOMEM;
 	}
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
-		 goto out;
+			cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
 	}
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
 		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
-				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+			cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
 
 	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HCT_GET_PLAT_PARAMS) {
-		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_PLAT_PARAMS);
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+			cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_PLAT_PARAMS);
 		return -EINVAL;
 	}
 
 	hct_get_plat_param_out = (void *)cmd->send_cmd->out.payload;
-	num = hct_get_plat_param_out->num_inst;
-	instances = hct_get_plat_param_out->type;
 	fprintf(stdout, "=============================== Get HIF/CXL Trace Buffer Platform Parameters ===============================\n");
 	fprintf(stdout, "Number of trace buffer instances: %u\n", hct_get_plat_param_out->num_inst);
-	for (int i = 0; i < num; i++) {
-		fprintf(stdout, "Instance 1: %u\n", instances[i]);
+	out_ptr = (u8*) cmd->send_cmd->out.payload;
+	for (int i = 1; i < cmd->send_cmd->out.size; i++) {
+		printf("Instance: %d type %02x %s\n", i, out_ptr[i], TRACE_BUF_INST_TYPE[out_ptr[i]]);
 	}
 
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
-	return 0;
 }
 
 #define CXL_MEM_COMMAND_ID_ERR_INJ_HIF_POISON CXL_MEM_COMMAND_ID_RAW
