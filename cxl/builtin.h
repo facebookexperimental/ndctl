@@ -71,6 +71,8 @@ int cmd_err_inj_hif_poison(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_hif_ecc(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_eye_cap_run(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_eye_cap_read(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_eh_eye_cap_timeout_enable(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_eh_eye_cap_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_adapt_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_adapt_oneoff(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_adapt_force(int argc, const char **argv, struct cxl_ctx *ctx);
