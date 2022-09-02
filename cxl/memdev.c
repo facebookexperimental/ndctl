@@ -2988,7 +2988,7 @@ int cmd_eh_eye_cap_read(int argc, const char **argv, struct cxl_ctx *ctx)
 int cmd_eh_eye_cap_timeout_enable(int argc, const char **argv, struct cxl_ctx *ctx)
 {
        int rc = memdev_action(argc, argv, ctx, action_cmd_eh_eye_cap_timeout_enable, cmd_eh_eye_cap_timeout_enable_options,
-                       "cxl eh_eye_cap_timeout_enable <mem0> [<mem1>..<memN>] [<options>]");
+                       "cxl eh-eye-cap-timeout-enable <mem0> [<mem1>..<memN>] [<options>]");
 
        return rc >= 0 ? 0 : EXIT_FAILURE;
 }
@@ -2996,7 +2996,7 @@ int cmd_eh_eye_cap_timeout_enable(int argc, const char **argv, struct cxl_ctx *c
 int cmd_eh_eye_cap_status(int argc, const char **argv, struct cxl_ctx *ctx)
 {
        int rc = memdev_action(argc, argv, ctx, action_cmd_eh_eye_cap_status, cmd_eh_eye_cap_status_options,
-                       "cxl eh_eye_cap_statuscmd_eh_eye_cap_status <mem0> [<mem1>..<memN>] [<options>]");
+                       "cxl eh-eye-cap-status <mem0> [<mem1>..<memN>] [<options>]");
 
        return rc >= 0 ? 0 : EXIT_FAILURE;
 }
