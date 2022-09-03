@@ -4884,12 +4884,12 @@ struct cxl_mbox_perfcnt_ddr_generic_select_in {
 	u8 rank;
 	u8 bank;
 	u8 bankgroup;
-	u8 event[8];
+	__le64 event;
 }  __attribute__((packed));
 
 
 CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_select(struct cxl_memdev *memdev,
-	u8 ddr_id, u8 cid, u8 rank, u8 bank, u8 bankgroup, u8 *event)
+	u8 ddr_id, u8 cid, u8 rank, u8 bank, u8 bankgroup, u64 event)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -4924,9 +4924,7 @@ CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_select(struct cxl_memdev *memdev,
 	perfcnt_ddr_generic_select_in->rank = rank;
 	perfcnt_ddr_generic_select_in->bank = bank;
 	perfcnt_ddr_generic_select_in->bankgroup = bankgroup;
-	for(int i = 0; i < 8; i++) {
-		perfcnt_ddr_generic_select_in->event[i] = event[i];
-	}
+	perfcnt_ddr_generic_select_in->event = cpu_to_le64(event);
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {

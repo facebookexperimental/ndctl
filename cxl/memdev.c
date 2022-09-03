@@ -1979,7 +1979,7 @@ static int action_cmd_perfcnt_ddr_generic_select(struct cxl_memdev *memdev, stru
   return cxl_memdev_perfcnt_ddr_generic_select(memdev, perfcnt_ddr_generic_select_params.ddr_id,
     perfcnt_ddr_generic_select_params.cid, perfcnt_ddr_generic_select_params.rank,
     perfcnt_ddr_generic_select_params.bank, perfcnt_ddr_generic_select_params.bankgroup,
-    (void *) perfcnt_ddr_generic_select_params.event);
+    perfcnt_ddr_generic_select_params.event);
 }
 
 static int action_cmd_perfcnt_ddr_generic_capture(struct cxl_memdev *memdev, struct action_context *actx)
