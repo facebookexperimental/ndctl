@@ -1212,6 +1212,22 @@ static const struct option cmd_err_inj_hif_ecc_options[] = {
 	OPT_END(),
 };
 
+static struct _eh_link_dbg_entry_dump_params {
+	u32 entry_idx;
+	bool verbose;
+} eh_link_dbg_entry_dump_params;
+
+#define EH_LINK_DBG_ENTRY_DUMP_BASE_OPTIONS() \
+OPT_BOOLEAN('v', "verbose", &eh_link_dbg_entry_dump_params.verbose, "turn on debug")
+
+#define EH_LINK_DBG_ENTRY_DUMP_OPTIONS() \
+OPT_UINTEGER('e', "entry_idx", &eh_link_dbg_entry_dump_params.entry_idx, "Entry Index")
+
+static const struct option cmd_eh_link_dbg_entry_dump_options[] = {
+	EH_LINK_DBG_ENTRY_DUMP_BASE_OPTIONS(),
+	EH_LINK_DBG_ENTRY_DUMP_OPTIONS(),
+	OPT_END(),
+};
 
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -2272,9 +2288,20 @@ static int action_cmd_err_inj_hif_ecc(struct cxl_memdev *memdev, struct action_c
 		return -EBUSY;
 	}
 
-	return cxl_memdev_err_inj_hif_poison(memdev, err_inj_hif_ecc_params.ch_id,
+	return cxl_memdev_err_inj_hif_ecc(memdev, err_inj_hif_ecc_params.ch_id,
 		err_inj_hif_ecc_params.duration, err_inj_hif_ecc_params.inj_mode,
 		err_inj_hif_ecc_params.address);
+}
+
+static int action_cmd_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort eh_link_dbg_entry_dump\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_eh_link_dbg_entry_dump(memdev, eh_link_dbg_entry_dump_params.entry_idx);
 }
 
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
@@ -3085,6 +3112,14 @@ int cmd_err_inj_hif_ecc(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_hif_ecc, cmd_err_inj_hif_ecc_options,
 			"cxl err_inj_hif_ecc <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_link_dbg_entry_dump(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_entry_dump, cmd_eh_link_dbg_entry_dump_options,
+			"cxl eh-link-dbg-entry-dump <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

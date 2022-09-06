@@ -172,6 +172,7 @@ int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev, u8 ch_id,
 	u8 duration, u8 inj_mode, u64 address);
 int cxl_memdev_err_inj_hif_ecc(struct cxl_memdev *memdev, u8 ch_id,
 	u8 duration, u8 inj_mode, u64 address);
+int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
