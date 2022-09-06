@@ -6508,3 +6508,144 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE_OPCODE 0XCC0A
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE_PAYLOAD_IN_SIZE 2
+
+struct cxl_mbox_eh_eye_cap_timeout_enable_in {
+	u8 rsvd;
+	u8 enable;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_eh_eye_cap_timeout_enable(struct cxl_memdev *memdev, u8 enable)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_eye_cap_timeout_enable_in *eh_eye_cap_timeout_enable_in;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev,
+	CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+		query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	eh_eye_cap_timeout_enable_in = (void *) cmd->send_cmd->in.payload;
+
+	eh_eye_cap_timeout_enable_in->enable = enable;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_EYE_CAP_TIMEOUT_ENABLE);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS_OPCODE 0XCC01
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS_PAYLOAD_IN_SIZE 4
+#define CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS_PAYLOAD_OUT_SIZE 4
+
+struct cxl_mbox_eh_eye_cap_status_in {
+	u8 rsvd;
+	u8 rsvd2[3];
+} __attribute__((packed));
+
+struct cxl_mbox_eh_eye_cap_status_out {
+	u8 stat;
+	u8 rsvd[3];
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_eh_eye_cap_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_eye_cap_status_out *eh_eye_cap_status_out;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev,
+	CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+		query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_EYE_CAP_STATUS);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+	eh_eye_cap_status_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== EH Eye Cap Status ============================\n");
+	fprintf(stdout, "Status: %x\n", eh_eye_cap_status_out->stat);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}

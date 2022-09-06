@@ -150,6 +150,8 @@ int cxl_memdev_eh_eye_cap_run(struct cxl_memdev *memdev, u8 depth,
 	u32 lane_mask);
 int cxl_memdev_eh_eye_cap_read(struct cxl_memdev *memdev, u8 lane_id,
 	u8 bin_num);
+int cxl_memdev_eh_eye_cap_timeout_enable(struct cxl_memdev *memdev, u8 enable);
+int cxl_memdev_eh_eye_cap_status(struct cxl_memdev *memdev);
 int cxl_memdev_eh_adapt_get(struct cxl_memdev *memdev, u32 lane_id);
 int cxl_memdev_eh_adapt_oneoff(struct cxl_memdev *memdev, u32 lane_id,
 	u32 preload, u32 loops, u32 objects);

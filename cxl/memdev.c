@@ -992,6 +992,35 @@ static const struct option cmd_eh_eye_cap_read_options[] = {
   OPT_END(),
 };
 
+static struct _eh_eye_cap_timeout_enable_params {
+  u32 enable;
+  bool verbose;
+} eh_eye_cap_timeout_enable_params;
+
+#define EH_EYE_CAP_TIMEOUT_ENABLE_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &eh_eye_cap_timeout_enable_params.verbose, "turn on debug")
+
+#define EH_EYE_CAP_TIMEOUT_ENABLE_OPTIONS() \
+OPT_UINTEGER('e', "enable", &eh_eye_cap_timeout_enable_params.enable, "enable (0: Disable, 1: Enable)")
+
+static const struct option cmd_eh_eye_cap_timeout_enable_options[] = {
+  EH_EYE_CAP_TIMEOUT_ENABLE_BASE_OPTIONS(),
+  EH_EYE_CAP_TIMEOUT_ENABLE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _eh_eye_cap_status_params {
+  bool verbose;
+} eh_eye_cap_status_params;
+
+#define EH_EYE_CAP_STATUS_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &eh_eye_cap_status_params.verbose, "turn on debug")
+
+static const struct option cmd_eh_eye_cap_status_options[] = {
+  EH_EYE_CAP_STATUS_BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _eh_adapt_get_params {
   u32 lane_id;
   bool verbose;
@@ -2091,6 +2120,28 @@ static int action_cmd_eh_eye_cap_read(struct cxl_memdev *memdev, struct action_c
     eh_eye_cap_read_params.bin_num);
 }
 
+static int action_cmd_eh_eye_cap_timeout_enable(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, abort eh_eye_cap_timeout_enable\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_eh_eye_cap_timeout_enable(memdev, eh_eye_cap_timeout_enable_params.enable);
+}
+
+static int action_cmd_eh_eye_cap_status(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, abort eh_eye_cap_status\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_eh_eye_cap_status(memdev);
+}
+
 static int action_cmd_eh_adapt_get(struct cxl_memdev *memdev, struct action_context *actx)
 {
   if (cxl_memdev_is_active(memdev)) {
@@ -2930,6 +2981,22 @@ int cmd_eh_eye_cap_read(int argc, const char **argv, struct cxl_ctx *ctx)
 {
        int rc = memdev_action(argc, argv, ctx, action_cmd_eh_eye_cap_read, cmd_eh_eye_cap_read_options,
                        "cxl eh_eye_cap_read <mem0> [<mem1>..<memN>] [<options>]");
+
+       return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_eye_cap_timeout_enable(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+       int rc = memdev_action(argc, argv, ctx, action_cmd_eh_eye_cap_timeout_enable, cmd_eh_eye_cap_timeout_enable_options,
+                       "cxl eh-eye-cap-timeout-enable <mem0> [<mem1>..<memN>] [<options>]");
+
+       return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_eye_cap_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+       int rc = memdev_action(argc, argv, ctx, action_cmd_eh_eye_cap_status, cmd_eh_eye_cap_status_options,
+                       "cxl eh-eye-cap-status <mem0> [<mem1>..<memN>] [<options>]");
 
        return rc >= 0 ? 0 : EXIT_FAILURE;
 }
