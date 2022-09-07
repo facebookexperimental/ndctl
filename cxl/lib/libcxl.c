@@ -6650,6 +6650,85 @@ out:
 	return 0;
 }
 
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_OPCODE 0XCC06
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_PAYLOAD_IN_SIZE 13
+
+struct cxl_mbox_eh_link_dbg_cfg_in {
+	u8 mode;
+	__le16 lane_mask;
+	u8 rate_mask;
+	__le32 timer_us;
+	__le32 cap_delay_us;
+	u8 max_cap;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode,
+	u8 cap_type, u16 lane_mask, u8 rate_mask, u32 timer_us, u32 cap_delay_us, u8 max_cap)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_link_dbg_cfg_in *eh_link_dbg_cfg_in;
+	int rc=0;
+
+	u8 modes;
+	modes = ((port_id) | (op_mode << 2) | (cap_type <<4));
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	eh_link_dbg_cfg_in = (void *) cmd->send_cmd->in.payload;
+	eh_link_dbg_cfg_in->mode = modes;
+	eh_link_dbg_cfg_in->lane_mask = cpu_to_le16(lane_mask);
+	eh_link_dbg_cfg_in->rate_mask = rate_mask;
+	eh_link_dbg_cfg_in->timer_us = cpu_to_le32(timer_us);
+	eh_link_dbg_cfg_in->cap_delay_us = cpu_to_le32(cap_delay_us);
+	eh_link_dbg_cfg_in->max_cap = max_cap;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
 #define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_OPCODE 0XCC07
 #define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_PAYLOAD_IN_SIZE 1
@@ -6689,7 +6768,7 @@ CXL_EXPORT int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 e
 	u8 entry_idx_shift = 0;
 	u8 entry_num_shift = 4;
 	u8 entry_idx_mask = (1 << entry_num_shift) - (1 << entry_idx_shift); // 0-3
-	u8 entry_num_mask = 0xffffffff - (1 << entry_num_shift) + 1; // 4-7
+	u8 entry_num_mask = 0xff - (1 << entry_num_shift) + 1; // 4-7
 	int rc=0;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_OPCODE);

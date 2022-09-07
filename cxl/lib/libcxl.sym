@@ -135,5 +135,6 @@ global:
 	cxl_memdev_hct_get_plat_param;
 	cxl_memdev_err_inj_hif_poison;
 	cxl_memdev_err_inj_hif_ecc;
+	cxl_memdev_eh_link_dbg_cfg;
 	cxl_memdev_eh_link_dbg_entry_dump;
 } LIBCXL_3;

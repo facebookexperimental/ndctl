@@ -1212,6 +1212,37 @@ static const struct option cmd_err_inj_hif_ecc_options[] = {
 	OPT_END(),
 };
 
+static struct _eh_link_dbg_cfg_params {
+	u32 port_id;
+	u32 op_mode;
+	u32 cap_type;
+	u32 lane_mask;
+	u32 rate_mask;
+	u32 timer_us;
+	u32 cap_delay_us;
+	u32 max_cap;
+	bool verbose;
+} eh_link_dbg_cfg_params;
+
+#define EH_LINK_DBG_CFG_BASE_OPTIONS() \
+OPT_BOOLEAN('v', "verbose", &eh_link_dbg_cfg_params.verbose, "turn on debug")
+
+#define EH_LINK_DBG_CFG_OPTIONS() \
+OPT_UINTEGER('p', "port_id", &eh_link_dbg_cfg_params.port_id, "Target Port"), \
+OPT_UINTEGER('o', "op_mode", &eh_link_dbg_cfg_params.op_mode, "Operation Mode"), \
+OPT_UINTEGER('c', "cap_type", &eh_link_dbg_cfg_params.cap_type, "Capture Type"), \
+OPT_UINTEGER('l', "lane_mask", &eh_link_dbg_cfg_params.lane_mask, "Lane Mask"), \
+OPT_UINTEGER('r', "rate_mask", &eh_link_dbg_cfg_params.rate_mask, "Rate Mask"), \
+OPT_UINTEGER('t', "timer_us", &eh_link_dbg_cfg_params.timer_us, "Timer interval"), \
+OPT_UINTEGER('d', "cap_delay_us", &eh_link_dbg_cfg_params.cap_delay_us, "Capture Timer delay"), \
+OPT_UINTEGER('m', "max_cap", &eh_link_dbg_cfg_params.max_cap, "Max Capture")
+
+static const struct option cmd_eh_link_dbg_cfg_options[] = {
+	EH_LINK_DBG_CFG_BASE_OPTIONS(),
+	EH_LINK_DBG_CFG_OPTIONS(),
+	OPT_END(),
+};
+
 static struct _eh_link_dbg_entry_dump_params {
 	u32 entry_idx;
 	bool verbose;
@@ -2293,6 +2324,21 @@ static int action_cmd_err_inj_hif_ecc(struct cxl_memdev *memdev, struct action_c
 		err_inj_hif_ecc_params.address);
 }
 
+static int action_cmd_eh_link_dbg_cfg(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort eh_link_dbg_cfg\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_eh_link_dbg_cfg(memdev, eh_link_dbg_cfg_params.port_id,
+		eh_link_dbg_cfg_params.op_mode, eh_link_dbg_cfg_params.cap_type,
+		eh_link_dbg_cfg_params.lane_mask, eh_link_dbg_cfg_params.rate_mask,
+		eh_link_dbg_cfg_params.timer_us, eh_link_dbg_cfg_params.cap_delay_us,
+		eh_link_dbg_cfg_params.max_cap);
+}
+
 static int action_cmd_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
@@ -3112,6 +3158,14 @@ int cmd_err_inj_hif_ecc(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_hif_ecc, cmd_err_inj_hif_ecc_options,
 			"cxl err_inj_hif_ecc <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_link_dbg_cfg(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_cfg, cmd_eh_link_dbg_cfg_options,
+			"cxl eh-link-dbg-cfg <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

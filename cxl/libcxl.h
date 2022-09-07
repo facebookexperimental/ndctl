@@ -172,6 +172,8 @@ int cxl_memdev_err_inj_hif_poison(struct cxl_memdev *memdev, u8 ch_id,
 	u8 duration, u8 inj_mode, u64 address);
 int cxl_memdev_err_inj_hif_ecc(struct cxl_memdev *memdev, u8 ch_id,
 	u8 duration, u8 inj_mode, u64 address);
+int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode,
+	u8 cap_type, u16 lane_mask, u8 rate_mask, u32 timer_us, u32 cap_delay_us, u8 max_cap);
 int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx);
 
 #define cxl_memdev_foreach(ctx, memdev) \
