@@ -6959,17 +6959,17 @@ CXL_EXPORT int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 en
 	u8 cursor_shift = 18;
 	u8 post_cursor_shift = 24;
 	u8 rsvd_shift = 30;
-	u8 fs_obs_mask = (1 << lf_obs_shift) - (1 << fs_obs_shift); // 0-5
-	u8 lf_obs_mask = (1 << pre_cursor_shift) - (1 << lf_obs_shift); // 6-11
-	u8 pre_cursor_mask = (1 << cursor_shift) - (1 << pre_cursor_shift); // 12-17
-	u8 cursor_mask = (1 << post_cursor_shift) - (1 << cursor_shift); //18-23
-	u8 post_cursor_mask = (1 << rsvd_shift) - (1 << post_cursor_shift); //24-29
+	u32 fs_obs_mask = (1 << lf_obs_shift) - (1 << fs_obs_shift); // 0-5
+	u32 lf_obs_mask = (1 << pre_cursor_shift) - (1 << lf_obs_shift); // 6-11
+	u32 pre_cursor_mask = (1 << cursor_shift) - (1 << pre_cursor_shift); // 12-17
+	u32 cursor_mask = (1 << post_cursor_shift) - (1 << cursor_shift); //18-23
+	u32 post_cursor_mask = (1 << rsvd_shift) - (1 << post_cursor_shift); //24-29
 
 	// register data 1
 	u8 usp_tx_preset_shift = 0;
 	u8 dsp_tx_preset_shift = 4;
-	u8 usp_tx_preset_mask = (1 << dsp_tx_preset_shift) - (1<< usp_tx_preset_shift); // 0-3
-	u8 dsp_tx_preset_mask = 0xff - (1 << dsp_tx_preset_shift); // 4-7
+	u32 usp_tx_preset_mask = (1 << dsp_tx_preset_shift) - (1<< usp_tx_preset_shift); // 0-3
+	u32 dsp_tx_preset_mask = 0xff - (1 << dsp_tx_preset_shift); // 4-7
 
 	// register data 2
 	u8 tx_p1a_d1en_shift = 0;
@@ -6978,11 +6978,11 @@ CXL_EXPORT int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 en
 	u8 tx_p1b_d1en_shift = 18;
 	u8 tx_p1b_d2en_shift = 24;
 	u8 rsvd1_shift = 30;
-	u8 tx_p1a_d1en_mask = (1 << tx_p1a_d2en_shift) - (1 << tx_p1a_d1en_shift);
-	u8 tx_p1a_d2en_mask = (1 << tx_p1a_amp_red_shift) - (1 << tx_p1a_d2en_shift);
-	u8 tx_p1a_amp_red_mask = (1 << tx_p1b_d1en_shift) - (1 << tx_p1a_amp_red_shift);
-	u8 tx_p1b_d1en_mask = (1 << tx_p1b_d2en_shift) - (1 << tx_p1b_d1en_shift);
-	u8 tx_p1b_d2en_mask = (1 << rsvd1_shift) - (1 << tx_p1b_d2en_shift);
+	u32 tx_p1a_d1en_mask = (1 << tx_p1a_d2en_shift) - (1 << tx_p1a_d1en_shift);
+	u32 tx_p1a_d2en_mask = (1 << tx_p1a_amp_red_shift) - (1 << tx_p1a_d2en_shift);
+	u32 tx_p1a_amp_red_mask = (1 << tx_p1b_d1en_shift) - (1 << tx_p1a_amp_red_shift);
+	u32 tx_p1b_d1en_mask = (1 << tx_p1b_d2en_shift) - (1 << tx_p1b_d1en_shift);
+	u32 tx_p1b_d2en_mask = (1 << rsvd1_shift) - (1 << tx_p1b_d2en_shift);
 
 	// register data 3
 	u8 tx_p1b_amp_red_shift = 0;
@@ -6990,10 +6990,10 @@ CXL_EXPORT int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 en
 	u8 tx_p2a_d2en_shift = 12;
 	u8 tx_p2a_amp_red_shift = 18;
 	u8 rsvd2_shift = 24;
-	u8 tx_p1b_amp_red_mask = (1 << tx_p2a_d1en_shift) - (1 << tx_p1b_amp_red_shift);
-	u8 tx_p2a_d1en_mask = (1 << tx_p2a_d2en_shift) - (1 << tx_p2a_d1en_shift);
-	u8 tx_p2a_d2en_mask = (1 << tx_p2a_amp_red_shift) - (1 << tx_p2a_d2en_shift);
-	u8 tx_p2a_amp_red_mask = (1 << rsvd2_shift) - (1 << tx_p2a_amp_red_shift);
+	u32 tx_p1b_amp_red_mask = (1 << tx_p2a_d1en_shift) - (1 << tx_p1b_amp_red_shift);
+	u32 tx_p2a_d1en_mask = (1 << tx_p2a_d2en_shift) - (1 << tx_p2a_d1en_shift);
+	u32 tx_p2a_d2en_mask = (1 << tx_p2a_amp_red_shift) - (1 << tx_p2a_d2en_shift);
+	u32 tx_p2a_amp_red_mask = (1 << rsvd2_shift) - (1 << tx_p2a_amp_red_shift);
 
 	// register data 4
 	u8 tx_p2b_d1en_shift = 0;
@@ -7001,10 +7001,10 @@ CXL_EXPORT int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 en
 	u8 tx_p2b_amp_red_shift = 12;
 	u8 tx_p3a_d1en_shift = 18;
 	u8 rsvd3_shift = 24;
-	u8 tx_p2b_d1en_mask = (1 << tx_p2b_d2en_shift) - (1 << tx_p2b_d1en_shift);
-	u8 tx_p2b_d2en_mask = (1 << tx_p2b_amp_red_shift) - (1 << tx_p2b_d2en_shift);
-	u8 tx_p2b_amp_red_mask = (1 << tx_p3a_d1en_shift) - (1 << tx_p2b_amp_red_shift);
-	u8 tx_p3a_d1en_mask = (1 << rsvd3_shift) - (1 << tx_p3a_d1en_shift);
+	u32 tx_p2b_d1en_mask = (1 << tx_p2b_d2en_shift) - (1 << tx_p2b_d1en_shift);
+	u32 tx_p2b_d2en_mask = (1 << tx_p2b_amp_red_shift) - (1 << tx_p2b_d2en_shift);
+	u32 tx_p2b_amp_red_mask = (1 << tx_p3a_d1en_shift) - (1 << tx_p2b_amp_red_shift);
+	u32 tx_p3a_d1en_mask = (1 << rsvd3_shift) - (1 << tx_p3a_d1en_shift);
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_OPCODE);
 	if(!cmd) {
