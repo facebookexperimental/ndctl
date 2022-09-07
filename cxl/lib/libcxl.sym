@@ -137,4 +137,6 @@ global:
 	cxl_memdev_err_inj_hif_ecc;
 	cxl_memdev_eh_link_dbg_cfg;
 	cxl_memdev_eh_link_dbg_entry_dump;
+	cxl_memdev_eh_link_dbg_lane_dump;
+	cxl_memdev_eh_link_dbg_reset;
 } LIBCXL_3;

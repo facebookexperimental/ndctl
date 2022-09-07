@@ -1260,6 +1260,37 @@ static const struct option cmd_eh_link_dbg_entry_dump_options[] = {
 	OPT_END(),
 };
 
+static struct _eh_link_dbg_lane_dump_params {
+	u32 entry_idx;
+	u32 lane_idx;
+	bool verbose;
+} eh_link_dbg_lane_dump_params;
+
+#define EH_LINK_DBG_LANE_DUMP_BASE_OPTIONS() \
+OPT_BOOLEAN('v', "verbose", &eh_link_dbg_lane_dump_params.verbose, "turn on debug")
+
+#define EH_LINK_DBG_LANE_DUMP_OPTIONS() \
+OPT_UINTEGER('e', "entry_idx", &eh_link_dbg_lane_dump_params.entry_idx, "Capture Entry Index"), \
+OPT_UINTEGER('l', "lane_idx", &eh_link_dbg_lane_dump_params.lane_idx, "Capture Lane")
+
+static const struct option cmd_eh_link_dbg_lane_dump_options[] = {
+	EH_LINK_DBG_LANE_DUMP_BASE_OPTIONS(),
+	EH_LINK_DBG_LANE_DUMP_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _eh_link_dbg_reset_params {
+	bool verbose;
+} eh_link_dbg_reset_params;
+
+#define EH_LINK_DBG_RESET_BASE_OPTIONS() \
+OPT_BOOLEAN('v', "verbose", &eh_link_dbg_reset_params.verbose, "turn on debug")
+
+static const struct option cmd_eh_link_dbg_reset_options[] = {
+	EH_LINK_DBG_RESET_BASE_OPTIONS(),
+	OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -2350,6 +2381,29 @@ static int action_cmd_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, struct a
 	return cxl_memdev_eh_link_dbg_entry_dump(memdev, eh_link_dbg_entry_dump_params.entry_idx);
 }
 
+static int action_cmd_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort eh_link_dbg_lane_dump\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_eh_link_dbg_lane_dump(memdev, eh_link_dbg_lane_dump_params.entry_idx,
+		eh_link_dbg_lane_dump_params.lane_idx);
+}
+
+static int action_cmd_eh_link_dbg_reset(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort eh_link_dbg_reset\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_eh_link_dbg_reset(memdev);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
   int rc;
@@ -3174,6 +3228,22 @@ int cmd_eh_link_dbg_entry_dump(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_entry_dump, cmd_eh_link_dbg_entry_dump_options,
 			"cxl eh-link-dbg-entry-dump <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_link_dbg_lane_dump(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_lane_dump, cmd_eh_link_dbg_lane_dump_options,
+			"cxl eh-link-dbg-lane-dump <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_eh_link_dbg_reset(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_reset, cmd_eh_link_dbg_reset_options,
+			"cxl eh-link-dbg-reset <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
