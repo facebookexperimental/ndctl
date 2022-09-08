@@ -138,6 +138,10 @@ static struct cmd_struct commands[] = {
 	{ "health-counters-clear", .c_fn = cmd_health_counters_clear },
 	{ "health-counters-get", .c_fn = cmd_health_counters_get },
 	{ "hct-get-plat-param", .c_fn = cmd_hct_get_plat_param },
+	{ "eh-link-dbg-cfg", .c_fn = cmd_eh_link_dbg_cfg },
+	{ "eh-link-dbg-entry-dump", .c_fn = cmd_eh_link_dbg_entry_dump },
+	{ "eh-link-dbg-lane-dump", .c_fn = cmd_eh_link_dbg_lane_dump },
+	{ "eh-link-dbg-reset", .c_fn = cmd_eh_link_dbg_reset },
 };
 
 int main(int argc, const char **argv)

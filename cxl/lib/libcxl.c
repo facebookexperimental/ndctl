@@ -6647,3 +6647,553 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_OPCODE 0XCC06
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_PAYLOAD_IN_SIZE 13
+
+struct cxl_mbox_eh_link_dbg_cfg_in {
+	u8 mode;
+	__le16 lane_mask;
+	u8 rate_mask;
+	__le32 timer_us;
+	__le32 cap_delay_us;
+	u8 max_cap;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode,
+	u8 cap_type, u16 lane_mask, u8 rate_mask, u32 timer_us, u32 cap_delay_us, u8 max_cap)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_link_dbg_cfg_in *eh_link_dbg_cfg_in;
+	int rc=0;
+
+	u8 modes;
+	modes = ((port_id) | (op_mode << 2) | (cap_type <<4));
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	eh_link_dbg_cfg_in = (void *) cmd->send_cmd->in.payload;
+	eh_link_dbg_cfg_in->mode = modes;
+	eh_link_dbg_cfg_in->lane_mask = cpu_to_le16(lane_mask);
+	eh_link_dbg_cfg_in->rate_mask = rate_mask;
+	eh_link_dbg_cfg_in->timer_us = cpu_to_le32(timer_us);
+	eh_link_dbg_cfg_in->cap_delay_us = cpu_to_le32(cap_delay_us);
+	eh_link_dbg_cfg_in->max_cap = max_cap;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_LINK_DBG_CFG);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_OPCODE 0XCC07
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_PAYLOAD_IN_SIZE 1
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_PAYLOAD_OUT_SIZE 34
+
+struct cxl_mbox_eh_link_dbg_entry_dump_in {
+	u8 entry_idx;
+} __attribute__((packed));
+
+struct cxl_mbox_eh_link_dbg_entry_dump_out {
+	u8 cap_info;
+	u8 cap_reason;
+	__le32 l2r_reason;
+	__le64 start_time;
+	__le64 end_time;
+	u8 start_rate;
+	u8 end_rate;
+	u8 start_state;
+	u8 end_state;
+	__le32 start_status;
+	__le32 end_status;
+} __attribute__((packed));
+
+struct eh_link_dbg_entry_dump_fields {
+	u8 entry_idx;
+	u8 entry_num;
+};
+
+CXL_EXPORT int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_link_dbg_entry_dump_in *eh_link_dbg_entry_dump_in;
+	struct cxl_mbox_eh_link_dbg_entry_dump_out *eh_link_dbg_entry_dump_out;
+	struct eh_link_dbg_entry_dump_fields *cap_info_fields;
+	u8 entry_idx_shift = 0;
+	u8 entry_num_shift = 4;
+	u8 entry_idx_mask = (1 << entry_num_shift) - (1 << entry_idx_shift); // 0-3
+	u8 entry_num_mask = 0xff - (1 << entry_num_shift) + 1; // 4-7
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	eh_link_dbg_entry_dump_in = (void *) cmd->send_cmd->in.payload;
+	eh_link_dbg_entry_dump_in->entry_idx = entry_idx;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_LINK_DBG_ENTRY_DUMP);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+	eh_link_dbg_entry_dump_out = (void *)cmd->send_cmd->out.payload;
+
+	cap_info_fields->entry_idx = (eh_link_dbg_entry_dump_out->cap_info & entry_idx_mask) >> entry_idx_shift;
+	cap_info_fields->entry_num = (eh_link_dbg_entry_dump_out->cap_info & entry_num_mask) >> entry_num_shift;
+
+	fprintf(stdout, "=========================== EH Link Debug Entry Dump ============================\n");
+	fprintf(stdout, "Capture Info (Entry Index): %x\n", cap_info_fields->entry_idx);
+	fprintf(stdout, "Capture Info (Entry Num): %x\n", cap_info_fields->entry_num);
+	fprintf(stdout, "Capture Reason: %x\n", eh_link_dbg_entry_dump_out->cap_reason);
+	fprintf(stdout, "L2R Reason: %x\n", le32_to_cpu(eh_link_dbg_entry_dump_out->l2r_reason));
+	fprintf(stdout, "Capture Start Timestamp: %lx\n", le64_to_cpu(eh_link_dbg_entry_dump_out->start_time));
+	fprintf(stdout, "Capture End Timestamp: %lx\n", le64_to_cpu(eh_link_dbg_entry_dump_out->end_time));
+	fprintf(stdout, "Capture Start Rate: %x\n", eh_link_dbg_entry_dump_out->start_rate);
+	fprintf(stdout, "Capture End Rate: %x\n", eh_link_dbg_entry_dump_out->end_rate);
+	fprintf(stdout, "Capture Start State: %x\n", eh_link_dbg_entry_dump_out->start_state);
+	fprintf(stdout, "Capture End State: %x\n", eh_link_dbg_entry_dump_out->end_state);
+	fprintf(stdout, "Capture Start Status: %x\n", le32_to_cpu(eh_link_dbg_entry_dump_out->start_status));
+	fprintf(stdout, "Capture End Status: %x\n", le32_to_cpu(eh_link_dbg_entry_dump_out->end_status));
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_OPCODE 0XCC08
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_PAYLOAD_IN_SIZE 2
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_PAYLOAD_OUT_SIZE 59
+
+struct cxl_mbox_eh_link_dbg_lane_dump_in {
+	u8 entry_idx;
+	u8 lane_idx;
+} __attribute__((packed));
+
+struct cxl_mbox_eh_link_dbg_lane_dump_out {
+	u8 cap_info;
+	u8 pga_gain;
+	u8 pga_off2;
+	u8 pga_off1;
+	u8 cdfe_a2;
+	u8 cdfe_a3;
+	u8 cdfe_a4;
+	u8 cdfe_a5;
+	u8 cdfe_a6;
+	u8 cdfe_a7;
+	u8 cdfe_a8;
+	u8 cdfe_a9;
+	u8 cdfe_a10;
+	u8 zobel_a_gain;
+	u8 zobel_b_gain;
+	__le16 zobel_dc_offset;
+	__le16 udfe_thr_0;
+	__le16 udfe_thr_1;
+	__le16 dc_offset;
+	__le16 median_amp;
+	u8 ph_ofs_t;
+	__le16 cdru_lock_time;
+	__le16 eh_workaround_stat;
+	__le16 los_toggle_cnt;
+	__le16 adapt_time;
+	__le16 cdr_lock_toggle_cnt_0;
+	__le16 jat_stat_0;
+	__le32 db_err;
+	__le32 reg_val0;
+	u8 reg_val1;
+	__le32 reg_val2;
+	__le32 reg_val3;
+	__le32 reg_val4;
+
+} __attribute__((packed));
+
+struct eh_link_dbg_cap_info_fields {
+	u8 lane_idx;
+	u8 entry_idx;
+};
+
+struct eh_link_dbg_reg_val0_fields {
+	u8 fs_obs;
+	u8 lf_obs;
+	u8 pre_cursor;
+	u8 cursor;
+	u8 post_cursor;
+	u8 rsvd;
+};
+
+struct eh_link_dbg_reg_val1_fields {
+	u8 usp_tx_preset;
+	u8 dsp_tx_preset;
+};
+
+struct eh_link_dbg_reg_val2_fields {
+	u8 tx_p1a_d1en;
+	u8 tx_p1a_d2en;
+	u8 tx_p1a_amp_red;
+	u8 tx_p1b_d1en;
+	u8 tx_p1b_d2en;
+	u8 rsvd1;
+};
+
+struct eh_link_dbg_reg_val3_fields {
+	u8 tx_p1b_amp_red;
+	u8 tx_p2a_d1en;
+	u8 tx_p2a_d2en;
+	u8 tx_p2a_amp_red;
+	u8 rsvd2;
+};
+
+struct eh_link_dbg_reg_val4_fields {
+	u8 tx_p2b_d1en;
+	u8 tx_p2b_d2en;
+	u8 tx_p2b_amp_red;
+	u8 tx_p3a_d1en;
+	u8 rsvd3;
+};
+
+CXL_EXPORT int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 entry_idx, u8 lane_idx)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_eh_link_dbg_lane_dump_in *eh_link_dbg_lane_dump_in;
+	struct cxl_mbox_eh_link_dbg_lane_dump_out *eh_link_dbg_lane_dump_out;
+	struct eh_link_dbg_cap_info_fields *cap_info_fields;
+	struct eh_link_dbg_reg_val0_fields *reg_val0_fields;
+	struct eh_link_dbg_reg_val1_fields *reg_val1_fields;
+	struct eh_link_dbg_reg_val2_fields *reg_val2_fields;
+	struct eh_link_dbg_reg_val3_fields *reg_val3_fields;
+	struct eh_link_dbg_reg_val4_fields *reg_val4_fields;
+
+	int rc=0;
+	// Initializing bit shifts and bit masks.
+
+	// Capture Info
+	u8 lane_idx_shift = 0;
+	u8 entry_idx_shift = 4;
+	u8 lane_idx_mask = (1 << entry_idx_shift) - (1 << lane_idx_shift); // 0-3
+	u8 entry_idx_mask = 0xff - (1 << entry_idx_shift) + 1; // 4-7
+
+	// register data 0
+	u8 fs_obs_shift = 0;
+	u8 lf_obs_shift = 6;
+	u8 pre_cursor_shift = 12;
+	u8 cursor_shift = 18;
+	u8 post_cursor_shift = 24;
+	u8 rsvd_shift = 30;
+	u32 fs_obs_mask = (1 << lf_obs_shift) - (1 << fs_obs_shift); // 0-5
+	u32 lf_obs_mask = (1 << pre_cursor_shift) - (1 << lf_obs_shift); // 6-11
+	u32 pre_cursor_mask = (1 << cursor_shift) - (1 << pre_cursor_shift); // 12-17
+	u32 cursor_mask = (1 << post_cursor_shift) - (1 << cursor_shift); //18-23
+	u32 post_cursor_mask = (1 << rsvd_shift) - (1 << post_cursor_shift); //24-29
+
+	// register data 1
+	u8 usp_tx_preset_shift = 0;
+	u8 dsp_tx_preset_shift = 4;
+	u32 usp_tx_preset_mask = (1 << dsp_tx_preset_shift) - (1<< usp_tx_preset_shift); // 0-3
+	u32 dsp_tx_preset_mask = 0xff - (1 << dsp_tx_preset_shift); // 4-7
+
+	// register data 2
+	u8 tx_p1a_d1en_shift = 0;
+	u8 tx_p1a_d2en_shift = 6;
+	u8 tx_p1a_amp_red_shift = 12;
+	u8 tx_p1b_d1en_shift = 18;
+	u8 tx_p1b_d2en_shift = 24;
+	u8 rsvd1_shift = 30;
+	u32 tx_p1a_d1en_mask = (1 << tx_p1a_d2en_shift) - (1 << tx_p1a_d1en_shift);
+	u32 tx_p1a_d2en_mask = (1 << tx_p1a_amp_red_shift) - (1 << tx_p1a_d2en_shift);
+	u32 tx_p1a_amp_red_mask = (1 << tx_p1b_d1en_shift) - (1 << tx_p1a_amp_red_shift);
+	u32 tx_p1b_d1en_mask = (1 << tx_p1b_d2en_shift) - (1 << tx_p1b_d1en_shift);
+	u32 tx_p1b_d2en_mask = (1 << rsvd1_shift) - (1 << tx_p1b_d2en_shift);
+
+	// register data 3
+	u8 tx_p1b_amp_red_shift = 0;
+	u8 tx_p2a_d1en_shift = 6;
+	u8 tx_p2a_d2en_shift = 12;
+	u8 tx_p2a_amp_red_shift = 18;
+	u8 rsvd2_shift = 24;
+	u32 tx_p1b_amp_red_mask = (1 << tx_p2a_d1en_shift) - (1 << tx_p1b_amp_red_shift);
+	u32 tx_p2a_d1en_mask = (1 << tx_p2a_d2en_shift) - (1 << tx_p2a_d1en_shift);
+	u32 tx_p2a_d2en_mask = (1 << tx_p2a_amp_red_shift) - (1 << tx_p2a_d2en_shift);
+	u32 tx_p2a_amp_red_mask = (1 << rsvd2_shift) - (1 << tx_p2a_amp_red_shift);
+
+	// register data 4
+	u8 tx_p2b_d1en_shift = 0;
+	u8 tx_p2b_d2en_shift = 6;
+	u8 tx_p2b_amp_red_shift = 12;
+	u8 tx_p3a_d1en_shift = 18;
+	u8 rsvd3_shift = 24;
+	u32 tx_p2b_d1en_mask = (1 << tx_p2b_d2en_shift) - (1 << tx_p2b_d1en_shift);
+	u32 tx_p2b_d2en_mask = (1 << tx_p2b_amp_red_shift) - (1 << tx_p2b_d2en_shift);
+	u32 tx_p2b_amp_red_mask = (1 << tx_p3a_d1en_shift) - (1 << tx_p2b_amp_red_shift);
+	u32 tx_p3a_d1en_mask = (1 << rsvd3_shift) - (1 << tx_p3a_d1en_shift);
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	eh_link_dbg_lane_dump_in = (void *) cmd->send_cmd->in.payload;
+	eh_link_dbg_lane_dump_in->entry_idx = entry_idx;
+	eh_link_dbg_lane_dump_in->lane_idx = lane_idx;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_LINK_DBG_LANE_DUMP);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+	eh_link_dbg_lane_dump_out = (void *)cmd->send_cmd->out.payload;
+
+	cap_info_fields->lane_idx = (eh_link_dbg_lane_dump_out->cap_info & lane_idx_mask) >> lane_idx_shift;
+	cap_info_fields->entry_idx = (eh_link_dbg_lane_dump_out->cap_info & entry_idx_mask) >> entry_idx_shift;
+
+	reg_val0_fields->fs_obs = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val0) & fs_obs_mask) >> fs_obs_shift;
+	reg_val0_fields->lf_obs = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val0) & lf_obs_mask) >> lf_obs_shift;
+	reg_val0_fields->pre_cursor = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val0) & pre_cursor_mask) >> pre_cursor_shift;
+	reg_val0_fields->cursor = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val0) & cursor_mask) >> cursor_shift;
+	reg_val0_fields->post_cursor = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val0) & post_cursor_mask) >> post_cursor_shift;
+
+	reg_val1_fields->usp_tx_preset = (eh_link_dbg_lane_dump_out->reg_val1 & usp_tx_preset_mask) >> usp_tx_preset_shift;
+	reg_val1_fields->dsp_tx_preset = (eh_link_dbg_lane_dump_out->reg_val1 & dsp_tx_preset_mask) >> dsp_tx_preset_shift;
+
+	reg_val2_fields->tx_p1a_d1en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val2) & tx_p1a_d1en_mask) >> tx_p1a_d1en_shift;
+	reg_val2_fields->tx_p1a_d2en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val2) & tx_p1a_d2en_mask) >> tx_p1a_d2en_shift;
+	reg_val2_fields->tx_p1a_amp_red = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val2) & tx_p1a_amp_red_mask) >> tx_p1a_amp_red_shift;
+	reg_val2_fields->tx_p1b_d1en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val2) & tx_p1b_d1en_mask) >> tx_p1b_d1en_shift;
+	reg_val2_fields->tx_p1b_d2en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val2) & tx_p1b_d2en_mask) >> tx_p1b_d2en_shift;
+
+	reg_val3_fields->tx_p1b_amp_red = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val3) & tx_p1b_amp_red_mask) >> tx_p1b_amp_red_shift;
+	reg_val3_fields->tx_p2a_d1en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val3) & tx_p2a_d1en_mask) >> tx_p2a_d1en_shift;
+	reg_val3_fields->tx_p2a_d2en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val3) & tx_p2a_d2en_mask) >> tx_p2a_d2en_shift;
+	reg_val3_fields->tx_p2a_amp_red = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val3) & tx_p2a_amp_red_mask) >> tx_p2a_amp_red_shift;
+
+	reg_val4_fields->tx_p2b_d1en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val4) & tx_p2b_d1en_mask) >> tx_p2b_d1en_shift;
+	reg_val4_fields->tx_p2b_d2en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val4) & tx_p2b_d2en_mask) >> tx_p2b_d2en_shift;
+	reg_val4_fields->tx_p2b_amp_red = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val4) & tx_p2b_amp_red_mask) >> tx_p2b_amp_red_shift;
+	reg_val4_fields->tx_p3a_d1en = (le32_to_cpu(eh_link_dbg_lane_dump_out->reg_val4) & tx_p3a_d1en_mask) >> tx_p3a_d1en_shift;
+
+	fprintf(stdout, "=========================== EH Link Debug Lane Dump ============================\n");
+	fprintf(stdout, "Capture Lane: %x\n", cap_info_fields->lane_idx);
+	fprintf(stdout, "Capture Entry Index: %x\n", cap_info_fields->entry_idx);
+	fprintf(stdout, "PGA Gain: %x\n", eh_link_dbg_lane_dump_out->pga_gain);
+	fprintf(stdout, "PGA offset 2: %x\n", eh_link_dbg_lane_dump_out->pga_off2);
+	fprintf(stdout, "PGA offset 1: %x\n", eh_link_dbg_lane_dump_out->pga_off1);
+	fprintf(stdout, "CDFE A2: %x\n", eh_link_dbg_lane_dump_out->cdfe_a2);
+	fprintf(stdout, "CDFE A3: %x\n", eh_link_dbg_lane_dump_out->cdfe_a3);
+	fprintf(stdout, "CDFE A4: %x\n", eh_link_dbg_lane_dump_out->cdfe_a4);
+	fprintf(stdout, "CDFE A5: %x\n", eh_link_dbg_lane_dump_out->cdfe_a5);
+	fprintf(stdout, "CDFE A6: %x\n", eh_link_dbg_lane_dump_out->cdfe_a6);
+	fprintf(stdout, "CDFE A7: %x\n", eh_link_dbg_lane_dump_out->cdfe_a7);
+	fprintf(stdout, "CDFE A8: %x\n", eh_link_dbg_lane_dump_out->cdfe_a8);
+	fprintf(stdout, "CDFE A9: %x\n", eh_link_dbg_lane_dump_out->cdfe_a9);
+	fprintf(stdout, "CDFE A10: %x\n", eh_link_dbg_lane_dump_out->cdfe_a10);
+	fprintf(stdout, "Zobel A Gain: %x\n", eh_link_dbg_lane_dump_out->zobel_a_gain);
+	fprintf(stdout, "Zobel B Gain: %x\n", eh_link_dbg_lane_dump_out->zobel_b_gain);
+	fprintf(stdout, "Zobel DC Offset: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->zobel_dc_offset));
+	fprintf(stdout, "UDFE_THR_0: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->udfe_thr_0));
+	fprintf(stdout, "UDFE_THR_1: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->udfe_thr_1));
+	fprintf(stdout, "DC_OFFSET: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->dc_offset));
+	fprintf(stdout, "MEDIAN_AMP: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->median_amp));
+	fprintf(stdout, "PH_OFS_T: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->ph_ofs_t));
+	fprintf(stdout, "CDRU lock time: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->cdru_lock_time));
+	fprintf(stdout, "EH Workaround Status: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->eh_workaround_stat));
+	fprintf(stdout, "LOS toggle count: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->los_toggle_cnt));
+	fprintf(stdout, "Adaptation time: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->adapt_time));
+	fprintf(stdout, "CDR lock toggle count (arg = 0): %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->cdr_lock_toggle_cnt_0));
+	fprintf(stdout, "JAT status (arg = 0): %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->jat_stat_0));
+	fprintf(stdout, "dorbell error: %x\n", le16_to_cpu(eh_link_dbg_lane_dump_out->db_err));
+	fprintf(stdout, "==== EH register 0 value capture ====\n");
+	fprintf(stdout, "FS from PIPE interface: %x\n", reg_val0_fields->fs_obs);
+	fprintf(stdout, "LF from PIPE interface: %x\n", reg_val0_fields->lf_obs);
+	fprintf(stdout, "Pre-cursor value from PIPE interface: %x\n", reg_val0_fields->pre_cursor);
+	fprintf(stdout, "Cursor value from PIPE interface: %x\n", reg_val0_fields->cursor);
+	fprintf(stdout, "Post-cursor value from PIPE interface: %x\n", reg_val0_fields->post_cursor);
+	fprintf(stdout, "==== EH register 1 value capture ====\n");
+	fprintf(stdout, "US_PORT_TX_PRESET for current link rate: %x\n", reg_val1_fields->usp_tx_preset);
+	fprintf(stdout, "DS_PORT_TX_PRESET for current link rate: %x\n", reg_val1_fields->dsp_tx_preset);
+	fprintf(stdout, "==== EH register 2 value capture ====\n");
+	fprintf(stdout, "TX_P1A_D1EN: %x\n", reg_val2_fields->tx_p1a_d1en);
+	fprintf(stdout, "TX_P1A_D2EN: %x\n", reg_val2_fields->tx_p1a_d2en);
+	fprintf(stdout, "TX_P1A_AMP_RED: %x\n", reg_val2_fields->tx_p1a_amp_red);
+	fprintf(stdout, "TX_P1B_D1EN: %x\n", reg_val2_fields->tx_p1b_d1en);
+	fprintf(stdout, "TX_P1B_D2EN: %x\n", reg_val2_fields->tx_p1b_d2en);
+	fprintf(stdout, "==== EH register 3 value capture ====\n");
+	fprintf(stdout, "TX_P1B_AMP_RED: %x\n", reg_val3_fields->tx_p1b_amp_red);
+	fprintf(stdout, "TX_P2A_D1EN: %x\n", reg_val3_fields->tx_p2a_d1en);
+	fprintf(stdout, "TX_P2A_D2EN: %x\n", reg_val3_fields->tx_p2a_d2en);
+	fprintf(stdout, "TX_P2A_AMP_RED: %x\n", reg_val3_fields->tx_p2a_amp_red);
+	fprintf(stdout, "==== EH register 4 value capture ====\n");
+	fprintf(stdout, "TX_P2B_D1EN: %x\n", reg_val4_fields->tx_p2b_d1en);
+	fprintf(stdout, "TX_P2B_D2EN: %x\n", reg_val4_fields->tx_p2b_d2en);
+	fprintf(stdout, "TX_P2B_AMP_RED: %x\n", reg_val4_fields->tx_p2b_amp_red);
+	fprintf(stdout, "TX_P3A_D1EN: %x\n", reg_val4_fields->tx_p3a_d1en);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET_OPCODE 0XCC09
+#define CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET_PAYLOAD_IN_SIZE 0
+
+CXL_EXPORT int cxl_memdev_eh_link_dbg_reset(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_EH_LINK_DBG_RESET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+
+	fprintf(stdout, "EH Link Reset Completed \n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
