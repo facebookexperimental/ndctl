@@ -184,6 +184,7 @@ int cxl_mem_fbist_reset_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_res
 int cxl_mem_fbist_run_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_run, , u8 txg1_run);
 int cxl_mem_fbist_run_get(struct cxl_memdev *memdev, u32 fbist_id);
 int cxl_mem_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, u32 fbist_id, u8 thread_nr);
+int cxl_mem_fbist_last_exp_read_data_get(struct cxl_memdev *memdev, u32 fbist_id);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

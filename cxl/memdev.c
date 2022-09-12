@@ -1160,6 +1160,43 @@ static const struct option cmd_fbist_run_get_options[] = {
   OPT_END(),
 };
 
+static struct _fbist_xfer_rem_cnt_get_params {
+  u32 fbist_id;
+  u32 thread_nr;
+  bool verbose;
+} fbist_xfer_rem_cnt_get_params;
+
+#define FBIST_XFER_REM_CNT_GET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_xfer_rem_cnt_get_params.fbist_id, "Flext BIST Instance"), \
+OPT_UINTEGER('t', "thread_nr", &fbist_xfer_rem_cnt_get_params.thread_nr, "Thread NR")
+
+
+#define FBIST_XFER_REM_CNT_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_xfer_rem_cnt_get_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_xfer_rem_cnt_get_options[] = {
+  FBIST_XFER_REM_CNT_GET_BASE_OPTIONS(),
+  FBIST_XFER_REM_CNT_GET_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _fbist_last_exp_read_data_get_params {
+  u32 fbist_id;
+  bool verbose;
+} fbist_last_exp_read_data_get_params;
+
+#define FBIST_LAST_EXP_READ_DATA_GET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_last_exp_read_data_get_params.fbist_id, "Flext BIST Instance")
+
+#define FBIST_LAST_EXP_READ_DATA_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_last_exp_read_data_get_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_last_exp_read_data_get_options[] = {
+  FBIST_LAST_EXP_READ_DATA_GET_BASE_OPTIONS(),
+  FBIST_LAST_EXP_READ_DATA_GET_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _eh_adapt_force_params {
   u32 lane_id;
   u32 rate;
@@ -2567,6 +2604,28 @@ static int action_cmd_fbist_run_get(struct cxl_memdev *memdev, struct action_con
 	return cxl_memdev_fbist_run_set(memdev);
 }
 
+static int action_cmd_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_xfer_rem_cnt_get\n",
+			cxl_memdev_get_devname(memdev, fbist_xfer_rem_cnt_get_params.fbist_id, fbist_xfer_rem_cnt_get_params.thread_nr));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_xfer_rem_cnt_set(memdev);
+}
+
+static int action_cmd_fbist_last_exp_read_data_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_last_exp_read_data_get\n",
+			cxl_memdev_get_devname(memdev, fbist_last_exp_read_data_get_params.fbist_id));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_last_exp_read_data_set(memdev);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
   int rc;
@@ -3447,6 +3506,22 @@ int cmd_fbist_run_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_run_get, cmd_fbist_run_get_options,
 			"cxl fbist-run-get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_xfer_rem_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_xfer_rem_cnt_get, cmd_fbist_xfer_rem_cnt_get_options,
+			"cxl fbist-xfer-rem-cnt-get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_last_exp_read_data_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_last_exp_read_data_get, cmd_fbist_last_exp_read_data_get_options,
+			"cxl fbist-last-exp-read-data-get <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

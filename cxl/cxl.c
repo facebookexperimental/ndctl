@@ -148,6 +148,7 @@ static struct cmd_struct commands[] = {
 	{ "fbist-run-set", .c_fn = cmd_fbist_run_set },
 	{ "fbist-run-get", .c_fn = cmd_fbist_run_get },
 	{ "fbist-xfer-rem-cnt-get", .c_fn = cmd_fbist_xfer_rem_cnt_get },
+	{ "fbist-last-exp-read-data-get", .c_fn = cmd_fbist_last_exp_read_data_get },
 };
 
 int main(int argc, const char **argv)

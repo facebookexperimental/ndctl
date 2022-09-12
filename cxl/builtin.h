@@ -92,4 +92,5 @@ int cmd_fbist_reset_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_run_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_run_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_xfer_rem_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_last_exp_read_data_get(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

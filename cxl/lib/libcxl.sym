@@ -145,4 +145,5 @@ global:
 	cxl_memdev_fbist_run_set;
 	cxl_memdev_fbist_run_get;
 	cxl_memdev_fbist_xfer_rem_cnt_get;
+	cxl_memdev_fbist_last_exp_read_data_get;
 } LIBCXL_3;
