@@ -177,6 +177,13 @@ int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode
 int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx);
 int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 entry_idx, u8 lane_idx);
 int cxl_memdev_eh_link_dbg_reset(struct cxl_memdev *memdev);
+int cxl_mem_fbist_stopconfig_set(struct cxl_memdev *memdev, u32 fbist_id, u8 stop_on_wresp,
+	u8 stop_on_rresp, u8 stop_on_rdataerr);
+int cxl_mem_fbist_cyclecount_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg_nr, u64 cyclecount);
+int cxl_mem_fbist_reset_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_reset, , u8 txg1_reset);
+int cxl_mem_fbist_run_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_run, , u8 txg1_run);
+int cxl_mem_fbist_run_get(struct cxl_memdev *memdev, u32 fbist_id);
+int cxl_mem_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, u32 fbist_id, u8 thread_nr);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

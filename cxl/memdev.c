@@ -1057,6 +1057,109 @@ static const struct option cmd_eh_adapt_oneoff_options[] = {
   OPT_END(),
 };
 
+static struct _fbist_stopconfig_set_params {
+  u32 fbist_id;
+  u32 stop_on_wresp;
+  u32 stop_on_rresp;
+  u32 stop_on_rdataerr;
+  bool verbose;
+} fbist_stopconfig_set_params;
+
+#define FBIST_STOPCONFIG_SET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_stopconfig_set_params.fbist_id, "Flext BIST Instance"), \
+OPT_UINTEGER('w', "stop_on_wresp", &fbist_stopconfig_set_params.stop_on_wresp, "Stop on Write Response"), \
+OPT_UINTEGER('r', "stop_on_rresp", &fbist_stopconfig_set_params.stop_on_rresp, "Stop on Read Response"), \
+OPT_UINTEGER('d', "stop_on_rdataerr", &fbist_stopconfig_set_params.stop_on_rdataerr, "Stop on Read Data Error")
+
+#define FBIST_STOPCONFIG_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_stopconfig_set_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_stopconfig_set_options[] = {
+  FBIST_STOPCONFIG_SET_BASE_OPTIONS(),
+  FBIST_STOPCONFIG_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _fbist_cyclecount_set_params {
+  u32 fbist_id;
+  u32 txg_nr;
+  u32 cyclecount;
+  bool verbose;
+} fbist_cyclecount_set_params;
+
+#define FBIST_CYCLECOUNT_SET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_cyclecount_set_params.fbist_id, "Flext BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_cyclecount_set_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('c', "cyclecount", &fbist_cyclecount_set_params.cyclecount, "cyclecount")
+
+#define FBIST_CYCLECOUNT_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_cyclecount_set_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_cyclecount_set_options[] = {
+  FBIST_CYCLECOUNT_SET_BASE_OPTIONS(),
+  FBIST_CYCLECOUNT_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _fbist_reset_set_params {
+  u32 fbist_id;
+  u32 txg0_reset;
+  u32 txg1_reset;
+  bool verbose;
+} fbist_reset_set_params;
+
+#define FBIST_RESET_SET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_reset_set_params.fbist_id, "Flext BIST Instance"), \
+OPT_UINTEGER('t', "txg0_reset", &fbist_reset_set_params.txg0_reset, "TXG0 Run"), \
+OPT_UINTEGER('T', "txg1_reset", &fbist_reset_set_params.txg1_reset, "TXG1 Run"), \
+
+#define FBIST_RESET_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_reset_set_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_reset_set_options[] = {
+  FBIST_RESET_SET_BASE_OPTIONS(),
+  FBIST_RESET_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _fbist_run_set_params {
+  u32 fbist_id;
+  u32 txg0_run;
+  u32 txg1_run;
+  bool verbose;
+} fbist_run_set_params;
+
+#define FBIST_RUN_SET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_run_set_params.fbist_id, "Flext BIST Instance"), \
+OPT_UINTEGER('t', "txg0_run", &fbist_run_set_params.txg0_run, "TXG0 Run"), \
+OPT_UINTEGER('T', "txg1_run", &fbist_run_set_params.txg1_run, "TXG1 Run"), \
+
+#define FBIST_RUN_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_run_set_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_run_set_options[] = {
+  FBIST_RUN_SET_BASE_OPTIONS(),
+  FBIST_RUN_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _fbist_run_get_params {
+  u32 fbist_id;
+  bool verbose;
+} fbist_run_get_params;
+
+#define FBIST_RUN_GET_OPTIONS() \
+OPT_UINTEGER('i', "fbist_id", &fbist_run_get_params.fbist_id, "Flext BIST Instance")
+
+#define FBIST_RUN_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_run_get_params.verbose, "turn on debug")
+
+static const struct option cmd_fbist_run_get_options[] = {
+  FBIST_RUN_GET_BASE_OPTIONS(),
+  FBIST_RUN_GET_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _eh_adapt_force_params {
   u32 lane_id;
   u32 rate;
@@ -2404,6 +2507,66 @@ static int action_cmd_eh_link_dbg_reset(struct cxl_memdev *memdev, struct action
 	return cxl_memdev_eh_link_dbg_reset(memdev);
 }
 
+static int action_cmd_fbist_stopconfig_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_stopconfig_set\n",
+			cxl_memdev_get_devname(memdev, fbist_stopconfig_set_params.fbist_id,
+        fbist_stopconfig_set_params.stop_on_wresp, fbist_stopconfig_set_params.stop_on_rresp,
+        fbist_stopconfig_set_params.stop_on_rdataerr));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_stopconfig_set(memdev);
+}
+
+static int action_cmd_fbist_cyclecount_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_cyclecount_set\n",
+			cxl_memdev_get_devname(memdev, fbist_cyclecount_set_params.fbist_id,
+        fbist_cyclecount_set_params.txg_nr, fbist_cyclecount_set_params.cyclecount));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_cyclecount_set(memdev);
+}
+
+static int action_cmd_fbist_reset_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_reset_set\n",
+			cxl_memdev_get_devname(memdev, fbist_reset_set_params.fbist_id,
+        fbist_reset_set_params.txg0_reset, fbist_reset_set_params.txg1_reset));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_reset_set(memdev);
+}
+
+static int action_cmd_fbist_run_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_run_set\n",
+			cxl_memdev_get_devname(memdev, fbist_run_set_params.fbist_id,
+        fbist_run_set_params.txg0_run, fbist_run_set_params.txg1_run));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_run_set(memdev);
+}
+
+static int action_cmd_fbist_run_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_run_get\n",
+			cxl_memdev_get_devname(memdev, fbist_run_get_params.fbist_id));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_run_set(memdev);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
   int rc;
@@ -3244,6 +3407,46 @@ int cmd_eh_link_dbg_reset(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_reset, cmd_eh_link_dbg_reset_options,
 			"cxl eh-link-dbg-reset <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_stopconfig_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_stopconfig_set, cmd_fbist_stopconfig_set_options,
+			"cxl fbist-stopconfig-set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_cyclecount_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_cyclecount_set, cmd_fbist_cyclecount_set_options,
+			"cxl fbist-cyclecount-set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_reset_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_reset_set, cmd_fbist_reset_set_options,
+			"cxl fbist-reset-set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_run_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_run_set, cmd_fbist_run_set_options,
+			"cxl fbist-run-set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_run_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_run_get, cmd_fbist_run_get_options,
+			"cxl fbist-run-get <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

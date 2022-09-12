@@ -7197,3 +7197,354 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET_OPCODE 0XC208
+#define CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET_PAYLOAD_IN_SIZE 6
+
+struct cxl_mbox_fbist_stopconfig_set_in {
+	__le32 fbist_id;
+	u8 stop_on_wresp;
+	u8 stop_on_rresp;
+	u8 stop_on_rdataerr;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_fbist_stopconfig_set(struct cxl_memdev *memdev, u32 fbist_id, u8 stop_on_wresp,
+	u8 stop_on_rresp, u8 stop_on_rdataerr)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_fbist_stopconfig_set_in *fbist_stopconfig_set_in;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	fbist_stopconfig_set_in->fbist_id = cpu_to_le32(fbist_id);
+	fbist_stopconfig_set_in->stop_on_wresp = stop_on_wresp;
+	fbist_stopconfig_set_in->stop_on_rresp = stop_on_rresp;
+	fbist_stopconfig_set_in->stop_on_rdataerr = stop_on_rdataerr;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_FBIST_STOPCONFIG_SET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET_OPCODE 0XC207
+#define CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET_PAYLOAD_IN_SIZE 7
+
+struct cxl_mbox_fbist_cyclecount_set_in {
+	__le32 fbist_id;
+	u8 txg_nr;
+	u8 rsvd[3];
+	__le64 cyclecount;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_fbist_cyclecount_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg_nr, u64 cyclecount)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_fbist_cyclecount_set_in *fbist_cyclecount_set_in;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	fbist_cyclecount_set_in->fbist_id = cpu_to_le32(fbist_id);
+	fbist_cyclecount_set_in->txg_nr = txg_nr;
+	fbist_cyclecount_set_in->cyclecount = cpu_to_le64(cyclecount);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_FBIST_CYCLECOUNT_SET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_FBIST_RESET_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_FBIST_RESET_SET_OPCODE 0XC209
+#define CXL_MEM_COMMAND_ID_FBIST_RESET_SET_PAYLOAD_IN_SIZE 6
+
+struct cxl_mbox_fbist_reset_set_in {
+	__le32 fbist_id;
+	u8 txg0_reset;
+	u8 txg1_reset;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_fbist_reset_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_reset, u8 txg1_reset)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_fbist_reset_set_in *fbist_reset_set_in;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_FBIST_RESET_SET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_FBIST_RESET_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	fbist_reset_set_in->fbist_id = cpu_to_le32(fbist_id);
+	fbist_reset_set_in->txg0_reset = txg0_reset;
+	fbist_reset_set_in->txg1_reset = txg1_reset;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_FBIST_RESET_SET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_FBIST_RESET_SET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_SET_OPCODE 0XC20A
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_SET_PAYLOAD_IN_SIZE 6
+
+struct cxl_mbox_fbist_run_set_in {
+	__le32 fbist_id;
+	u8 txg0_run;
+	u8 txg1_run;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_fbist_run_set(struct cxl_memdev *memdev, u32 fbist_id, u8 txg0_run, u8 txg1_run)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_fbist_run_set_in *fbist_run_set_in;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_FBIST_RUN_SET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_FBIST_RUN_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	fbist_run_set_in->fbist_id = cpu_to_le32(fbist_id);
+	fbist_run_set_in->txg0_run = txg0_run;
+	fbist_run_set_in->txg1_run = txg1_run;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_FBIST_RUN_SET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_FBIST_RUN_SET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_GET_OPCODE 0XC20B
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_GET_PAYLOAD_IN_SIZE 4
+#define CXL_MEM_COMMAND_ID_FBIST_RUN_GET_PAYLOAD_OUT_SIZE 2
+
+struct cxl_mbox_fbist_run_get_in {
+	__le32 fbist_id;
+} __attribute__((packed));
+
+struct cxl_mbox_fbist_run_get_out {
+	u8 txg0_run;
+	u8 txg1_run;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_fbist_run_get(struct cxl_memdev *memdev, u32 fbist_id)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_fbist_run_get_in *fbist_run_get_in;
+	struct cxl_mbox_fbist_run_get_out *fbist_run_get_out;
+	int rc=0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_FBIST_RUN_GET_OPCODE);
+	if(!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_FBIST_RUN_GET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+	fprintf(stdout, "in size: 0x%x\n", cmd->send_cmd->in.size);
+
+	fbist_run_get_in->fbist_id = cpu_to_le32(fbist_id);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_FBIST_RUN_GET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+	CXL_MEM_COMMAND_ID_FBIST_RUN_GET);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+	fbist_run_get_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== Flex BIST Read Run Flags ============================\n");
+	fprintf(stdout, "TXG0 Run: %x\n", fbist_run_get_out->txg0_run);
+	fprintf(stdout, "TXG1 Run: %x\n", fbist_run_get_out->txg1_run);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}

@@ -142,6 +142,12 @@ static struct cmd_struct commands[] = {
 	{ "eh-link-dbg-entry-dump", .c_fn = cmd_eh_link_dbg_entry_dump },
 	{ "eh-link-dbg-lane-dump", .c_fn = cmd_eh_link_dbg_lane_dump },
 	{ "eh-link-dbg-reset", .c_fn = cmd_eh_link_dbg_reset },
+	{ "fbist-stopconfig-set", .c_fn = cmd_fbist_stopconfig_set },
+	{ "fbist-cyclecount-set", .c_fn = cmd_fbist_cyclecount_set },
+	{ "fbist-reset-set", .c_fn = cmd_fbist_reset_set },
+	{ "fbist-run-set", .c_fn = cmd_fbist_run_set },
+	{ "fbist-run-get", .c_fn = cmd_fbist_run_get },
+	{ "fbist-xfer-rem-cnt-get", .c_fn = cmd_fbist_xfer_rem_cnt_get },
 };
 
 int main(int argc, const char **argv)
