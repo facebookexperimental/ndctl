@@ -149,6 +149,19 @@ static struct cmd_struct commands[] = {
 	{ "fbist-run-get", .c_fn = cmd_fbist_run_get },
 	{ "fbist-xfer-rem-cnt-get", .c_fn = cmd_fbist_xfer_rem_cnt_get },
 	{ "fbist-last-exp-read-data-get", .c_fn = cmd_fbist_last_exp_read_data_get },
+	{ "fbist-curr-cycle-cnt-get", .c_fn = cmd_fbist_curr_cycle_cnt_get },
+	{ "fbist-thread-status-get", .c_fn = cmd_fbist_thread_status_get },
+	{ "fbist-thread-trans-cnt-get", .c_fn = cmd_fbist_thread_trans_cnt_get },
+	{ "fbist-thread-bandwidth-get", .c_fn = cmd_fbist_thread_bandwidth_get },
+	{ "fbist-thread-latency-get", .c_fn = cmd_fbist_thread_latency_get },
+	{ "fbist-thread-perf-mon-set", .c_fn = cmd_fbist_thread_perf_mon_set },
+	{ "fbist-top-read-status0-get", .c_fn = cmd_fbist_top_read_status0_get },
+	{ "fbist-top-err-cnt-get", .c_fn = cmd_fbist_top_err_cnt_get },
+	{ "fbist-last-read-addr-get", .c_fn = cmd_fbist_last_read_addr_get },
+	{ "fbist-test-simpledata", .c_fn = cmd_fbist_test_simpledata },
+	{ "fbist-test-addresstest", .c_fn = cmd_fbist_test_addresstest },
+	{ "fbist-test-movinginversion", .c_fn = cmd_fbist_test_movinginversion },
+	{ "fbist-test-randomsequence", .c_fn = cmd_fbist_test_randomsequence },
 };
 
 int main(int argc, const char **argv)

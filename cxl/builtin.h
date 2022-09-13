@@ -93,4 +93,17 @@ int cmd_fbist_run_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_run_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_xfer_rem_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_last_exp_read_data_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_curr_cycle_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_thread_status_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_thread_trans_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_thread_bandwidth_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_thread_latency_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_thread_perf_mon_set(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_top_read_status0_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_top_err_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_last_read_addr_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_test_simpledata(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_test_addresstest(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_test_movinginversion(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_fbist_test_randomsequence(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

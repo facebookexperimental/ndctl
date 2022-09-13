@@ -146,4 +146,17 @@ global:
 	cxl_memdev_fbist_run_get;
 	cxl_memdev_fbist_xfer_rem_cnt_get;
 	cxl_memdev_fbist_last_exp_read_data_get;
+	cxl_memdev_fbist_curr_cycle_cnt_get;
+	cxl_memdev_fbist_thread_status_get;
+	cxl_memdev_fbist_thread_trans_cnt_get;
+	cxl_memdev_fbist_thread_bandwidth_get;
+	cxl_memdev_fbist_thread_latency_get;
+	cxl_memdev_fbist_thread_perf_mon_set;
+	cxl_memdev_fbist_top_read_status0_get;
+	cxl_memdev_fbist_top_err_cnt_get;
+	cxl_memdev_fbist_last_read_addr_get;
+	cxl_memdev_fbist_test_simpledata;
+	cxl_memdev_fbist_test_addresstest;
+	cxl_memdev_fbist_test_movinginversion;
+	cxl_memdev_fbist_test_randomsequence;
 } LIBCXL_3;
