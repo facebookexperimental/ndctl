@@ -7617,7 +7617,7 @@ CXL_EXPORT int cxl_memdev_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, u32 
 	fprintf(stdout, "command completed successfully\n");
 	fbist_xfer_rem_cnt_get_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "=========================== Flex BIST thread remaining count ============================\n");
-	fprintf(stdout, "Thread NR: %x\n", le16_to_cpu(fbist_xfer_rem_cnt_get_out->txg0_xfer_rem_cnt));
+	fprintf(stdout, "Thread NR: %x\n", le16_to_cpu(fbist_xfer_rem_cnt_get_out->xfer_rem));
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
@@ -7692,11 +7692,11 @@ CXL_EXPORT int cxl_memdev_fbist_last_exp_read_data_get(struct cxl_memdev *memdev
 	fbist_last_exp_read_data_get_out = (void *)cmd->send_cmd->out.payload;
 
 	fprintf(stdout, "=========================== Flex BIST Read last and expected data ============================\n");
-	fprintf(stdout, "Last Read Data:\n")
+	fprintf(stdout, "Last Read Data:\n");
 	for(int i=0; i<16; i++) {
 		fprintf(stdout, "%x\n", le32_to_cpu(fbist_last_exp_read_data_get_out->last_rd_data[i]));
 	}
-	fprintf(stdout, "Expected Read Data:\n")
+	fprintf(stdout, "Expected Read Data:\n");
 	for(int i=0; i<16; i++) {
 		fprintf(stdout, "%x\n", le32_to_cpu(fbist_last_exp_read_data_get_out->exp_rd_data[i]));
 	}
@@ -8195,7 +8195,7 @@ CXL_EXPORT int cxl_memdev_fbist_thread_perf_mon_set(struct cxl_memdev *memdev,
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_FBIST_THREAD_PERF_MON_SET);
 		return -EINVAL;
 	}
-	fprintf(stdout, "Command completed successfully.\n")
+	fprintf(stdout, "Command completed successfully\n");
 
 out:
 	cxl_cmd_unref(cmd);

@@ -1111,7 +1111,7 @@ static struct _fbist_reset_set_params {
 #define FBIST_RESET_SET_OPTIONS() \
 OPT_UINTEGER('i', "fbist_id", &fbist_reset_set_params.fbist_id, "Flext BIST Instance"), \
 OPT_UINTEGER('t', "txg0_reset", &fbist_reset_set_params.txg0_reset, "TXG0 Run"), \
-OPT_UINTEGER('T', "txg1_reset", &fbist_reset_set_params.txg1_reset, "TXG1 Run"), \
+OPT_UINTEGER('T', "txg1_reset", &fbist_reset_set_params.txg1_reset, "TXG1 Run")
 
 #define FBIST_RESET_SET_BASE_OPTIONS() \
 OPT_BOOLEAN('v',"verbose", &fbist_reset_set_params.verbose, "turn on debug")
@@ -1132,7 +1132,7 @@ static struct _fbist_run_set_params {
 #define FBIST_RUN_SET_OPTIONS() \
 OPT_UINTEGER('i', "fbist_id", &fbist_run_set_params.fbist_id, "Flext BIST Instance"), \
 OPT_UINTEGER('t', "txg0_run", &fbist_run_set_params.txg0_run, "TXG0 Run"), \
-OPT_UINTEGER('T', "txg1_run", &fbist_run_set_params.txg1_run, "TXG1 Run"), \
+OPT_UINTEGER('T', "txg1_run", &fbist_run_set_params.txg1_run, "TXG1 Run")
 
 #define FBIST_RUN_SET_BASE_OPTIONS() \
 OPT_BOOLEAN('v',"verbose", &fbist_run_set_params.verbose, "turn on debug")
@@ -2835,82 +2835,82 @@ static int action_cmd_fbist_stopconfig_set(struct cxl_memdev *memdev, struct act
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_stopconfig_set\n",
-			cxl_memdev_get_devname(memdev, fbist_stopconfig_set_params.fbist_id,
-        fbist_stopconfig_set_params.stop_on_wresp, fbist_stopconfig_set_params.stop_on_rresp,
-        fbist_stopconfig_set_params.stop_on_rdataerr));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_stopconfig_set(memdev);
+	return cxl_memdev_fbist_stopconfig_set(memdev, fbist_stopconfig_set_params.fbist_id,
+        fbist_stopconfig_set_params.stop_on_wresp, fbist_stopconfig_set_params.stop_on_rresp,
+        fbist_stopconfig_set_params.stop_on_rdataerr);
 }
 
 static int action_cmd_fbist_cyclecount_set(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_cyclecount_set\n",
-			cxl_memdev_get_devname(memdev, fbist_cyclecount_set_params.fbist_id,
-        fbist_cyclecount_set_params.txg_nr, fbist_cyclecount_set_params.cyclecount));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_cyclecount_set(memdev);
+	return cxl_memdev_fbist_cyclecount_set(memdev, fbist_cyclecount_set_params.fbist_id,
+        fbist_cyclecount_set_params.txg_nr, fbist_cyclecount_set_params.cyclecount);
 }
 
 static int action_cmd_fbist_reset_set(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_reset_set\n",
-			cxl_memdev_get_devname(memdev, fbist_reset_set_params.fbist_id,
-        fbist_reset_set_params.txg0_reset, fbist_reset_set_params.txg1_reset));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_reset_set(memdev);
+	return cxl_memdev_fbist_reset_set(memdev, fbist_reset_set_params.fbist_id,
+        fbist_reset_set_params.txg0_reset, fbist_reset_set_params.txg1_reset);
 }
 
 static int action_cmd_fbist_run_set(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_run_set\n",
-			cxl_memdev_get_devname(memdev, fbist_run_set_params.fbist_id,
-        fbist_run_set_params.txg0_run, fbist_run_set_params.txg1_run));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_run_set(memdev);
+	return cxl_memdev_fbist_run_set(memdev, fbist_run_set_params.fbist_id,
+        fbist_run_set_params.txg0_run, fbist_run_set_params.txg1_run);
 }
 
 static int action_cmd_fbist_run_get(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_run_get\n",
-			cxl_memdev_get_devname(memdev, fbist_run_get_params.fbist_id));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_run_set(memdev);
+	return cxl_memdev_fbist_run_set(memdev, fbist_run_get_params.fbist_id);
 }
 
 static int action_cmd_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_xfer_rem_cnt_get\n",
-			cxl_memdev_get_devname(memdev, fbist_xfer_rem_cnt_get_params.fbist_id, fbist_xfer_rem_cnt_get_params.thread_nr));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_xfer_rem_cnt_set(memdev);
+	return cxl_memdev_fbist_xfer_rem_cnt_get(memdev, fbist_xfer_rem_cnt_get_params.fbist_id, fbist_xfer_rem_cnt_get_params.thread_nr);
 }
 
 static int action_cmd_fbist_last_exp_read_data_get(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort fbist_last_exp_read_data_get\n",
-			cxl_memdev_get_devname(memdev, fbist_last_exp_read_data_get_params.fbist_id));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 
-	return cxl_memdev_fbist_last_exp_read_data_set(memdev);
+	return cxl_memdev_fbist_last_exp_read_data_get(memdev, fbist_last_exp_read_data_get_params.fbist_id);
 }
 
 static int action_cmd_fbist_curr_cycle_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
