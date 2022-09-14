@@ -21,6 +21,881 @@
 --- # CCI vendor commands
 
 command_sets:
+- command_set_name: Device Info
+  command_set_description: Fetches general Device Information
+
+  command_set_opcodes:
+  - opcode_name: Read Device Information
+    mnemonic: DEVICE_INFO_GET
+    opcode: 0xC000
+
+    output_payload:
+    - opl_name: Output parameters for Device Info Get
+      opl_mnemonic: DEVICE_INFO_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Device ID
+        opl_par_mnemonic: DEVICE_ID
+        opl_offset: 0x00
+        opl_length: 2
+
+      - opl_par_name: Chip Info Release Major
+        opl_par_mnemonic: CHIPINFO_REL_MAJOR
+        opl_offset: 0x02
+        opl_length: 1
+        opl_description: >
+          Major: Rev A = 0, Rev B = 1, Rev C = 2, etc.
+
+      - opl_par_name: Chip Info Release Minor
+        opl_par_mnemonic: CHIPINFO_REL_MINOR
+        opl_offset: 0x03
+        opl_length: 1
+        opl_description: >
+          Minor: Rev A.0 = 0, Rev A.1 = 1, Rev B.0 = 0, Rev B.1 = 1, etc.
+
+      - opl_par_name: Device Revision
+        opl_par_mnemonic: DEVICE_REV
+        opl_offset: 0x04
+        opl_length: 1
+        opl_description: >
+          Incremented for every device revision.
+          Mapping to major/minor revisions is specific to the device lineage.
+
+      - opl_par_name: ConfigFile version Major
+        opl_par_mnemonic: CONFIGFILE_VER_MAJOR
+        opl_offset: 0x05
+        opl_length: 1
+
+      - opl_par_name: ConfigFile version Minor
+        opl_par_mnemonic: CONFIGFILE_VER_MINOR
+        opl_offset: 0x06
+        opl_length: 2
+
+- command_set_name: Flex BIST
+  command_set_description: >
+    0xC20x: General API
+    0xC21x: Error and Performance monitoring API
+    0xC22x: Polling API (Collection of useful interrupt-flags)
+    0xC23x: Test API (Predefined standard testcases)
+
+  command_set_opcodes:
+
+  - opcode_name: Configure error stop conditions
+    mnemonic: FBIST_STOPCONFIG_SET
+    opcode: 0xC207
+    opcode_description: >
+      Note: Affects both Transaction Generators
+
+    input_payload:
+    - ipl_name: Input parameters for StopConfig register Set
+      ipl_mnemonic: FBIST_STOPCONFIG_SET_IN_PL
+      ipl_size_bytes: 7
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Stop on Write Response
+        ipl_par_mnemonic: STOP_ON_WRESP
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Stop on Read Response
+        ipl_par_mnemonic: STOP_ON_RRESP
+        ipl_offset: 0x05
+        ipl_length: 1
+
+      - ipl_par_name: Stop on Read Data Error
+        ipl_par_mnemonic: STOP_ON_RDATAERR
+        ipl_offset: 0x06
+        ipl_length: 1
+
+  - opcode_name: Configure maximum cyclecount
+    mnemonic: FBIST_CYCLECOUNT_SET
+    opcode: 0xC208
+    opcode_description: >
+      Note: Must not be accessed while a TXG is in run state
+      Setting cyclecount to '0' disables this stop condition
+
+    input_payload:
+    - ipl_name: Input parameters for CycleCnt register Set
+      ipl_mnemonic: FBIST_CYCLECOUNT_SET_IN_PL
+      ipl_size_bytes: 16
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x05
+        ipl_length: 3
+
+      - ipl_par_name: cyclecount
+        ipl_par_mnemonic: CYCLECOUNT
+        ipl_offset: 0x08
+        ipl_length: 8
+
+  - opcode_name: Set Reset flags of TXG[0|1]
+    mnemonic: FBIST_RESET_SET
+    opcode: 0xC209
+    opcode_description: >
+      Note: Activating a reset will also clear the run flag
+
+    input_payload:
+    - ipl_name: Input parameters for Reset flags Set
+      ipl_mnemonic: FBIST_RESET_SET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG0 Reset
+        ipl_par_mnemonic: TXG0_RESET
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: TXG1 Reset
+        ipl_par_mnemonic: TXG1_RESET
+        ipl_offset: 0x05
+        ipl_length: 1
+
+  - opcode_name: Set Run flags of TXG[0|1]
+    mnemonic: FBIST_RUN_SET
+    opcode: 0xC20A
+
+    input_payload:
+    - ipl_name: Input parameters for Run flags Set
+      ipl_mnemonic: FBIST_RUN_SET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG0 Run
+        ipl_par_mnemonic: TXG0_RUN
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: TXG1 Run
+        ipl_par_mnemonic: TXG1_RUN
+        ipl_offset: 0x05
+        ipl_length: 1
+
+  - opcode_name: Read Run flags of TXG[0|1]
+    mnemonic: FBIST_RUN_GET
+    opcode: 0xC20B
+
+    input_payload:
+    - ipl_name: Input parameters for Run flags Get
+      ipl_mnemonic: FBIST_RUN_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: Output parameters for Run flags Get
+      opl_mnemonic: FBIST_RUN_GET_OUT_PL
+      opl_size_bytes: 2
+
+      parameters:
+      - opl_par_name: TXG0 Run
+        opl_par_mnemonic: TXG0_RUN
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: TXG1 Run
+        opl_par_mnemonic: TXG1_RUN
+        opl_offset: 0x01
+        opl_length: 1
+
+
+  - opcode_name: Read a thread's Remaining Transfer Counts
+    mnemonic: FBIST_XFER_REM_CNT_GET
+    opcode: 0xC210
+    opcode_description: >
+      Note: Must not be accessed while a TXG is in run state
+
+    input_payload:
+    - ipl_name: Input parameters for XFER remaining counter Get
+      ipl_mnemonic: FBIST_XFER_REM_CNT_GET_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for XFER remaining counter Get
+      opl_mnemonic: FBIST_XFER_REM_CNT_GET_OUT_PL
+      opl_size_bytes: 2
+
+      parameters:
+      - opl_par_name: XFER Remaining
+        opl_par_mnemonic: XFER_REM
+        opl_offset: 0x00
+        opl_length: 2
+
+  - opcode_name: Reads last and expected data
+    mnemonic: FBIST_LAST_EXP_READ_DATA_GET
+    opcode: 0xC211
+    opcode_description: >
+      Note: Must not be accessed while a TXG is in run state
+
+    input_payload:
+    - ipl_name: Input parameters for Last Exp Read Data Get
+      ipl_mnemonic: FBIST_LAST_EXP_READ_DATA_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: Output parameters for Input parameters for Last Exp Read Data Get
+      opl_mnemonic: FBIST_LAST_EXP_READ_DATA_GET_OUT_PL
+      opl_size_bytes: 128
+
+      parameters:
+      - opl_par_name: last_rd_data
+        opl_par_mnemonic: LAST_RD_DATA
+        opl_offset: 0x00
+        opl_unit_size: 4
+        opl_units_num: 16
+        opl_length: 64
+        opl_description: Array of 16 DWords
+
+      - opl_par_name: exp_rd_data
+        opl_par_mnemonic: EXP_RD_DATA
+        opl_offset: 0x40
+        opl_unit_size: 4
+        opl_units_num: 16
+        opl_length: 64
+        opl_description: Array of 16 DWords
+
+  - opcode_name: Read a TXG's current cycle count
+    mnemonic: FBIST_CURR_CYCLE_CNT_GET
+    opcode: 0xC212
+
+    input_payload:
+    - ipl_name: Input parameters for Current Cycle Count Get
+      ipl_mnemonic: FBIST_CURR_CYCLE_CNT_GET_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for Current Cycle Count Get
+      opl_mnemonic: FBIST_CURR_CYCLE_CNT_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Current Cycle Count
+        opl_par_mnemonic: CURR_CYCLE_CNT
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: Read a TXG's thread status
+    mnemonic: FBIST_THREAD_STATUS_GET
+    opcode: 0xC213
+
+    input_payload:
+    - ipl_name: Input parameters for Thread Status Get
+      ipl_mnemonic: FBIST_THREAD_STATUS_GET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for Thread Status Get
+      opl_mnemonic: FBIST_THREAD_STATUS_GET_OUT_PL
+      opl_size_bytes: 4
+
+      parameters:
+      - opl_par_name: Thread State
+        opl_par_mnemonic: THREAD_STATE
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x01
+        opl_length: 1
+
+      - opl_par_name: curr_thread_desc_index
+        opl_par_mnemonic: CURR_THREAD_DESC_INDEX
+        opl_offset: 0x02
+        opl_length: 2
+
+  - opcode_name: Read a TXG's thread transaction count
+    mnemonic: FBIST_THREAD_TRANS_CNT_GET
+    opcode: 0xC214
+
+    input_payload:
+    - ipl_name: Input parameters for Thread Trans Count Get
+      ipl_mnemonic: FBIST_THREAD_TRANS_CNT_GET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for Thread Trans Count Get
+      opl_mnemonic: FBIST_THREAD_TRANS_CNT_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Transaction Count
+        opl_par_mnemonic: TRANSACTION_CNT
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: Read a TXG's thread Rd/Wr bandwidth counters
+    mnemonic: FBIST_THREAD_BANDWIDTH_GET
+    opcode: 0xC215
+
+    input_payload:
+    - ipl_name: Input parameters for Thread Bandwidth Get
+      ipl_mnemonic: FBIST_THREAD_BANDWIDTH_GET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for Thread Bandwidth Get
+      opl_mnemonic: FBIST_THREAD_BANDWIDTH_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Read BW Count
+        opl_par_mnemonic: READ_BW_CNT
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: Write BW Count
+        opl_par_mnemonic: WRITE_BW_CNT
+        opl_offset: 0x04
+        opl_length: 4
+
+  - opcode_name: Read a TXG's thread Rd/Wr latency counters
+    mnemonic: FBIST_THREAD_LATENCY_GET
+    opcode: 0xC216
+
+    input_payload:
+    - ipl_name: Input parameters for Thread Latency Get
+      ipl_mnemonic: FBIST_THREAD_LATENCY_GET_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: Output parameters for Thread Latency Get
+      opl_mnemonic: FBIST_THREAD_LATENCY_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Read Latency Count
+        opl_par_mnemonic: READ_LATENCY_CNT
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: Write Latency Count
+        opl_par_mnemonic: WRITE_LATENCY_CNT
+        opl_offset: 0x04
+        opl_length: 4
+
+  - opcode_name: Set up TXG's/thread's performance monitor
+    mnemonic: FBIST_THREAD_PERF_MON_SET
+    opcode: 0xC217
+
+    input_payload:
+    - ipl_name: Input parameters for Thread Performance Monitor Set
+      ipl_mnemonic: FBIST_THREAD_PERF_MON_SET_IN_PL
+      ipl_size_bytes: 10
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: TXG Nr
+        ipl_par_mnemonic: TXG_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Thread Nr
+        ipl_par_mnemonic: THREAD_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+      - ipl_par_name: Performance Monitor Preset Enable
+        ipl_par_mnemonic: PMON_PRESET_EN
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Performance Monitor Clear Enable
+        ipl_par_mnemonic: PMON_CLEAR_EN
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: Performance Monitor Rollover
+        ipl_par_mnemonic: PMON_ROLLOVER
+        ipl_offset: 0x08
+        ipl_length: 1
+
+      - ipl_par_name: Performance Monitor Thread lclk
+        ipl_par_mnemonic: PMON_THREAD_LCLK
+        ipl_offset: 0x09
+        ipl_length: 1
+
+  - opcode_name: Read the top read status0
+    mnemonic: FBIST_TOP_READ_STATUS0_GET
+    opcode: 0xC218
+
+    input_payload:
+    - ipl_name: Input parameters for Top Read Status0 Get
+      ipl_mnemonic: FBIST_TOP_READ_STATUS0_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: Output parameters for Top Read Status0 Get
+      opl_mnemonic: FBIST_TOP_READ_STATUS0_GET_OUT_PL
+      opl_size_bytes: 3
+
+      parameters:
+      - opl_par_name: tag_id_err_idx
+        opl_par_mnemonic: TAG_ID_ERR_IDX
+        opl_offset: 0x00
+        opl_length: 2
+
+      - opl_par_name: thread_err_idx
+        opl_par_mnemonic: THREAD_ERR_IDX
+        opl_offset: 0x02
+        opl_length: 1
+
+  - opcode_name: Read Read-Dataframe, Read-Response and Write-Response error counters
+    mnemonic: FBIST_TOP_ERR_CNT_GET
+    opcode: 0xC219
+
+    input_payload:
+    - ipl_name: Input parameters for Top Error Count Get
+      ipl_mnemonic: FBIST_TOP_ERR_CNT_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: Output parameters for Top Error Count Get
+      opl_mnemonic: FBIST_TOP_ERR_CNT_GET_OUT_PL
+      opl_size_bytes: 12
+
+      parameters:
+      - opl_par_name: Read Data Error Count
+        opl_par_mnemonic: RDATA_ERR_CNT
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: Read Response Error Count
+        opl_par_mnemonic: RRESP_ERR_CNT
+        opl_offset: 0x04
+        opl_length: 4
+
+      - opl_par_name: Write Response Error Count
+        opl_par_mnemonic: WRESP_ERR_CNT
+        opl_offset: 0x08
+        opl_length: 4
+
+  - opcode_name: Read the last read address
+    mnemonic: FBIST_LAST_READ_ADDR_GET
+    opcode: 0xC21A
+    opcode_description: >
+      Note: Must not be accessed while a TXG is in run state
+
+    input_payload:
+    - ipl_name: Input parameters for Last Read Address Get
+      ipl_mnemonic: FBIST_LAST_READ_ADDR_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: Output parameters for Last Read Address Get
+      opl_mnemonic: FBIST_LAST_READ_ADDR_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: last_read_addr
+        opl_par_mnemonic: LAST_READ_ADDR
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: Sets up a predefined configuration from the SimpleData group
+    mnemonic: FBIST_TEST_SIMPLEDATA
+    opcode: 0xC230
+    opcode_description: >
+      This function sets up a complete testcase.
+      User then need to run TXG[0] and poll/handle interrupt flags for errors.
+
+    input_payload:
+    - ipl_name: Parameters for SimpleData configuration Input Payload
+      ipl_mnemonic: FBIST_TEST_SIMPLEDATA_IN_PL
+      ipl_size_bytes: 24
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Test number to be setup
+        ipl_par_mnemonic: TEST_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+        enumerators:
+        - ipl_en_name: Wr Sweep, Rd Sweep
+          ipl_en_mnemonic: FBIST_WRSWEEP_RDSWEEP
+          ipl_value: 0x00
+
+        - ipl_en_name: Wr/Rd Interleave
+          ipl_en_mnemonic: FBIST_WR_RD_INTERLEAVE
+          ipl_value: 0x01
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x05
+        ipl_length: 3
+
+      - ipl_par_name: Start Address
+        ipl_par_mnemonic: START_ADDRESS
+        ipl_offset: 0x08
+        ipl_length: 8
+
+      - ipl_par_name: Size of memory to operate on
+        ipl_par_mnemonic: NUM_BYTES
+        ipl_offset: 0x10
+        ipl_length: 8
+        ipl_description: Rounded down to a multiple of 64
+
+  - opcode_name: Sets up a predefined configuration from the AddressTest group
+    mnemonic: FBIST_TEST_ADDRESSTEST
+    opcode: 0xC231
+    opcode_description: >
+      This function sets up a complete testcase.
+      User then need to run TXG[0] and poll/handle interrupt flags for errors.
+
+    input_payload:
+    - ipl_name: Parameters for AddressTest configuration Input Payload
+      ipl_mnemonic: FBIST_TEST_ADDRESSTEST_IN_PL
+      ipl_size_bytes: 28
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Test number to be setup
+        ipl_par_mnemonic: TEST_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+        enumerators:
+        - ipl_en_name: Walking Ones
+          ipl_en_mnemonic: FBIST_WALKING_ONES
+          ipl_value: 0x00
+
+        - ipl_en_name: Own Address Sequential
+          ipl_en_mnemonic: FBIST_OWN_ADDR_SEQUENTIAL
+          ipl_value: 0x01
+
+        - ipl_en_name: Own Address Parallel
+          ipl_en_mnemonic: FBIST_OWN_ADDR_PARALLEL
+          ipl_value: 0x02
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x05
+        ipl_length: 3
+
+      - ipl_par_name: Start Address
+        ipl_par_mnemonic: START_ADDRESS
+        ipl_offset: 0x08
+        ipl_length: 8
+
+      - ipl_par_name: Size of memory to operate on
+        ipl_par_mnemonic: NUM_BYTES
+        ipl_offset: 0x10
+        ipl_length: 8
+        ipl_description: Rounded down to a multiple of 64
+
+      - ipl_par_name: Inital Seed
+        ipl_par_mnemonic: SEED
+        ipl_offset: 0x18
+        ipl_length: 4
+
+  - opcode_name: Sets up a predefined configuration from the MovingInversion group
+    mnemonic: FBIST_TEST_MOVINGINVERSION
+    opcode: 0xC232
+    opcode_description: >
+      This function sets up one of the phases (A/B/C/D/E/F) of a testcase.
+      User then need to run both TXG[0/1] and poll/handle interrupt flags for errors.
+
+    input_payload:
+    - ipl_name: Parameters for MovingInversion configuration Input Payload
+      ipl_mnemonic: FBIST_TEST_MOVINGINVERSION_IN_PL
+      ipl_size_bytes: 28
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Test number to be setup
+        ipl_par_mnemonic: TEST_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+        enumerators:
+        - ipl_en_name: MemTest86 #3: Ones & Zeros sequential
+          ipl_en_mnemonic: FBIST_MEMTEST86_3
+          ipl_value: 0x00
+
+        - ipl_en_name: MemTest86 #4: 8-bit pattern
+          ipl_en_mnemonic: FBIST_MEMTEST86_4
+          ipl_value: 0x01
+
+        - ipl_en_name: MemTest86 #5: Random Pattern
+          ipl_en_mnemonic: FBIST_MEMTEST86_5
+          ipl_value: 0x02
+
+        - ipl_en_name: MemTest86 #7: 32-bit Pattern
+          ipl_en_mnemonic: FBIST_MEMTEST86_7
+          ipl_value: 0x03
+
+      - ipl_par_name: Testphase to be setup
+        ipl_par_mnemonic: PHASE_NR
+        ipl_offset: 0x05
+        ipl_length: 1
+
+        enumerators:
+        - ipl_en_name: Test Phase A
+          ipl_en_mnemonic: FBIST_PHASE_A
+          ipl_value: 0x00
+
+        - ipl_en_name: Test Phase B
+          ipl_en_mnemonic: FBIST_PHASE_B
+          ipl_value: 0x01
+
+        - ipl_en_name: Test Phase C
+          ipl_en_mnemonic: FBIST_PHASE_C
+          ipl_value: 0x02
+
+        - ipl_en_name: Test Phase D
+          ipl_en_mnemonic: FBIST_PHASE_D
+          ipl_value: 0x03
+
+        - ipl_en_name: Test Phase E
+          ipl_en_mnemonic: FBIST_PHASE_E
+          ipl_value: 0x04
+
+        - ipl_en_name: Test Phase F
+          ipl_en_mnemonic: FBIST_PHASE_F
+          ipl_value: 0x05
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x06
+        ipl_length: 2
+
+      - ipl_par_name: Start Address
+        ipl_par_mnemonic: START_ADDRESS
+        ipl_offset: 0x08
+        ipl_length: 8
+
+      - ipl_par_name: Size of memory to operate on
+        ipl_par_mnemonic: NUM_BYTES
+        ipl_offset: 0x10
+        ipl_length: 8
+        ipl_description: Rounded down to a multiple of 64
+
+      - ipl_par_name: DDR Page size
+        ipl_par_mnemonic: DDRPAGE_SIZE
+        ipl_offset: 0x18
+        ipl_length: 4
+
+  - opcode_name: Sets up a predefined configuration from the RandomSequence group
+    mnemonic: FBIST_TEST_RANDOMSEQUENCE
+    opcode: 0xC233
+    opcode_description: >
+      This function sets up one of the phases (A/B) of the random sequence test.
+      User then need to run both TXG[0/1] and poll/handle interrupt flags for error.
+
+    input_payload:
+    - ipl_name: Parameters for RandomSequence configuration Input Payload
+      ipl_mnemonic: FBIST_TEST_RANDOMSEQUENCE_IN_PL
+      ipl_size_bytes: 36
+
+      parameters:
+      - ipl_par_name: Flex BIST Instance
+        ipl_par_mnemonic: FBIST_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+      - ipl_par_name: Testphase to be setup
+        ipl_par_mnemonic: PHASE_NR
+        ipl_offset: 0x04
+        ipl_length: 1
+
+        enumerators:
+        - ipl_en_name: Test Phase A
+          ipl_en_mnemonic: FBIST_PHASE_A
+          ipl_value: 0x00
+
+        - ipl_en_name: Test Phase B
+          ipl_en_mnemonic: FBIST_PHASE_B
+          ipl_value: 0x01
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x05
+        ipl_length: 3
+
+      - ipl_par_name: Start Address
+        ipl_par_mnemonic: START_ADDRESS
+        ipl_offset: 0x08
+        ipl_length: 8
+
+      - ipl_par_name: Size of memory to operate on
+        ipl_par_mnemonic: NUM_BYTES
+        ipl_offset: 0x10
+        ipl_length: 8
+        ipl_description: Rounded down to a multiple of 64
+
+      - ipl_par_name: DDR Page size
+        ipl_par_mnemonic: DDRPAGE_SIZE
+        ipl_offset: 0x18
+        ipl_length: 4
+
+      - ipl_par_name: Seed_DR0
+        ipl_par_mnemonic: SEED_DR0
+        ipl_offset: 0x1C
+        ipl_length: 4
+
+      - ipl_par_name: Seed DR1
+        ipl_par_mnemonic: SEED_DR1
+        ipl_offset: 0x20
+        ipl_length: 4
+
 - command_set_name: DDR Commands
   command_set_description: DDR Subcommands
 
@@ -481,7 +1356,7 @@ command_sets:
         opl_description: |
           Depending on the 'NUM_ENTRIES_TO_READ' parameter of the input payload
           or the provided output payload buffer size, this section of the
-          payload can occur multipe times.
+          payload can occur multiple times.
 
           The structure of an entry is as follows:
 
@@ -497,7 +1372,7 @@ command_sets:
             RAM data [159:128] HIF Write Command (valid flag), HIF Read Command (read token, length, autopre fields)
             RAM data [191:160] HIF Read Command (read token field)
             RAM data [223:192] HIF Read Command (addr,pri, latency, read token fields)
-            RAM data [255:224] HIF Read Command (validflag, cmd_type, addr fields)
+            RAM data [255:224] HIF Read Command (valid flag, cmd_type, addr fields)
 
           FLIT buffer entry data:
 
@@ -1210,10 +2085,20 @@ command_sets:
         ipl_offset: 0x0C
         ipl_length: 2
 
+      - ipl_par_name: Lane Mux
+        ipl_par_mnemonic: LANE_MUX
+        ipl_offset: 0x0E
+        ipl_length: 1
+        ipl_description: >
+          00: Captures RX and TX of Lanes 0 to 7
+          01: Captures All Lanes TX only
+          10: Captures All Lanes RX only
+          11: Captures RX and TX of Lanes 8 to 15
+
       - ipl_par_name: Reserved
         ipl_par_mnemonic: RSVD
-        ipl_offset: 0x0E
-        ipl_length: 2
+        ipl_offset: 0x0F
+        ipl_length: 1
 
   - opcode_name: OSA Configuration Dump
     mnemonic: OSA_CFG_DUMP
@@ -1630,40 +2515,26 @@ command_sets:
         ipl_offset: 0x04
         ipl_length: 4
         ipl_description: >
-          This field specifies that out of 3 monitored signals which signal match should trigger the event counter.
+          This field specifies which signal out of 3 signals should be monitored and trigger the event counter.
+          Value 0 allows to pass events unfiltered and to count all types of LTIF commands.
 
-        enumerators:
-        - ipl_en_name: Pass event unfiltered. Count all types of LTIF commands
-          ipl_en_mnemonic: UNFILTERED
-          ipl_value: 0x00
+          Bit 0 - enable filter for CXL opcode
+          Bit 1 - enable filter for CXL meta field
+          Bit 2 - enable filter for CXL meta value
 
-        - ipl_en_name: Count event trigger when programmed CXL OPCODE matches
-          ipl_en_mnemonic: OPCODE
-          ipl_value: 0x01
+        bit_fields:
 
-        - ipl_en_name: Count event trigger when programmed META_FIELD matches
-          ipl_en_mnemonic: META_FIELD
-          ipl_value: 0x02
+        - ipl_bf_name: Count event trigger when programmed CXL OPCODE matches
+          ipl_bf_mnemonic: opcode
+          ipl_bit: "0"
 
-        - ipl_en_name: Count_event trigger when programmed OPCODE and META_FIELD matches
-          ipl_en_mnemonic: OPCODE_META_FIELD
-          ipl_value: 0x03
+        - ipl_bf_name: Count event trigger when programmed META_FIELD matches
+          ipl_bf_mnemonic: meta_field
+          ipl_bit: "1"
 
-        - ipl_en_name: Count event trigger when programmed META_VALUE matches
-          ipl_en_mnemonic: META_VALUE
-          ipl_value: 0x04
-
-        - ipl_en_name: Count_event trigger when programmed OPCODE and META_VALUE matches
-          ipl_en_mnemonic: OPCODE_META_VAL
-          ipl_value: 0x05
-
-        - ipl_en_name: Count_event trigger when programmed META_VALUE and META_FIELD matches
-          ipl_en_mnemonic: META_VAL_META_FIELD
-          ipl_value: 0x06
-
-        - ipl_en_name: Count_event trigger when programmed OPCODE, META_FIELD and META_VALUE matches
-          ipl_en_mnemonic: OPCODE_META_VAL_META_FIELD
-          ipl_value: 0x07
+        - ipl_bf_name: Count event trigger when programmed META_VALUE matches
+          ipl_bf_mnemonic: meta_value
+          ipl_bit: "2"
 
       - ipl_par_name: Opcode
         ipl_par_mnemonic: OPCODE
@@ -1903,7 +2774,26 @@ command_sets:
         ipl_offset: 0x04
         ipl_length: 4
         ipl_description: >
-          Monitor an event for a programmed CXL OPCODE.
+          This field specifies which signal out of 3 signals should be monitored and trigger the event counter.
+          Value 0 allows to pass events unfiltered and to count all types of HIF commands.
+
+          Bit 0 - enable filter for address
+          Bit 1 - enable filter for request type
+          Bit 2 - enable filter for scrubbing type
+
+        bit_fields:
+
+        - ipl_bf_name: Count event trigger when programmed ADDR matches
+          ipl_bf_mnemonic: addr
+          ipl_bit: "0"
+
+        - ipl_bf_name: Count event trigger when programmed REQ_TYPE matches
+          ipl_bf_mnemonic: req_type
+          ipl_bit: "1"
+
+        - ipl_bf_name: Count event trigger when programmed SC_TYPE matches
+          ipl_bf_mnemonic: sc_type
+          ipl_bit: "2"
 
       - ipl_par_name: Address
         ipl_par_mnemonic: ADDR
@@ -1939,88 +2829,6 @@ command_sets:
         ipl_description: >
           Monitor an event for a programmed scrubbing type request.
 
-  - opcode_name: MTA get HIF configuration
-    mnemonic: PERFCNT_MTA_HIF_CFG_GET
-    opcode: 0xCA06
-
-    input_payload:
-    - ipl_name: MTA get HIF configuration Input Payload
-      ipl_mnemonic: PERFCNT_MTA_HIF_CFG_GET_IN_PL
-      ipl_size_bytes: 4
-
-      parameters:
-      - ipl_par_name: Counter
-        ipl_par_mnemonic: COUNTER
-        ipl_offset: 0x00
-        ipl_length: 4
-
-    output_payload:
-    - opl_name: MTA get HIF configuration output Payload
-      opl_mnemonic: PERFCNT_MTA_HIF_CFG_GET_OUT_PL
-      opl_size_bytes: 8
-
-      parameters:
-      - opl_par_name: Counter
-        opl_par_mnemonic: COUNTER
-        opl_offset: 0x00
-        opl_length: 8
-
-  - opcode_name: MTA get HIF latch value
-    mnemonic: PERFCNT_MTA_HIF_LATCH_VAL_GET
-    opcode: 0xCA07
-
-    input_payload:
-    - ipl_name: MTA get HIF latch Input Payload
-      ipl_mnemonic: PERFCNT_MTA_LTIF_LATCH_VAL_GET_IN_PL
-      ipl_size_bytes: 4
-
-      parameters:
-      - ipl_par_name: Counter
-        ipl_par_mnemonic: COUNTER
-        ipl_offset: 0x00
-        ipl_length: 4
-
-    output_payload:
-    - opl_name: MTA get HIF latch output Payload
-      opl_mnemonic: PERFCNT_MTA_HIF_LATCH_GET_OUT_PL
-      opl_size_bytes: 8
-
-      parameters:
-      - opl_par_name: Latch value
-        opl_par_mnemonic: LATCH_VAL
-        opl_offset: 0x00
-        opl_length: 8
-
-  - opcode_name: MTA HIF clear counter
-    mnemonic: PERFCNT_MTA_HIF_COUNTER_CLEAR
-    opcode: 0xCA08
-
-    input_payload:
-    - ipl_name: MTA HIF clear counter Input Payload
-      ipl_mnemonic: PERFCNT_MTA_LTIF_COUNTER_CLEAR_IN_PL
-      ipl_size_bytes: 4
-
-      parameters:
-      - ipl_par_name: Counter
-        ipl_par_mnemonic: COUNTER
-        ipl_offset: 0x00
-        ipl_length: 4
-
-  - opcode_name: MTA latch HIF counter value
-    mnemonic: PERFCNT_MTA_HIF_CNT_VAL_LATCH
-    opcode: 0xCA09
-
-    input_payload:
-    - ipl_name: MTA latch HIF counter value Input Payload
-      ipl_mnemonic: PERFCNT_MTA_HIF_CNT_VAL_LATCH_IN_PL
-      ipl_size_bytes: 4
-
-      parameters:
-      - ipl_par_name: Counter
-        ipl_par_mnemonic: COUNTER
-        ipl_offset: 0x00
-        ipl_length: 4
-
 - command_set_name: Performance Counters DDR
   command_set_description: Performance Counters DDR command set
 
@@ -2048,7 +2856,7 @@ command_sets:
         ipl_offset: 0x01
         ipl_length: 1
 
-        enumumerators:
+        enumerators:
         - ipl_en_name: CID 0 filter
           ipl_en_mnemonic: CID0
           ipl_value: 0x01
@@ -2074,7 +2882,7 @@ command_sets:
         ipl_offset: 0x02
         ipl_length: 1
 
-        enumumerators:
+        enumerators:
         - ipl_en_name: Rank 0 filter
           ipl_en_mnemonic: RANK0
           ipl_value: 0x01
@@ -2100,7 +2908,7 @@ command_sets:
         ipl_offset: 0x03
         ipl_length: 1
 
-        enumumerators:
+        enumerators:
         - ipl_en_name: Bank 0 filter
           ipl_en_mnemonic: BA0
           ipl_value: 0x01
@@ -2126,7 +2934,7 @@ command_sets:
         ipl_offset: 0x04
         ipl_length: 1
 
-        enumumerators:
+        enumerators:
         - ipl_en_name: Bank Group 0 filter
           ipl_en_mnemonic: BG0
           ipl_value: 0x01
@@ -2170,7 +2978,7 @@ command_sets:
         ipl_units_num: 8
         ipl_length: 8
 
-        enumumerators:
+        enumerators:
         - ipl_en_name: RAS on PHY0
           ipl_en_mnemonic: RAS_ON_PHY0
           ipl_value: 0x00
@@ -3007,6 +3815,31 @@ command_sets:
   command_set_description: EH Eye Capture Commands
   command_set_opcodes:
 
+  - opcode_name: EH Eye capture Enable Timeout
+    mnemonic: EH_EYE_CAP_TIMEOUT_ENABLE
+    opcode: 0xCC0A
+
+    input_payload:
+
+    - ipl_name: EH Eye capture Enable Timeout
+      ipl_mnemonic: eh_eye_cap_timeout_en_in_pl
+      ipl_size_bytes: 2
+
+      parameters:
+
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: enable
+        ipl_par_mnemonic: enable
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          0: disable timeout
+          1: enable timeout
+
   - opcode_name: EH Eye capture Run
     mnemonic: EH_EYE_CAP_RUN
     opcode: 0xCC00
@@ -3087,7 +3920,7 @@ command_sets:
 
     - ipl_name: EH Eye capture Read input
       ipl_mnemonic: eh_eye_cap_read_in_pl
-      ipl_size_bytes: 4
+      ipl_size_bytes: 5
 
       parameters:
 
@@ -3096,7 +3929,7 @@ command_sets:
         ipl_offset: 0x00
         ipl_length: 1
 
-      - ipl_par_name: lane ID
+      - ipl_par_name: Lane ID
         ipl_par_mnemonic: lane_id
         ipl_offset: 0x01
         ipl_length: 1
@@ -3106,35 +3939,59 @@ command_sets:
         ipl_offset: 0x02
         ipl_length: 1
 
-      - ipl_par_name: reserved
-        ipl_par_mnemonic: RSVD
+      - ipl_par_name: Phase Offset
+        ipl_par_mnemonic: phase_offset
         ipl_offset: 0x03
         ipl_length: 1
+        ipl_description: >
+          Offset of the first phase to be returned.
+
+      - ipl_par_name: Requested number of phases in ber_data
+        ipl_par_mnemonic: num_phases
+        ipl_offset: 0x04
+        ipl_length: 1
+        ipl_description: >
+          The output payload for requested number of phases cannot exceed CCI buffer size.
 
     output_payload:
 
     - opl_name: EH Eye capture Read output
       opl_mnemonic: eh_eye_cap_read_out_pl
-      opl_size_bytes: 248
+      opl_size_bytes: 8+
 
       parameters:
 
       - opl_par_name: Total number of phases in ber_data
-        opl_par_mnemonic: num_phase
+        opl_par_mnemonic: total_num_phases
         opl_offset: 0x00
         opl_length: 1
 
+      - opl_par_name: Returned number of phases in ber_data
+        opl_par_mnemonic: num_phases
+        opl_offset: 0x01
+        opl_length: 1
+        opl_description: >
+          if returned number of phases is less than the requested number of phases,
+          then the output payload contains data for the last phase.
+
+      - opl_par_name: Phase Offset
+        opl_par_mnemonic: phase_offset
+        opl_offset: 0x02
+        opl_length: 1
+        opl_description: >
+          Offset of the first returned phase.
+
       - opl_par_name: reserved
         opl_par_mnemonic: RSVD
-        opl_offset: 0x01
-        opl_length: 7
+        opl_offset: 0x03
+        opl_length: 5
 
       - opl_par_name: Per-phase bit error rates (multiplied by EYE_CAP_ERROR_CNT_MULT)
         opl_par_mnemonic: ber_data
         opl_offset: 0x08
-        opl_unit_size: 4
-        opl_units_num: 60
-        opl_length: 240
+        opl_unit_size: 8
+        opl_units_num: VARIES
+        opl_length: VARIES
 
 - command_set_name: Elkhound Adaptation Objects
   command_set_description: >
@@ -3410,6 +4267,580 @@ command_sets:
         ipl_par_mnemonic: ph_ofs_t
         ipl_offset: 0x27
         ipl_length: 1
+
+- command_set_name: Elkhound Link Debug Commands
+  command_set_description: Elkhound Link Debug Configuration and Dump Command
+  command_set_opcodes:
+
+  - opcode_name: Config EH Link Debug
+    mnemonic: EH_LINK_DBG_CFG
+    opcode: 0xCC06
+    opcode_description: >
+      This command configures Elkhound Link Debug operation
+
+    input_payload:
+
+    - ipl_name: Link Debug Configuration Input Payload
+      ipl_mnemonic: link_dbg_cfg_in_pl
+      ipl_size_bytes: 13
+
+      parameters:
+
+      - ipl_par_name: mode
+        ipl_par_mnemonic: mode
+        ipl_offset: 0
+        ipl_length: 1
+        ipl_description: >
+            Bit[1:0] port_id: Link Debug target port id
+            Bit[3:2] op_mode: 1 - L2R, 2 - Rate
+            Bit[7:4] Capture Types: b4-Doorbell, b5-Adaptation, b6-EH register
+
+        bit_fields:
+        - ipl_bf_name: Target port
+          ipl_bf_mnemonic: port_id
+          ipl_bit: "1:0"
+
+        - ipl_bf_name: Operation Mode
+          ipl_bf_mnemonic: op_mode
+          ipl_bit: "3:2"
+
+        - ipl_bf_name: Capture Type
+          ipl_bf_mnemonic: cap_type
+          ipl_bit: "7:4"
+
+      - ipl_par_name: Lane mask
+        ipl_par_mnemonic: lane_mask
+        ipl_offset: 1
+        ipl_length: 2
+        ipl_description: >
+          Each bit represents capturing lane (b0: lane 0 ~ b15: lane 15)
+
+      - ipl_par_name: Rate mask
+        ipl_par_mnemonic: rate_mask
+        ipl_offset: 3
+        ipl_length: 1
+        ipl_description: >
+          Each bit represents link rate (b0: GEN1 ~ b4: Gen5)
+
+      - ipl_par_name: Timer interval
+        ipl_par_mnemonic: timer_us
+        ipl_offset: 4
+        ipl_length: 4
+        ipl_description: >
+          Polling Timer value in microsecond (minimum 1)
+
+      - ipl_par_name: Capture Timer delay
+        ipl_par_mnemonic: cap_delay_us
+        ipl_offset: 8
+        ipl_length: 4
+        ipl_description: >
+          Capture delay timer value in microsecond
+
+      - ipl_par_name: Max Capture
+        ipl_par_mnemonic: max_cap
+        ipl_offset: 12
+        ipl_length: 1
+        ipl_description: >
+          Maximum number of capture (0: Wrap around)
+
+  - opcode_name: EH Link Debug Entry Dump
+    mnemonic: EH_LINK_DBG_ENTRY_DUMP
+    opcode: 0xCC07
+    opcode_description: >
+      This command dumps Link capture entry results
+      One entry has lanes capture data
+
+    input_payload:
+    - ipl_name: Link Debug Entry Dump Input Payload
+      ipl_mnemonic: link_dbg_entry_dump_in_pl
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: Entry index
+        ipl_par_mnemonic: entry_idx
+        ipl_offset: 0
+        ipl_length: 1
+        ipl_description: >
+          index of capture entries - 0: Oldest entry
+
+    output_payload:
+    - opl_name: Link Debug Entry Dump Output Payload
+      opl_mnemonic: link_dbg_entry_dump_out_pl
+      opl_size_bytes: 34
+
+      parameters:
+      - opl_par_name: Capture Info
+        opl_par_mnemonic: cap_info
+        opl_offset: 0
+        opl_length: 1
+        opl_description: >
+          Bit[3:0] Entry index of following data
+          Bit[7:4] Total Captured Entry Number
+
+        bit_fields:
+        - opl_bf_name: Entry index of following data
+          opl_bf_mnemonic: entry_idx
+          opl_bit: "3:0"
+
+        - opl_bf_name: Total Captured Entry Number
+          opl_bf_mnemonic: entry_num
+          opl_bit: "7:4"
+
+      - opl_par_name: Capture Reason
+        opl_par_mnemonic: cap_reason
+        opl_offset: 1
+        opl_length: 1
+        opl_description: >
+           Capture Reason
+
+      - opl_par_name: L2R Reason
+        opl_par_mnemonic: l2r_reason
+        opl_offset: 2
+        opl_length: 4
+        opl_description: >
+           L2R Reason
+
+      - opl_par_name: Capture Start Timestamp
+        opl_par_mnemonic: start_time
+        opl_offset: 6
+        opl_length: 8
+        opl_description: >
+           Capture Start Time (us)
+
+      - opl_par_name: Capture End Timestamp
+        opl_par_mnemonic: end_time
+        opl_offset: 14
+        opl_length: 8
+        opl_description: >
+           Capture End Time (us)
+
+      - opl_par_name: Capture Start Rate
+        opl_par_mnemonic: start_rate
+        opl_offset: 22
+        opl_length: 1
+        opl_description: >
+           Capture Start Rate
+
+      - opl_par_name: Capture End Rate
+        opl_par_mnemonic: end_rate
+        opl_offset: 23
+        opl_length: 1
+        opl_description: >
+           Capture End Rate
+
+      - opl_par_name: Capture Start State
+        opl_par_mnemonic: start_state
+        opl_offset: 24
+        opl_length: 1
+        opl_description: >
+           Capture Start LTSSM State
+
+      - opl_par_name: Capture End State
+        opl_par_mnemonic: end_state
+        opl_offset: 25
+        opl_length: 1
+        opl_description: >
+           Capture End LTSSM State
+
+      - opl_par_name: Capture Start Status
+        opl_par_mnemonic: start_status
+        opl_offset: 26
+        opl_length: 4
+        opl_description: >
+           Capture Start LTSSM Status (SHB_PHYDL_INT_STAT_REG_3)
+
+      - opl_par_name: Capture End Status
+        opl_par_mnemonic: end_status
+        opl_offset: 30
+        opl_length: 4
+        opl_description: >
+           Capture End LTSSM status (SHB_PHYDL_INT_STAT_REG_3)
+
+  - opcode_name: EH Link Debug Lane Dump
+    mnemonic: EH_LINK_DBG_LANE_DUMP
+    opcode: 0xCC08
+    opcode_description: >
+      This command dumps each Lane capture results of a Entry
+
+    input_payload:
+    - ipl_name: Link Debug Lane Dump Input Payload
+      ipl_mnemonic: link_dbg_lane_dump_in_pl
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: Capture Entry index
+        ipl_par_mnemonic: entry_idx
+        ipl_offset: 0
+        ipl_length: 1
+        ipl_description: >
+          index of capture entry - 0: Oldest capture
+
+      - ipl_par_name: Capture Lane
+        ipl_par_mnemonic: lane_idx
+        ipl_offset: 1
+        ipl_length: 1
+        ipl_description: >
+          lane number to read (0: Lane 0 ~ 15 : Lane 15)
+
+    output_payload:
+    - opl_name: Link Debug Lane Dump Output Payload
+      opl_mnemonic: link_dbg_lane_dump_out_pl
+      opl_size_bytes: 59
+
+      parameters:
+      - opl_par_name: Capture Info
+        opl_par_mnemonic: cap_info
+        opl_offset: 0
+        opl_length: 1
+        opl_description: >
+          Bit[3:0] Capture lane
+          Bit[7:4] Capture Entry number.
+
+        bit_fields:
+        - opl_bf_name: Capture Lane
+          opl_bf_mnemonic: lane_idx
+          opl_bit: "3:0"
+
+        - opl_bf_name: Capture Entry Index
+          opl_bf_mnemonic: entry_idx
+          opl_bit: "7:4"
+
+      - opl_par_name: PGA gain
+        opl_par_mnemonic: pga_gain
+        opl_offset: 1
+        opl_length: 1
+        opl_description: >
+          contain the current value of the object PGA_GAIN as captured
+          through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+
+      - opl_par_name: PGA offset 2
+        opl_par_mnemonic: pga_off2
+        opl_offset: 2
+        opl_length: 1
+        opl_description: >
+          PGA Stage2 DC offset correction
+
+      - opl_par_name: PGA offset 1
+        opl_par_mnemonic: pga_off1
+        opl_offset: 3
+        opl_length: 1
+        opl_description: >
+          PGA Stage1 DC offset correction
+
+      - opl_par_name: CDFE A2
+        opl_par_mnemonic: cdfe_a2
+        opl_offset: 4
+        opl_length: 1
+        opl_description: >
+          I_TAP2<7:0> 2's compliment
+
+      - opl_par_name: CDFE A3
+        opl_par_mnemonic: cdfe_a3
+        opl_offset: 5
+        opl_length: 1
+        opl_description: >
+          I_TAP3<6:0> 2's compliment
+
+      - opl_par_name: CDFE A4
+        opl_par_mnemonic: cdfe_a4
+        opl_offset: 6
+        opl_length: 1
+        opl_description: >
+          I_TAP4<6:0> 2's compliment
+
+      - opl_par_name: CDFE A5
+        opl_par_mnemonic: cdfe_a5
+        opl_offset: 7
+        opl_length: 1
+        opl_description: >
+          I_TAP5<6:0> 2's compliment
+
+      - opl_par_name: CDFE A6
+        opl_par_mnemonic: cdfe_a6
+        opl_offset: 8
+        opl_length: 1
+        opl_description: >
+          I_TAP6<6:0> 2's compliment
+
+      - opl_par_name: CDFE A7
+        opl_par_mnemonic: cdfe_a7
+        opl_offset: 9
+        opl_length: 1
+        opl_description: >
+          I_TAP7<6:0> 2's compliment
+
+      - opl_par_name: CDFE A8
+        opl_par_mnemonic: cdfe_a8
+        opl_offset: 10
+        opl_length: 1
+        opl_description: >
+          I_TAP8<6:0> 2's compliment
+
+      - opl_par_name: CDFE A9
+        opl_par_mnemonic: cdfe_a9
+        opl_offset: 11
+        opl_length: 1
+        opl_description: >
+          I_TAP9<5:0> 2's compliment
+
+      - opl_par_name: CDFE A10
+        opl_par_mnemonic: cdfe_a10
+        opl_offset: 12
+        opl_length: 1
+        opl_description: >
+          I_TAP10<5:0> 2's compliment
+
+      - opl_par_name: Zobel A Gain
+        opl_par_mnemonic: zobel_a_gain
+        opl_offset: 13
+        opl_length: 1
+        opl_description: >
+          Zobel a_gain
+
+      - opl_par_name: Zobel B Gain
+        opl_par_mnemonic: zobel_b_gain
+        opl_offset: 14
+        opl_length: 1
+        opl_description: >
+          zobel_b_gain
+
+      - opl_par_name: Zobel DC Offset
+        opl_par_mnemonic: zobel_dc_offset
+        opl_offset: 15
+        opl_length: 2
+        opl_description: >
+          Zobel DC offset correction
+
+      - opl_par_name: UDFE_THR_0
+        opl_par_mnemonic: udfe_thr_0
+        opl_offset: 17
+        opl_length: 2
+        opl_description: >
+          contain the current value of the object UDFE_THR_0 as
+          captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ.
+
+      - opl_par_name: UDFE_THR_1
+        opl_par_mnemonic: udfe_thr_1
+        opl_offset: 19
+        opl_length: 2
+        opl_description: >
+          contain the current value of the object UDFE_THR_1 as
+          captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+
+      - opl_par_name: DC_OFFSET
+        opl_par_mnemonic: dc_offset
+        opl_offset: 21
+        opl_length: 2
+        opl_description: >
+          contain the current value of the object DC_OFFSET as
+          captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+
+      - opl_par_name: MEDIAN_AMP
+        opl_par_mnemonic: median_amp
+        opl_offset: 23
+        opl_length: 2
+        opl_description: >
+          contain the current value of the object MEDIAN_AMP as
+          captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+
+      - opl_par_name: PH_OFS_T
+        opl_par_mnemonic: ph_ofs_t
+        opl_offset: 25
+        opl_length: 1
+        opl_description: >
+          contain the current value of the object PH_OFS_T as
+          captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+
+      - opl_par_name: CDRU lock time
+        opl_par_mnemonic: cdru_lock_time
+        opl_offset: 26
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_READ_CDRU_LOCK_TIME EH doorbell value
+
+      - opl_par_name: EH Workaround Status
+        opl_par_mnemonic: eh_workaround_stat
+        opl_offset: 28
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_WORKAROUND_STAT EH doorbell value
+
+      - opl_par_name: LOS toggle count
+        opl_par_mnemonic: los_toggle_cnt
+        opl_offset: 30
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_LOS_TOGGLE_CNT EH doorbell value
+
+      - opl_par_name: Adaptation time
+        opl_par_mnemonic: adapt_time
+        opl_offset: 32
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_ADAPT_TIME EH doorbell value
+
+      - opl_par_name: CDR lock toggle count (arg = 0)
+        opl_par_mnemonic: cdr_lock_toggle_cnt_0
+        opl_offset: 34
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_CDR_LOCK_TOGGLE_CNT 0 EH doorbell value
+
+      - opl_par_name: JAT status (arg = 0)
+        opl_par_mnemonic: jat_stat_0
+        opl_offset: 36
+        opl_length: 2
+        opl_description: >
+          EHRV_CMD_JAT_STATUS 0 EH doorbell value
+
+      - opl_par_name: doorbell error
+        opl_par_mnemonic: db_err
+        opl_offset: 38
+        opl_length: 4
+        opl_description: >
+          doorbell error indicators
+
+      - opl_par_name: EH register data 0
+        opl_par_mnemonic: reg_val0
+        opl_offset: 42
+        opl_length: 4
+        opl_description: >
+          EH register 0 value capture
+
+        bit_fields:
+        - opl_bf_name: FS from PIPE interface
+          opl_bf_mnemonic: fs_obs
+          opl_bit: "5:0"
+
+        - opl_bf_name: LF from PIPE interface
+          opl_bf_mnemonic: lf_obs
+          opl_bit: "11:6"
+
+        - opl_bf_name: Pre-cursor value from PIPE interface
+          opl_bf_mnemonic: pre_cursor
+          opl_bit: "17:12"
+
+        - opl_bf_name: Cursor value from PIPE interface
+          opl_bf_mnemonic: cursor
+          opl_bit: "23:18"
+
+        - opl_bf_name: Post-cursor value from PIPE interface
+          opl_bf_mnemonic: post_cursor
+          opl_bit: "29:24"
+
+        - opl_bf_name: Reserved
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:30"
+
+      - opl_par_name: EH register data 1
+        opl_par_mnemonic: reg_val1
+        opl_offset: 46
+        opl_length: 1
+        opl_description: >
+          EH register 1 value capture
+
+        bit_fields:
+        - opl_bf_name: US_PORT_TX_PRESET for current link rate
+          opl_bf_mnemonic: usp_tx_preset
+          opl_bit: "3:0"
+
+        - opl_bf_name: DS_PORT_TX_PRESET for current link rate
+          opl_bf_mnemonic: dsp_tx_preset
+          opl_bit: "7:4"
+
+      - opl_par_name: EH register data 2
+        opl_par_mnemonic: reg_val2
+        opl_offset: 47
+        opl_length: 4
+        opl_description: >
+          EH register 2 value capture
+
+        bit_fields:
+        - opl_bf_name: TX_P1A_D1EN
+          opl_bf_mnemonic: tx_p1a_d1en
+          opl_bit: "5:0"
+
+        - opl_bf_name: TX_P1A_D2EN
+          opl_bf_mnemonic: tx_p1a_d2en
+          opl_bit: "11:6"
+
+        - opl_bf_name: TX_P1A_AMP_RED
+          opl_bf_mnemonic: tx_p1a_amp_red
+          opl_bit: "17:12"
+
+        - opl_bf_name: TX_P1B_D1EN
+          opl_bf_mnemonic: tx_p1b_d1en
+          opl_bit: "23:18"
+
+        - opl_bf_name: TX_P1B_D2EN
+          opl_bf_mnemonic: tx_p1b_d2en
+          opl_bit: "29:24"
+
+        - opl_bf_name: Reserved
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:30"
+
+      - opl_par_name: EH register data 3
+        opl_par_mnemonic: reg_val3
+        opl_offset: 51
+        opl_length: 4
+        opl_description: >
+          EH register 3 value capture
+
+        bit_fields:
+        - opl_bf_name: TX_P1B_AMP_RED
+          opl_bf_mnemonic: tx_p1b_amp_red
+          opl_bit: "5:0"
+
+        - opl_bf_name: TX_P2A_D1EN
+          opl_bf_mnemonic: tx_p2a_d1en
+          opl_bit: "11:6"
+
+        - opl_bf_name: TX_P2A_D2EN
+          opl_bf_mnemonic: tx_p2a_d2en
+          opl_bit: "17:12"
+
+        - opl_bf_name: TX_P2A_AMP_RED
+          opl_bf_mnemonic: tx_p2a_amp_red
+          opl_bit: "23:18"
+
+        - opl_bf_name: Reserved
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:24"
+
+      - opl_par_name: EH register data 4
+        opl_par_mnemonic: reg_val4
+        opl_offset: 55
+        opl_length: 4
+        opl_description: >
+          EH register 4 value capture
+
+        bit_fields:
+        - opl_bf_name: TX_P2B_D1EN
+          opl_bf_mnemonic: tx_p2b_d1en
+          opl_bit: "5:0"
+
+        - opl_bf_name: TX_P2B_D2EN
+          opl_bf_mnemonic: tx_p2b_d2en
+          opl_bit: "11:6"
+
+        - opl_bf_name: TX_P2B_AMP_RED
+          opl_bf_mnemonic: tx_p2b_amp_red
+          opl_bit: "17:12"
+
+        - opl_bf_name: TX_P3A_D1EN
+          opl_bf_mnemonic: tx_p3a_d1en
+          opl_bit: "23:18"
+
+        - opl_bf_name: Reserved
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:24"
+
+  - opcode_name: Reset EH Link Debug Dump
+    mnemonic: EH_LINK_DBG_RESET
+    opcode: 0xCC09
+    opcode_description: >
+      This command resets configured (running) EH Link Debug
 
 - command_set_name: Hidden BO Commands
   command_set_description: Perform background operations hidden from the host driver
