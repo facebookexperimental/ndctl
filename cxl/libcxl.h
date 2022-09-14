@@ -177,6 +177,13 @@ int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode
 int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx);
 int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 entry_idx, u8 lane_idx);
 int cxl_memdev_eh_link_dbg_reset(struct cxl_memdev *memdev);
+int cxl_memdev_osa_os_patt_trig_cfg(struct cxl_memdev *memdev,
+	u8 cxl_mem_id, u16 lane_mask, u8 lane_dir_mask, u8 rate_mask, u32 *patt_val,
+	u32 *patt_mask);
+int cxl_memdev_osa_misc_trig_cfg(struct cxl_memdev *memdev, u8 cxl_mem_id,
+	u8 trig_en_mask);
+int cxl_memdev_osa_data_read(struct cxl_memdev *memdev, u8 cxl_mem_id,
+	u8 lane_id, u8 lane_dir, u16 start_entry, u8 num_entries);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

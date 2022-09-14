@@ -642,6 +642,76 @@ static struct _perfcnt_mta_ltif_set_params {
   bool verbose;
 } perfcnt_mta_ltif_set_params;
 
+static struct _osa_os_patt_trig_cfg_params {
+	u32 cxl_mem_id;
+	u32 lane_mask;
+	u32 lane_dir_mask;
+	u32 rate_mask;
+	u64 patt_val;
+	u64 patt_mask;
+	bool verbose;
+} osa_os_patt_trig_cfg_params;
+
+#define OSA_OS_PATT_TRIG_CFG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_os_patt_trig_cfg_params.verbose, "turn on debug")
+
+#define OSA_OS_PATT_TRIG_CFG_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_os_patt_trig_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('l', "lane_mask", &osa_os_patt_trig_cfg_params.lane_mask, "Lane Mask"), \
+OPT_UINTEGER('m', "lane_dir_mask", &osa_os_patt_trig_cfg_params.lane_dir_mask, "Lane Direction mask (see OSA_LANE_DIR_BITMSK_*)"), \
+OPT_UINTEGER('r', "rate_mask", &osa_os_patt_trig_cfg_params.rate_mask, "Link Rate mask (see OSA_LINK_RATE_BITMSK_*)"), \
+OPT_U64('p', "patt_val", &osa_os_patt_trig_cfg_params.patt_val, "Pattern Match Value [CXL_MEM_OSA_DATA_LEN_DW]"), \
+OPT_U64('q', "patt_mask", &osa_os_patt_trig_cfg_params.patt_mask, "Pattern Match mask [CXL_MEM_OSA_DATA_LEN_DW]")
+
+static const struct option cmd_osa_os_patt_trig_cfg_options[] = {
+	OSA_OS_PATT_TRIG_CFG_BASE_OPTIONS(),
+	OSA_OS_PATT_TRIG_CFG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _osa_misc_trig_cfg_params {
+	u32 cxl_mem_id;
+	u32 trig_en_mask;
+	bool verbose;
+} osa_misc_trig_cfg_params;
+
+#define OSA_MISC_TRIG_CFG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_misc_trig_cfg_params.verbose, "turn on debug")
+
+#define OSA_MISC_TRIG_CFG_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_misc_trig_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('t', "trig_en_mask", &osa_misc_trig_cfg_params.trig_en_mask, "Trigger Enable Mask.")
+
+static const struct option cmd_osa_misc_trig_cfg_options[] = {
+	OSA_MISC_TRIG_CFG_BASE_OPTIONS(),
+	OSA_MISC_TRIG_CFG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _osa_data_read_params {
+	u32 cxl_mem_id;
+	u32 lane_id;
+	u32 lane_dir;
+	u32 start_entry;
+	u32 num_entries;
+	bool verbose;
+} osa_data_read_params;
+
+#define OSA_DATA_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_data_read_params.verbose, "turn on debug")
+
+#define OSA_DATA_READ_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_data_read_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('l', "lane_id", &osa_data_read_params.lane_id, "Lane ID"), \
+OPT_UINTEGER('m', "lane_dir", &osa_data_read_params.lane_dir, "lane direction (see osa_lane_dir_enum)"), \
+OPT_UINTEGER('s', "start_entry", &osa_data_read_params.start_entry, "index of the first entry to read"), \
+OPT_UINTEGER('n', "num_entries", &osa_data_read_params.num_entries, "maximum number of entries to read")
+
+static const struct option cmd_osa_data_read_options[] = {
+	OSA_DATA_READ_BASE_OPTIONS(),
+	OSA_DATA_READ_OPTIONS(),
+	OPT_END(),
+};
 
 #define PERFCNT_MTA_LTIF_SET_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_ltif_set_params.counter, "Counter"), \
@@ -1957,6 +2027,45 @@ static int action_cmd_osa_access_rel(struct cxl_memdev *memdev, struct action_co
   return cxl_memdev_osa_access_rel(memdev, osa_access_rel_params.cxl_mem_id);
 }
 
+static int action_cmd_osa_os_patt_trig_cfg(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_os_patt_trig_cfg\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_os_patt_trig_cfg(memdev, osa_os_patt_trig_cfg_params.cxl_mem_id,
+		osa_os_patt_trig_cfg_params.lane_mask, osa_os_patt_trig_cfg_params.lane_dir_mask,
+		osa_os_patt_trig_cfg_params.rate_mask, (void *) osa_os_patt_trig_cfg_params.patt_val,
+		(void *) osa_os_patt_trig_cfg_params.patt_mask);
+}
+
+static int action_cmd_osa_misc_trig_cfg(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_misc_trig_cfg\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_misc_trig_cfg(memdev, osa_misc_trig_cfg_params.cxl_mem_id,
+		osa_misc_trig_cfg_params.trig_en_mask);
+}
+
+static int action_cmd_osa_data_read(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_data_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_data_read(memdev, osa_data_read_params.cxl_mem_id,
+		osa_data_read_params.lane_id, osa_data_read_params.lane_dir, osa_data_read_params.start_entry,
+		osa_data_read_params.num_entries);
+}
+
 static int action_cmd_perfcnt_mta_ltif_set(struct cxl_memdev *memdev, struct action_context *actx)
 {
   if (cxl_memdev_is_active(memdev)) {
@@ -2952,6 +3061,30 @@ int cmd_osa_access_rel(int argc, const char **argv, struct cxl_ctx *ctx)
       "cxl osa_access_rel <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_os_patt_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_os_patt_trig_cfg, cmd_osa_os_patt_trig_cfg_options,
+			"cxl osa_os_patt_trig_cfg <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_misc_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_misc_trig_cfg, cmd_osa_misc_trig_cfg_options,
+			"cxl osa_misc_trig_cfg <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_data_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_data_read, cmd_osa_data_read_options,
+			"cxl osa_data_read <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
 int cmd_perfcnt_mta_ltif_set(int argc, const char **argv, struct cxl_ctx *ctx)
