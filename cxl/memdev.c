@@ -1529,10 +1529,6 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     {
       printf("%d percent complete. Transfering block %d of %d at offset 0x%x\n", percent_to_print, i, num_blocks, offset);
       percent_to_print = percent_to_print + 10;
-      if (percent_to_print >= 20)
-      {
-        goto abort;
-      }
     }
 
 
