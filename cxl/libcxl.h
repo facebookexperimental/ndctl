@@ -161,7 +161,7 @@ int cxl_memdev_eh_adapt_force(struct cxl_memdev *memdev, u32 lane_id,
 	u8 cdfe_a8, u8 cdfe_a9, u8 cdfe_a10, u16 dc_offset, u16 zobel_dc_offset,
 	u16 udfe_thr_0, u16 udfe_thr_1, u16 median_amp, u8 zobel_a_gain,
 	u8 ph_ofs_t);
-int cxl_memdev_hbo_status(struct cxl_memdev *memdev);
+int cxl_memdev_hbo_status(struct cxl_memdev *memdev, u8 print_output);
 int cxl_memdev_hbo_transfer_fw(struct cxl_memdev *memdev);
 int cxl_memdev_hbo_activate_fw(struct cxl_memdev *memdev);
 int cxl_memdev_health_counters_clear(struct cxl_memdev *memdev,
