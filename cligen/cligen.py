@@ -40,7 +40,7 @@ except:
 
 import yaml
 
-YAMFILE = f"/data/users/eldonlake/fbsource/fbcode/scratch/eldonlake/cligen/gen/cci_vendor_cmds.yaml"
+YAMFILE = f"gen/cci_vendor_cmds.yaml"
 OUTDIR = f"gen/"
 BASE = "base"
 BUILTINH = "builtin.h"
@@ -236,7 +236,7 @@ def generate_def_options(name, ipl):
     if not ipl.params_used:
         return ""
     # options memdev.c line 148-151
-    flags = set()
+    flags = set(['h', 'v'])
     t = {
         'u8': 'OPT_UINTEGER',
         '__le16': 'OPT_UINTEGER',
