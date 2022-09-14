@@ -177,6 +177,8 @@ int cxl_memdev_eh_link_dbg_cfg(struct cxl_memdev *memdev, u8 port_id, u8 op_mode
 int cxl_memdev_eh_link_dbg_entry_dump(struct cxl_memdev *memdev, u8 entry_idx);
 int cxl_memdev_eh_link_dbg_lane_dump(struct cxl_memdev *memdev, u8 entry_idx, u8 lane_idx);
 int cxl_memdev_eh_link_dbg_reset(struct cxl_memdev *memdev);
+int cxl_memdev_conf_read(struct cxl_memdev *memdev, u32 offset,
+	u32 length);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

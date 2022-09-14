@@ -142,6 +142,7 @@ static struct cmd_struct commands[] = {
 	{ "eh-link-dbg-entry-dump", .c_fn = cmd_eh_link_dbg_entry_dump },
 	{ "eh-link-dbg-lane-dump", .c_fn = cmd_eh_link_dbg_lane_dump },
 	{ "eh-link-dbg-reset", .c_fn = cmd_eh_link_dbg_reset },
+	{ "conf-read", .c_fn = cmd_conf_read },
 };
 
 int main(int argc, const char **argv)

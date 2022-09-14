@@ -86,4 +86,5 @@ int cmd_eh_link_dbg_cfg(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_link_dbg_entry_dump(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_link_dbg_lane_dump(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_eh_link_dbg_reset(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
