@@ -7,7 +7,7 @@
 #include <syslog.h>
 
 struct log_ctx;
-typedef void (*log_fn)(struct log_ctx *ctx, int priority, const char *file,
+typedef void (*log_fn)(struct log_ctx *ctx, int loud, int priority, const char *file,
 		int line, const char *fn, const char *format, va_list args);
 
 struct log_ctx {
@@ -17,36 +17,40 @@ struct log_ctx {
 };
 
 
-void do_log(struct log_ctx *ctx, int priority, const char *file, int line,
+void do_log(struct log_ctx *ctx, int loud, int priority, const char *file, int line,
 		const char *fn, const char *format, ...)
-	__attribute__((format(printf, 6, 7)));
+	__attribute__((format(printf, 7, 8)));
 void log_init(struct log_ctx *ctx, const char *owner, const char *log_env);
 static inline void __attribute__((always_inline, format(printf, 2, 3)))
 	log_null(struct log_ctx *ctx, const char *format, ...) {}
 
-#define log_cond(ctx, prio, arg...) \
+#define log_cond(ctx, loud, prio, arg...) \
 do { \
 	if ((ctx)->log_priority >= prio) \
-		do_log(ctx, prio, __FILE__, __LINE__, __FUNCTION__, ## arg); \
+		do_log(ctx, loud, prio, __FILE__, __LINE__, __FUNCTION__, ## arg); \
 } while (0)
 
 #ifdef ENABLE_LOGGING
 #  ifdef ENABLE_DEBUG
-#    define log_dbg(ctx, arg...) log_cond(ctx, LOG_DEBUG, ## arg)
+#    define log_dbg(ctx, arg...) log_cond(ctx, 1, LOG_DEBUG, ## arg)
+#    define log_dbgs(ctx, arg...) log_cond(ctx, 0, LOG_DEBUG, ## arg)
 #  else
 #    define log_dbg(ctx, arg...) log_null(ctx, ## arg)
+#    define log_dbgs(ctx, arg...) log_null(ctx, ## arg)
 #  endif
-#  define log_info(ctx, arg...) log_cond(ctx, LOG_INFO, ## arg)
-#  define log_err(ctx, arg...) log_cond(ctx, LOG_ERR, ## arg)
-#  define log_notice(ctx, arg...) log_cond(ctx, LOG_NOTICE, ## arg)
+#  define log_info(ctx, arg...) log_cond(ctx, 1, LOG_INFO, ## arg)
+#  define log_err(ctx, arg...) log_cond(ctx, 1, LOG_ERR, ## arg)
+#  define log_notice(ctx, arg...) log_cond(ctx, 1, LOG_NOTICE, ## arg)
 #else
 #  define log_dbg(ctx, arg...) log_null(ctx, ## arg)
+#  define log_dbgs(ctx, arg...) log_null(ctx, ## arg)
 #  define log_info(ctx, arg...) log_null(ctx, ## arg)
 #  define log_err(ctx, arg...) log_null(ctx, ## arg)
 #  define log_notice(ctx, arg...) log_null(ctx, ## arg)
 #endif
 
 #define dbg(x, arg...) log_dbg(&(x)->ctx, ## arg)
+#define dbg_s(x, arg...) log_dbgs(&(x)->ctx, ## arg)
 #define info(x, arg...) log_info(&(x)->ctx, ## arg)
 #define err(x, arg...) log_err(&(x)->ctx, ## arg)
 #define notice(x, arg...) log_notice(&(x)->ctx, ## arg)

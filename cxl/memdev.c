@@ -277,7 +277,7 @@ static struct _hct_start_stop_trigger_params {
 
 
 #define HCT_START_STOP_TRIGGER_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_start_stop_trigger_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('i', "hct_inst", &hct_start_stop_trigger_params.hct_inst, "HCT Instance"), \
 OPT_UINTEGER('b', "buf_control", &hct_start_stop_trigger_params.buf_control, "Buffer Control")
 
 static const struct option cmd_hct_start_stop_trigger_options[] = {
@@ -293,7 +293,7 @@ static struct _hct_get_buffer_status_params {
 
 
 #define HCT_GET_BUFFER_STATUS_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_get_buffer_status_params.hct_inst, "HCT Instance")
+OPT_UINTEGER('i', "hct_inst", &hct_get_buffer_status_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_get_buffer_status_options[] = {
   BASE_OPTIONS(),
@@ -308,7 +308,7 @@ static struct _hct_enable_params {
 
 
 #define HCT_ENABLE_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_enable_params.hct_inst, "HCT Instance")
+OPT_UINTEGER('i', "hct_inst", &hct_enable_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_enable_options[] = {
   BASE_OPTIONS(),
@@ -1057,6 +1057,451 @@ static const struct option cmd_eh_adapt_oneoff_options[] = {
   OPT_END(),
 };
 
+static struct _fbist_stopconfig_set_params {
+	u32 fbist_id;
+	u32 stop_on_wresp;
+	u32 stop_on_rresp;
+	u32 stop_on_rdataerr;
+	bool verbose;
+} fbist_stopconfig_set_params;
+
+#define FBIST_STOPCONFIG_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_stopconfig_set_params.verbose, "turn on debug")
+
+#define FBIST_STOPCONFIG_SET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_stopconfig_set_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('w', "stop_on_wresp", &fbist_stopconfig_set_params.stop_on_wresp, "Stop on Write Response"), \
+OPT_UINTEGER('r', "stop_on_rresp", &fbist_stopconfig_set_params.stop_on_rresp, "Stop on Read Response"), \
+OPT_UINTEGER('e', "stop_on_rdataerr", &fbist_stopconfig_set_params.stop_on_rdataerr, "Stop on Read Data Error")
+
+static const struct option cmd_fbist_stopconfig_set_options[] = {
+	FBIST_STOPCONFIG_SET_BASE_OPTIONS(),
+	FBIST_STOPCONFIG_SET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_cyclecount_set_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u64 cyclecount;
+	bool verbose;
+} fbist_cyclecount_set_params;
+
+#define FBIST_CYCLECOUNT_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_cyclecount_set_params.verbose, "turn on debug")
+
+#define FBIST_CYCLECOUNT_SET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_cyclecount_set_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_cyclecount_set_params.txg_nr, "TXG Nr"), \
+OPT_U64('c', "cyclecount", &fbist_cyclecount_set_params.cyclecount, "cyclecount")
+
+static const struct option cmd_fbist_cyclecount_set_options[] = {
+	FBIST_CYCLECOUNT_SET_BASE_OPTIONS(),
+	FBIST_CYCLECOUNT_SET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_reset_set_params {
+	u32 fbist_id;
+	u32 txg0_reset;
+	u32 txg1_reset;
+	bool verbose;
+} fbist_reset_set_params;
+
+#define FBIST_RESET_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_reset_set_params.verbose, "turn on debug")
+
+#define FBIST_RESET_SET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_reset_set_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg0_reset", &fbist_reset_set_params.txg0_reset, "TXG0 Reset"), \
+OPT_UINTEGER('u', "txg1_reset", &fbist_reset_set_params.txg1_reset, "TXG1 Reset")
+
+static const struct option cmd_fbist_reset_set_options[] = {
+	FBIST_RESET_SET_BASE_OPTIONS(),
+	FBIST_RESET_SET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_run_set_params {
+	u32 fbist_id;
+	u32 txg0_run;
+	u32 txg1_run;
+	bool verbose;
+} fbist_run_set_params;
+
+#define FBIST_RUN_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_run_set_params.verbose, "turn on debug")
+
+#define FBIST_RUN_SET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_run_set_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg0_run", &fbist_run_set_params.txg0_run, "TXG0 Run"), \
+OPT_UINTEGER('u', "txg1_run", &fbist_run_set_params.txg1_run, "TXG1 Run")
+
+static const struct option cmd_fbist_run_set_options[] = {
+	FBIST_RUN_SET_BASE_OPTIONS(),
+	FBIST_RUN_SET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_run_get_params {
+	u32 fbist_id;
+	bool verbose;
+} fbist_run_get_params;
+
+#define FBIST_RUN_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_run_get_params.verbose, "turn on debug")
+
+#define FBIST_RUN_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_run_get_params.fbist_id, "Flex BIST Instance")
+
+static const struct option cmd_fbist_run_get_options[] = {
+	FBIST_RUN_GET_BASE_OPTIONS(),
+	FBIST_RUN_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_xfer_rem_cnt_get_params {
+	u32 fbist_id;
+	u32 thread_nr;
+	bool verbose;
+} fbist_xfer_rem_cnt_get_params;
+
+#define FBIST_XFER_REM_CNT_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_xfer_rem_cnt_get_params.verbose, "turn on debug")
+
+#define FBIST_XFER_REM_CNT_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_xfer_rem_cnt_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "thread_nr", &fbist_xfer_rem_cnt_get_params.thread_nr, "Thread Nr")
+
+static const struct option cmd_fbist_xfer_rem_cnt_get_options[] = {
+	FBIST_XFER_REM_CNT_GET_BASE_OPTIONS(),
+	FBIST_XFER_REM_CNT_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_last_exp_read_data_get_params {
+	u32 fbist_id;
+	bool verbose;
+} fbist_last_exp_read_data_get_params;
+
+#define FBIST_LAST_EXP_READ_DATA_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_last_exp_read_data_get_params.verbose, "turn on debug")
+
+#define FBIST_LAST_EXP_READ_DATA_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_last_exp_read_data_get_params.fbist_id, "Flex BIST Instance")
+
+static const struct option cmd_fbist_last_exp_read_data_get_options[] = {
+	FBIST_LAST_EXP_READ_DATA_GET_BASE_OPTIONS(),
+	FBIST_LAST_EXP_READ_DATA_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_curr_cycle_cnt_get_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	bool verbose;
+} fbist_curr_cycle_cnt_get_params;
+
+#define FBIST_CURR_CYCLE_CNT_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_curr_cycle_cnt_get_params.verbose, "turn on debug")
+
+#define FBIST_CURR_CYCLE_CNT_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_curr_cycle_cnt_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_curr_cycle_cnt_get_params.txg_nr, "TXG Nr")
+
+static const struct option cmd_fbist_curr_cycle_cnt_get_options[] = {
+	FBIST_CURR_CYCLE_CNT_GET_BASE_OPTIONS(),
+	FBIST_CURR_CYCLE_CNT_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_thread_status_get_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u32 thread_nr;
+	bool verbose;
+} fbist_thread_status_get_params;
+
+#define FBIST_THREAD_STATUS_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_thread_status_get_params.verbose, "turn on debug")
+
+#define FBIST_THREAD_STATUS_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_thread_status_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_thread_status_get_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('u', "thread_nr", &fbist_thread_status_get_params.thread_nr, "Thread Nr")
+
+static const struct option cmd_fbist_thread_status_get_options[] = {
+	FBIST_THREAD_STATUS_GET_BASE_OPTIONS(),
+	FBIST_THREAD_STATUS_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_thread_trans_cnt_get_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u32 thread_nr;
+	bool verbose;
+} fbist_thread_trans_cnt_get_params;
+
+#define FBIST_THREAD_TRANS_CNT_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_thread_trans_cnt_get_params.verbose, "turn on debug")
+
+#define FBIST_THREAD_TRANS_CNT_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_thread_trans_cnt_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_thread_trans_cnt_get_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('u', "thread_nr", &fbist_thread_trans_cnt_get_params.thread_nr, "Thread Nr")
+
+static const struct option cmd_fbist_thread_trans_cnt_get_options[] = {
+	FBIST_THREAD_TRANS_CNT_GET_BASE_OPTIONS(),
+	FBIST_THREAD_TRANS_CNT_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_thread_bandwidth_get_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u32 thread_nr;
+	bool verbose;
+} fbist_thread_bandwidth_get_params;
+
+#define FBIST_THREAD_BANDWIDTH_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_thread_bandwidth_get_params.verbose, "turn on debug")
+
+#define FBIST_THREAD_BANDWIDTH_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_thread_bandwidth_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_thread_bandwidth_get_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('u', "thread_nr", &fbist_thread_bandwidth_get_params.thread_nr, "Thread Nr")
+
+static const struct option cmd_fbist_thread_bandwidth_get_options[] = {
+	FBIST_THREAD_BANDWIDTH_GET_BASE_OPTIONS(),
+	FBIST_THREAD_BANDWIDTH_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_thread_latency_get_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u32 thread_nr;
+	bool verbose;
+} fbist_thread_latency_get_params;
+
+#define FBIST_THREAD_LATENCY_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_thread_latency_get_params.verbose, "turn on debug")
+
+#define FBIST_THREAD_LATENCY_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_thread_latency_get_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_thread_latency_get_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('u', "thread_nr", &fbist_thread_latency_get_params.thread_nr, "Thread Nr")
+
+static const struct option cmd_fbist_thread_latency_get_options[] = {
+	FBIST_THREAD_LATENCY_GET_BASE_OPTIONS(),
+	FBIST_THREAD_LATENCY_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_thread_perf_mon_set_params {
+	u32 fbist_id;
+	u32 txg_nr;
+	u32 thread_nr;
+	u32 pmon_preset_en;
+	u32 pmon_clear_en;
+	u32 pmon_rollover;
+	u32 pmon_thread_lclk;
+	bool verbose;
+} fbist_thread_perf_mon_set_params;
+
+#define FBIST_THREAD_PERF_MON_SET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_thread_perf_mon_set_params.verbose, "turn on debug")
+
+#define FBIST_THREAD_PERF_MON_SET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_thread_perf_mon_set_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "txg_nr", &fbist_thread_perf_mon_set_params.txg_nr, "TXG Nr"), \
+OPT_UINTEGER('u', "thread_nr", &fbist_thread_perf_mon_set_params.thread_nr, "Thread Nr"), \
+OPT_UINTEGER('p', "pmon_preset_en", &fbist_thread_perf_mon_set_params.pmon_preset_en, "Performance Monitor Preset Enable"), \
+OPT_UINTEGER('c', "pmon_clear_en", &fbist_thread_perf_mon_set_params.pmon_clear_en, "Performance Monitor Clear Enable"), \
+OPT_UINTEGER('r', "pmon_rollover", &fbist_thread_perf_mon_set_params.pmon_rollover, "Performance Monitor Rollover"), \
+OPT_UINTEGER('l', "pmon_thread_lclk", &fbist_thread_perf_mon_set_params.pmon_thread_lclk, "Performance Monitor Thread lclk")
+
+static const struct option cmd_fbist_thread_perf_mon_set_options[] = {
+	FBIST_THREAD_PERF_MON_SET_BASE_OPTIONS(),
+	FBIST_THREAD_PERF_MON_SET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_top_read_status0_get_params {
+	u32 fbist_id;
+	bool verbose;
+} fbist_top_read_status0_get_params;
+
+#define FBIST_TOP_READ_STATUS0_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_top_read_status0_get_params.verbose, "turn on debug")
+
+#define FBIST_TOP_READ_STATUS0_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_top_read_status0_get_params.fbist_id, "Flex BIST Instance")
+
+static const struct option cmd_fbist_top_read_status0_get_options[] = {
+	FBIST_TOP_READ_STATUS0_GET_BASE_OPTIONS(),
+	FBIST_TOP_READ_STATUS0_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_top_err_cnt_get_params {
+	u32 fbist_id;
+	bool verbose;
+} fbist_top_err_cnt_get_params;
+
+#define FBIST_TOP_ERR_CNT_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_top_err_cnt_get_params.verbose, "turn on debug")
+
+#define FBIST_TOP_ERR_CNT_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_top_err_cnt_get_params.fbist_id, "Flex BIST Instance")
+
+static const struct option cmd_fbist_top_err_cnt_get_options[] = {
+	FBIST_TOP_ERR_CNT_GET_BASE_OPTIONS(),
+	FBIST_TOP_ERR_CNT_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_last_read_addr_get_params {
+	u32 fbist_id;
+	bool verbose;
+} fbist_last_read_addr_get_params;
+
+#define FBIST_LAST_READ_ADDR_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_last_read_addr_get_params.verbose, "turn on debug")
+
+#define FBIST_LAST_READ_ADDR_GET_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_last_read_addr_get_params.fbist_id, "Flex BIST Instance")
+
+static const struct option cmd_fbist_last_read_addr_get_options[] = {
+	FBIST_LAST_READ_ADDR_GET_BASE_OPTIONS(),
+	FBIST_LAST_READ_ADDR_GET_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_test_simpledata_params {
+	u32 fbist_id;
+	u32 test_nr;
+	u64 start_address;
+	u64 num_bytes;
+	bool verbose;
+} fbist_test_simpledata_params;
+
+#define FBIST_TEST_SIMPLEDATA_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_test_simpledata_params.verbose, "turn on debug")
+
+#define FBIST_TEST_SIMPLEDATA_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_test_simpledata_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "test_nr", &fbist_test_simpledata_params.test_nr, "Test number to be setup"), \
+OPT_U64('s', "start_address", &fbist_test_simpledata_params.start_address, "Start Address"), \
+OPT_U64('n', "num_bytes", &fbist_test_simpledata_params.num_bytes, "Size of memory to operate on")
+
+static const struct option cmd_fbist_test_simpledata_options[] = {
+	FBIST_TEST_SIMPLEDATA_BASE_OPTIONS(),
+	FBIST_TEST_SIMPLEDATA_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_test_addresstest_params {
+	u32 fbist_id;
+	u32 test_nr;
+	u64 start_address;
+	u64 num_bytes;
+	u32 seed;
+	bool verbose;
+} fbist_test_addresstest_params;
+
+#define FBIST_TEST_ADDRESSTEST_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_test_addresstest_params.verbose, "turn on debug")
+
+#define FBIST_TEST_ADDRESSTEST_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_test_addresstest_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "test_nr", &fbist_test_addresstest_params.test_nr, "Test number to be setup"), \
+OPT_U64('a', "start_address", &fbist_test_addresstest_params.start_address, "Start Address"), \
+OPT_U64('n', "num_bytes", &fbist_test_addresstest_params.num_bytes, "Size of memory to operate on"), \
+OPT_UINTEGER('s', "seed", &fbist_test_addresstest_params.seed, "Inital Seed")
+
+static const struct option cmd_fbist_test_addresstest_options[] = {
+	FBIST_TEST_ADDRESSTEST_BASE_OPTIONS(),
+	FBIST_TEST_ADDRESSTEST_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_test_movinginversion_params {
+	u32 fbist_id;
+	u32 test_nr;
+	u32 phase_nr;
+	u64 start_address;
+	u64 num_bytes;
+	u32 ddrpage_size;
+	bool verbose;
+} fbist_test_movinginversion_params;
+
+#define FBIST_TEST_MOVINGINVERSION_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_test_movinginversion_params.verbose, "turn on debug")
+
+#define FBIST_TEST_MOVINGINVERSION_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_test_movinginversion_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('t', "test_nr", &fbist_test_movinginversion_params.test_nr, "Test number to be setup"), \
+OPT_UINTEGER('p', "phase_nr", &fbist_test_movinginversion_params.phase_nr, "Testphase to be setup"), \
+OPT_U64('s', "start_address", &fbist_test_movinginversion_params.start_address, "Start Address"), \
+OPT_U64('n', "num_bytes", &fbist_test_movinginversion_params.num_bytes, "Size of memory to operate on"), \
+OPT_UINTEGER('d', "ddrpage_size", &fbist_test_movinginversion_params.ddrpage_size, "DDR Page size")
+
+static const struct option cmd_fbist_test_movinginversion_options[] = {
+	FBIST_TEST_MOVINGINVERSION_BASE_OPTIONS(),
+	FBIST_TEST_MOVINGINVERSION_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _fbist_test_randomsequence_params {
+	u32 fbist_id;
+	u32 phase_nr;
+	u64 start_address;
+	u64 num_bytes;
+	u32 ddrpage_size;
+	u32 seed_dr0;
+	u32 seed_dr1;
+	bool verbose;
+} fbist_test_randomsequence_params;
+
+#define FBIST_TEST_RANDOMSEQUENCE_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &fbist_test_randomsequence_params.verbose, "turn on debug")
+
+#define FBIST_TEST_RANDOMSEQUENCE_OPTIONS() \
+OPT_UINTEGER('f', "fbist_id", &fbist_test_randomsequence_params.fbist_id, "Flex BIST Instance"), \
+OPT_UINTEGER('p', "phase_nr", &fbist_test_randomsequence_params.phase_nr, "Testphase to be setup"), \
+OPT_U64('s', "start_address", &fbist_test_randomsequence_params.start_address, "Start Address"), \
+OPT_U64('n', "num_bytes", &fbist_test_randomsequence_params.num_bytes, "Size of memory to operate on"), \
+OPT_UINTEGER('d', "ddrpage_size", &fbist_test_randomsequence_params.ddrpage_size, "DDR Page size"), \
+OPT_UINTEGER('t', "seed_dr0", &fbist_test_randomsequence_params.seed_dr0, "Seed_DR0"), \
+OPT_UINTEGER('u', "seed_dr1", &fbist_test_randomsequence_params.seed_dr1, "Seed DR1")
+
+static const struct option cmd_fbist_test_randomsequence_options[] = {
+	FBIST_TEST_RANDOMSEQUENCE_BASE_OPTIONS(),
+	FBIST_TEST_RANDOMSEQUENCE_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _conf_read_params {
+	u32 offset;
+	u32 length;
+	bool verbose;
+} conf_read_params;
+
+#define CONF_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &conf_read_params.verbose, "turn on debug")
+
+#define CONF_READ_OPTIONS() \
+OPT_UINTEGER('o', "offset", &conf_read_params.offset, "Starting Offset"), \
+OPT_UINTEGER('l', "length", &conf_read_params.length, "Requested Length")
+
+static const struct option cmd_conf_read_options[] = {
+	CONF_READ_BASE_OPTIONS(),
+	CONF_READ_OPTIONS(),
+	OPT_END(),
+};
+
 static struct _eh_adapt_force_params {
   u32 lane_id;
   u32 rate;
@@ -1088,7 +1533,7 @@ static struct _eh_adapt_force_params {
 #define EH_ADAPT_FORCE_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_adapt_force_params.lane_id, "lane id"), \
 OPT_UINTEGER('r', "rate", &eh_adapt_force_params.rate, "PCIe rate (0 - Gen1, 1 - Gen2, 2 - Gen3, 3 - Gen4, 4 - Gen5)"), \
-OPT_UINTEGER('v', "vdd_bias", &eh_adapt_force_params.vdd_bias, "vdd bias (0 = 0.82V, 1 = 0.952V)"), \
+OPT_UINTEGER('b', "vdd_bias", &eh_adapt_force_params.vdd_bias, "vdd bias (0 = 0.82V, 1 = 0.952V)"), \
 OPT_UINTEGER('s', "ssc", &eh_adapt_force_params.ssc, "spread spectrum clocking enable (0 - SSC enable, 1 - SSC disable)"), \
 OPT_UINTEGER('p', "pga_gain", &eh_adapt_force_params.pga_gain, "used to set the value of the PGA_GAIN object when preloading is enabled"), \
 OPT_UINTEGER('q', "pga_a0", &eh_adapt_force_params.pga_a0, "used to set the value of the PGA_A0 object when preloading is enabled"), \
@@ -1098,7 +1543,7 @@ OPT_UINTEGER('d', "cdfe_a3", &eh_adapt_force_params.cdfe_a3, "used to set the va
 OPT_UINTEGER('e', "cdfe_a4", &eh_adapt_force_params.cdfe_a4, "used to set the value of CDFE_A4 (DFE Tap4) when preloading (CDFE_GRP0) is enabled"), \
 OPT_UINTEGER('f', "cdfe_a5", &eh_adapt_force_params.cdfe_a5, "used to set the value of CDFE_A5 (DFE Tap5) when preloading (CDFE_GRP1) is enabled"), \
 OPT_UINTEGER('g', "cdfe_a6", &eh_adapt_force_params.cdfe_a6, "used to set the value of CDFE_A6 (DFE Tap6) when preloading (CDFE_GRP1) is enabled"), \
-OPT_UINTEGER('h', "cdfe_a7", &eh_adapt_force_params.cdfe_a7, "used to set the value of CDFE_A7 (DFE Tap7) when preloading (CDFE_GRP1) is enabled"), \
+OPT_UINTEGER('y', "cdfe_a7", &eh_adapt_force_params.cdfe_a7, "used to set the value of CDFE_A7 (DFE Tap7) when preloading (CDFE_GRP1) is enabled"), \
 OPT_UINTEGER('i', "cdfe_a8", &eh_adapt_force_params.cdfe_a8, "used to set the value of CDFE_A8 (DFE Tap8) when preloading (CDFE_GRP2) is enabled"), \
 OPT_UINTEGER('j', "cdfe_a9", &eh_adapt_force_params.cdfe_a9, "used to set the value of CDFE_A9 (DFE Tap9) when preloading (CDFE_GRP2) is enabled"), \
 OPT_UINTEGER('k', "cdfe_a10", &eh_adapt_force_params.cdfe_a10, "used to set the value of CDFE_A10 (DFE Tap10) when preloading (CDFE_GRP2) is enabled"), \
@@ -1291,25 +1736,6 @@ static const struct option cmd_eh_link_dbg_reset_options[] = {
 	OPT_END(),
 };
 
-static struct _conf_read_params {
-	u32 offset;
-	u32 length;
-	bool verbose;
-} conf_read_params;
-
-#define CONF_READ_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &conf_read_params.verbose, "turn on debug")
-
-#define CONF_READ_OPTIONS() \
-OPT_UINTEGER('o', "offset", &conf_read_params.offset, "Starting Offset"), \
-OPT_UINTEGER('l', "length", &conf_read_params.length, "Requested Length")
-
-static const struct option cmd_conf_read_options[] = {
-	CONF_READ_BASE_OPTIONS(),
-	CONF_READ_OPTIONS(),
-	OPT_END(),
-};
-
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -1461,6 +1887,17 @@ const char *TRANSFER_FW_ERRORS[15] = {
  * User must provide available FW slot as indicated from get-fw-info. This slot is provided
  * for every call to transfer-fw, but will only be read during the end_transfer call.
 */
+
+struct cxl_ctx {
+	/* log_ctx must be first member for cxl_set_log_fn compat */
+	struct log_ctx ctx;
+	int refcount;
+	void *userdata;
+	int memdevs_init;
+	struct list_head memdevs;
+	struct kmod_ctx *kmod_ctx;
+	void *private_data;
+};
 static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
   struct stat fileStat;
@@ -1478,6 +1915,8 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   u32 opcode;
   u8 action;
   int sleep_time = 1;
+  int percent_to_print = 0;
+  struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 
   rom = fopen(update_fw_params.filepath, "rb");
   if (rom == NULL) {
@@ -1492,17 +1931,17 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     return -EBUSY;
   }
 
-  printf("Rom filepath: %s\n", update_fw_params.filepath);
+  dbg(ctx, "Rom filepath: %s\n", update_fw_params.filepath);
   fd = fileno(rom);
   rc = fstat(fd, &fileStat);
   if (rc != 0) {
-    fprintf(stderr, "Could not read filesize");
+    dbg(ctx, "Could not read filesize");
     fclose(rom);
     return 1;
   }
 
   filesize = fileStat.st_size;
-  printf("ROM size: %d bytes\n", filesize);
+  dbg(ctx, "ROM size: %d bytes\n", filesize);
 
   num_blocks = filesize / FW_BLOCK_SIZE;
   if (filesize % FW_BLOCK_SIZE != 0)
@@ -1514,12 +1953,11 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   num_read = fread(rom_buffer, 1, filesize, rom);
   if (filesize != num_read)
   {
-    fprintf(stderr, "Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
+    fprintf(stderr, "Number of bytes read: %d\nNumber of bytes expected: %d\n", num_read, num_blocks);
     free(rom_buffer);
     fclose(rom);
     return -ENOENT;
   }
-  printf("Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
 
   offset = 0;
   if (update_fw_params.hbo) {
@@ -1531,7 +1969,13 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   for (int i = 0; i < num_blocks; i++)
   {
     offset = i * (FW_BLOCK_SIZE / FW_BYTE_ALIGN);
-    printf("Transfering block %d of %d at offset 0x%x\n", i, num_blocks, offset);
+
+    if ( (i *  100) / num_blocks >= percent_to_print)
+    {
+      printf("%d percent complete. Transfering block %d of %d at offset 0x%x\n", percent_to_print, i, num_blocks, offset);
+      percent_to_print = percent_to_print + 10;
+    }
+
 
         if (i == 0)
             action = INITIATE_TRANSFER;
@@ -1554,10 +1998,10 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     {
       if (retry_count > max_retries)
       {
-        printf("Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
+        fprintf(stderr, "Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
         goto abort;
       }
-      printf("Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
+      dbg(ctx, "Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
       sleep(sleep_time);
       rc = cxl_memdev_transfer_fw(memdev, action, update_fw_params.slot, offset, size, rom_buffer[i], opcode);
       retry_count++;
@@ -1569,19 +2013,19 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
       goto abort;
     }
 
-    rc = cxl_memdev_hbo_status(memdev);
+    rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count = 0;
     sleep_time = 10;
     while (rc != 0)
     {
       if (retry_count > max_retries)
       {
-        printf("Maximum %d retries exceeded for hbo_status of block %d\n", max_retries, i);
+        dbg(ctx, "Maximum %d retries exceeded for hbo_status of block %d\n", max_retries, i);
         goto abort;
       }
-      printf("HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
+      dbg(ctx, "HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
       sleep(sleep_time);
-      rc = cxl_memdev_hbo_status(memdev);
+      rc = cxl_memdev_hbo_status(memdev, 0);
       retry_count++;
     }
 
@@ -1597,12 +2041,12 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     }
   }
 
-  printf("Transfer completed successfully and fw was transferred to slot %d\n", update_fw_params.slot);
+  dbg(ctx, "Transfer completed successfully and fw was transferred to slot %d\n", update_fw_params.slot);
   goto out;
 abort:
   sleep(2.0);
   rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, FW_BLOCK_SIZE, rom_buffer[0], opcode);
-  printf("Abort return status %d\n", rc);
+  dbg(ctx, "Abort return status %d\n", rc);
 out:
   free(rom_buffer);
   fclose(rom);
@@ -1775,7 +2219,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
         return rc;
   }
 
-    rc = cxl_memdev_hbo_status(memdev);
+    rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count = 0;
   while (rc != 0) {
         if (retry_count > max_retries) {
@@ -1784,7 +2228,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
       }
         printf("HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
         sleep(sleep_time);
-        rc = cxl_memdev_hbo_status(memdev);
+        rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count++;
   }
 
@@ -2290,7 +2734,7 @@ static int action_cmd_hbo_status(struct cxl_memdev *memdev, struct action_contex
     return -EBUSY;
   }
 
-  return cxl_memdev_hbo_status(memdev);
+  return cxl_memdev_hbo_status(memdev, 1);
 }
 
 static int action_cmd_hbo_transfer_fw(struct cxl_memdev *memdev, struct action_context *actx)
@@ -2421,6 +2865,250 @@ static int action_cmd_eh_link_dbg_reset(struct cxl_memdev *memdev, struct action
 	}
 
 	return cxl_memdev_eh_link_dbg_reset(memdev);
+}
+
+static int action_cmd_fbist_stopconfig_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_stopconfig_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_stopconfig_set(memdev, fbist_stopconfig_set_params.fbist_id,
+		fbist_stopconfig_set_params.stop_on_wresp, fbist_stopconfig_set_params.stop_on_rresp,
+		fbist_stopconfig_set_params.stop_on_rdataerr);
+}
+
+static int action_cmd_fbist_cyclecount_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_cyclecount_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_cyclecount_set(memdev, fbist_cyclecount_set_params.fbist_id,
+		fbist_cyclecount_set_params.txg_nr, fbist_cyclecount_set_params.cyclecount);
+}
+
+static int action_cmd_fbist_reset_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_reset_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_reset_set(memdev, fbist_reset_set_params.fbist_id,
+		fbist_reset_set_params.txg0_reset, fbist_reset_set_params.txg1_reset);
+}
+
+static int action_cmd_fbist_run_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_run_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_run_set(memdev, fbist_run_set_params.fbist_id,
+		fbist_run_set_params.txg0_run, fbist_run_set_params.txg1_run);
+}
+
+static int action_cmd_fbist_run_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_run_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_run_get(memdev, fbist_run_get_params.fbist_id);
+}
+
+static int action_cmd_fbist_xfer_rem_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_xfer_rem_cnt_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_xfer_rem_cnt_get(memdev, fbist_xfer_rem_cnt_get_params.fbist_id,
+		fbist_xfer_rem_cnt_get_params.thread_nr);
+}
+
+static int action_cmd_fbist_last_exp_read_data_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_last_exp_read_data_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_last_exp_read_data_get(memdev, fbist_last_exp_read_data_get_params.fbist_id);
+}
+
+static int action_cmd_fbist_curr_cycle_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_curr_cycle_cnt_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_curr_cycle_cnt_get(memdev, fbist_curr_cycle_cnt_get_params.fbist_id,
+		fbist_curr_cycle_cnt_get_params.txg_nr);
+}
+
+static int action_cmd_fbist_thread_status_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_thread_status_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_thread_status_get(memdev, fbist_thread_status_get_params.fbist_id,
+		fbist_thread_status_get_params.txg_nr, fbist_thread_status_get_params.thread_nr);
+}
+
+static int action_cmd_fbist_thread_trans_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_thread_trans_cnt_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_thread_trans_cnt_get(memdev, fbist_thread_trans_cnt_get_params.fbist_id,
+		fbist_thread_trans_cnt_get_params.txg_nr, fbist_thread_trans_cnt_get_params.thread_nr);
+}
+
+static int action_cmd_fbist_thread_bandwidth_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_thread_bandwidth_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_thread_bandwidth_get(memdev, fbist_thread_bandwidth_get_params.fbist_id,
+		fbist_thread_bandwidth_get_params.txg_nr, fbist_thread_bandwidth_get_params.thread_nr);
+}
+
+static int action_cmd_fbist_thread_latency_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_thread_latency_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_thread_latency_get(memdev, fbist_thread_latency_get_params.fbist_id,
+		fbist_thread_latency_get_params.txg_nr, fbist_thread_latency_get_params.thread_nr);
+}
+
+static int action_cmd_fbist_thread_perf_mon_set(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_thread_perf_mon_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_thread_perf_mon_set(memdev, fbist_thread_perf_mon_set_params.fbist_id,
+		fbist_thread_perf_mon_set_params.txg_nr, fbist_thread_perf_mon_set_params.thread_nr,
+		fbist_thread_perf_mon_set_params.pmon_preset_en, fbist_thread_perf_mon_set_params.pmon_clear_en,
+		fbist_thread_perf_mon_set_params.pmon_rollover, fbist_thread_perf_mon_set_params.pmon_thread_lclk);
+}
+
+static int action_cmd_fbist_top_read_status0_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_top_read_status0_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_top_read_status0_get(memdev, fbist_top_read_status0_get_params.fbist_id);
+}
+
+static int action_cmd_fbist_top_err_cnt_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_top_err_cnt_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_top_err_cnt_get(memdev, fbist_top_err_cnt_get_params.fbist_id);
+}
+
+static int action_cmd_fbist_last_read_addr_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_last_read_addr_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_last_read_addr_get(memdev, fbist_last_read_addr_get_params.fbist_id);
+}
+
+static int action_cmd_fbist_test_simpledata(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_test_simpledata\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_test_simpledata(memdev, fbist_test_simpledata_params.fbist_id,
+		fbist_test_simpledata_params.test_nr, fbist_test_simpledata_params.start_address,
+		fbist_test_simpledata_params.num_bytes);
+}
+
+static int action_cmd_fbist_test_addresstest(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_test_addresstest\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_test_addresstest(memdev, fbist_test_addresstest_params.fbist_id,
+		fbist_test_addresstest_params.test_nr, fbist_test_addresstest_params.start_address,
+		fbist_test_addresstest_params.num_bytes, fbist_test_addresstest_params.seed);
+}
+
+static int action_cmd_fbist_test_movinginversion(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_test_movinginversion\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_test_movinginversion(memdev, fbist_test_movinginversion_params.fbist_id,
+		fbist_test_movinginversion_params.test_nr, fbist_test_movinginversion_params.phase_nr,
+		fbist_test_movinginversion_params.start_address, fbist_test_movinginversion_params.num_bytes,
+		fbist_test_movinginversion_params.ddrpage_size);
+}
+
+static int action_cmd_fbist_test_randomsequence(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort fbist_test_randomsequence\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_fbist_test_randomsequence(memdev, fbist_test_randomsequence_params.fbist_id,
+		fbist_test_randomsequence_params.phase_nr, fbist_test_randomsequence_params.start_address,
+		fbist_test_randomsequence_params.num_bytes, fbist_test_randomsequence_params.ddrpage_size,
+		fbist_test_randomsequence_params.seed_dr0, fbist_test_randomsequence_params.seed_dr1);
 }
 
 static int action_cmd_conf_read(struct cxl_memdev *memdev, struct action_context *actx)
@@ -3274,6 +3962,166 @@ int cmd_eh_link_dbg_reset(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_eh_link_dbg_reset, cmd_eh_link_dbg_reset_options,
 			"cxl eh-link-dbg-reset <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_stopconfig_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_stopconfig_set, cmd_fbist_stopconfig_set_options,
+			"cxl fbist_stopconfig_set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_cyclecount_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_cyclecount_set, cmd_fbist_cyclecount_set_options,
+			"cxl fbist_cyclecount_set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_reset_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_reset_set, cmd_fbist_reset_set_options,
+			"cxl fbist_reset_set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_run_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_run_set, cmd_fbist_run_set_options,
+			"cxl fbist_run_set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_run_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_run_get, cmd_fbist_run_get_options,
+			"cxl fbist_run_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_xfer_rem_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_xfer_rem_cnt_get, cmd_fbist_xfer_rem_cnt_get_options,
+			"cxl fbist_xfer_rem_cnt_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_last_exp_read_data_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_last_exp_read_data_get, cmd_fbist_last_exp_read_data_get_options,
+			"cxl fbist_last_exp_read_data_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_curr_cycle_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_curr_cycle_cnt_get, cmd_fbist_curr_cycle_cnt_get_options,
+			"cxl fbist_curr_cycle_cnt_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_thread_status_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_thread_status_get, cmd_fbist_thread_status_get_options,
+			"cxl fbist_thread_status_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_thread_trans_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_thread_trans_cnt_get, cmd_fbist_thread_trans_cnt_get_options,
+			"cxl fbist_thread_trans_cnt_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_thread_bandwidth_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_thread_bandwidth_get, cmd_fbist_thread_bandwidth_get_options,
+			"cxl fbist_thread_bandwidth_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_thread_latency_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_thread_latency_get, cmd_fbist_thread_latency_get_options,
+			"cxl fbist_thread_latency_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_thread_perf_mon_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_thread_perf_mon_set, cmd_fbist_thread_perf_mon_set_options,
+			"cxl fbist_thread_perf_mon_set <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_top_read_status0_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_top_read_status0_get, cmd_fbist_top_read_status0_get_options,
+			"cxl fbist_top_read_status0_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_top_err_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_top_err_cnt_get, cmd_fbist_top_err_cnt_get_options,
+			"cxl fbist_top_err_cnt_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_last_read_addr_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_last_read_addr_get, cmd_fbist_last_read_addr_get_options,
+			"cxl fbist_last_read_addr_get <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_test_simpledata(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_simpledata, cmd_fbist_test_simpledata_options,
+			"cxl fbist_test_simpledata <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_test_addresstest(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_addresstest, cmd_fbist_test_addresstest_options,
+			"cxl fbist_test_addresstest <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_test_movinginversion(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_movinginversion, cmd_fbist_test_movinginversion_options,
+			"cxl fbist_test_movinginversion <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_fbist_test_randomsequence(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_randomsequence, cmd_fbist_test_randomsequence_options,
+			"cxl fbist_test_randomsequence <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
