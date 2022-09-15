@@ -219,6 +219,8 @@ int cxl_memdev_fbist_test_movinginversion(struct cxl_memdev *memdev,
 int cxl_memdev_fbist_test_randomsequence(struct cxl_memdev *memdev,
 	u32 fbist_id, u8 phase_nr, u64 start_address, u64 num_bytes, u32 ddrpage_size,
 	u32 seed_dr0, u32 seed_dr1);
+int cxl_memdev_conf_read(struct cxl_memdev *memdev, u32 offset,
+	u32 length);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

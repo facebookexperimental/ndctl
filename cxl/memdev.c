@@ -1717,6 +1717,25 @@ static const struct option cmd_eh_link_dbg_reset_options[] = {
 	OPT_END(),
 };
 
+static struct _conf_read_params {
+	u32 offset;
+	u32 length;
+	bool verbose;
+} conf_read_params;
+
+#define CONF_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &conf_read_params.verbose, "turn on debug")
+
+#define CONF_READ_OPTIONS() \
+OPT_UINTEGER('o', "offset", &conf_read_params.offset, "Starting Offset"), \
+OPT_UINTEGER('l', "length", &conf_read_params.length, "Requested Length")
+
+static const struct option cmd_conf_read_options[] = {
+	CONF_READ_BASE_OPTIONS(),
+	CONF_READ_OPTIONS(),
+	OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3092,6 +3111,18 @@ static int action_cmd_fbist_test_randomsequence(struct cxl_memdev *memdev, struc
 		fbist_test_randomsequence_params.seed_dr0, fbist_test_randomsequence_params.seed_dr1);
 }
 
+
+static int action_cmd_conf_read(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort conf_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_conf_read(memdev, conf_read_params.offset, conf_read_params.length);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
   int rc;
@@ -4092,6 +4123,14 @@ int cmd_fbist_test_randomsequence(int argc, const char **argv, struct cxl_ctx *c
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_randomsequence, cmd_fbist_test_randomsequence_options,
 			"cxl fbist_test_randomsequence <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_conf_read, cmd_conf_read_options,
+			"cxl conf_read <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

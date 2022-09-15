@@ -8756,3 +8756,84 @@ out:
 	return rc;
 	return 0;
 }
+
+
+#define CXL_MEM_COMMAND_ID_CONF_READ CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CONF_READ_OPCODE 52992
+#define CXL_MEM_COMMAND_ID_CONF_READ_PAYLOAD_IN_SIZE 8
+#define CXL_MEM_COMMAND_ID_CONF_READ_PAYLOAD_OUT_SIZE 4 // varies
+
+struct cxl_mbox_conf_read_in {
+	__le32 offset;
+	__le32 length;
+}  __attribute__((packed));
+
+struct cxl_mbox_conf_read_out {
+	__le32 payload;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
+	u32 offset, u32 length)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_conf_read_in *conf_read_in;
+	struct cxl_mbox_conf_read_out *conf_read_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CONF_READ_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_CONF_READ_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	conf_read_in = (void *) cmd->send_cmd->in.payload;
+
+	conf_read_in->offset = cpu_to_le32(offset);
+	conf_read_in->length = cpu_to_le32(length);
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CONF_READ) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_CONF_READ);
+		return -EINVAL;
+	}
+
+	fprintf(stdout, "command completed successfully\n");
+	conf_read_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== Read configuration file ============================\n");
+	fprintf(stdout, "Payload: %x\n", conf_read_out->payload);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}

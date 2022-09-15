@@ -159,4 +159,5 @@ global:
 	cxl_memdev_fbist_test_addresstest;
 	cxl_memdev_fbist_test_movinginversion;
 	cxl_memdev_fbist_test_randomsequence;
+	cxl_memdev_conf_read;
 } LIBCXL_3;

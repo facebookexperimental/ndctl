@@ -106,4 +106,5 @@ int cmd_fbist_test_simpledata(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_test_addresstest(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_test_movinginversion(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_fbist_test_randomsequence(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
