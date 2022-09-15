@@ -1777,7 +1777,7 @@ static struct _hct_set_config_params {
   u32 config_flags;
   u32 post_trig_depth;
   u32 ignore_valid;
-  const char trig_config_file;
+  const char *trig_config_file;
 	bool verbose;
 } hct_set_config_params;
 
@@ -1789,7 +1789,8 @@ OPT_UINTEGER('h', "hct_inst", &hct_set_config_params.hct_inst, "HCT Instance"), 
 OPT_UINTEGER('c', "config_flags", &hct_set_config_params.config_flags, "Config Flags"), \
 OPT_UINTEGER('p', "post_trig_depth", &hct_set_config_params.post_trig_depth, "Post Trigger Depth"), \
 OPT_UINTEGER('i', "ignore_valid", &hct_set_config_params.ignore_valid, "Ignore Valid"), \
-OPT_FILENAME('t', "trig_config_file", &hct_set_config_params.trig_config_file, "Trigger Config filepath")
+OPT_FILENAME('t', "trig_config_file", &hct_set_config_params.trig_config_file, "Trigger Config filepath", \
+  "Filepath containing trigger config")
 
 static const struct option cmd_hct_set_config_options[] = {
 	HCT_SET_CONFIG_BASE_OPTIONS(),
@@ -3255,7 +3256,7 @@ static int action_cmd_hct_set_config(struct cxl_memdev *memdev, struct action_co
 
 	if (cxl_memdev_is_active(memdev)) {
 		fprintf(stderr, "%s: memdev active, abort hct_set_config\n",
-			cxl_memdev_set_devname(memdev));
+			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
 

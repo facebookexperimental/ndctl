@@ -9031,7 +9031,7 @@ struct cxl_mbox_hct_set_config_in {
 }  __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
-	u8 hct_inst, u8 config_flags, u8 port_trig_depth, u8 ignore_invalid, int size, u8 *trig_config_buffer)
+	u8 hct_inst, u8 config_flags, u8 post_trig_depth, u8 ignore_valid, int size, u8 *trig_config_buffer)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -9042,7 +9042,7 @@ CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_OPCODE);
 	if (!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
-				cxl_memdev_set_devname(memdev));
+				cxl_memdev_get_devname(memdev));
 		return -ENOMEM;
 	}
 
@@ -9065,27 +9065,27 @@ CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
 	hct_set_config_in->hct_inst = hct_inst;
 	hct_set_config_in->config_flags = config_flags;
 	hct_set_config_in->post_trig_depth = post_trig_depth;
-	hct_set_config_in->ignore_invalid = ignore_invalid;
+	hct_set_config_in->ignore_valid = ignore_valid;
 	memcpy(hct_set_config_in->trig_config, trig_config_buffer, size);
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_set_devname(memdev), rc, strerror(-rc));
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
 		 goto out;
 	}
 
-	rc = cxl_cmd_set_mbox_status(cmd);
+	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
 		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_set_devname(memdev), rc);
+				cxl_memdev_get_devname(memdev), rc);
 		rc = -ENXIO;
 		goto out;
 	}
 
 	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HCT_SET_CONFIG) {
 		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_set_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG);
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG);
 		return -EINVAL;
 	}
 	fprintf(stdout, "command completed successfully\n");
