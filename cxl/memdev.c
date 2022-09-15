@@ -277,7 +277,7 @@ static struct _hct_start_stop_trigger_params {
 
 
 #define HCT_START_STOP_TRIGGER_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_start_stop_trigger_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('i', "hct_inst", &hct_start_stop_trigger_params.hct_inst, "HCT Instance"), \
 OPT_UINTEGER('b', "buf_control", &hct_start_stop_trigger_params.buf_control, "Buffer Control")
 
 static const struct option cmd_hct_start_stop_trigger_options[] = {
@@ -293,7 +293,7 @@ static struct _hct_get_buffer_status_params {
 
 
 #define HCT_GET_BUFFER_STATUS_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_get_buffer_status_params.hct_inst, "HCT Instance")
+OPT_UINTEGER('i', "hct_inst", &hct_get_buffer_status_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_get_buffer_status_options[] = {
   BASE_OPTIONS(),
@@ -308,7 +308,7 @@ static struct _hct_enable_params {
 
 
 #define HCT_ENABLE_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_enable_params.hct_inst, "HCT Instance")
+OPT_UINTEGER('i', "hct_inst", &hct_enable_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_enable_options[] = {
   BASE_OPTIONS(),
@@ -1514,7 +1514,7 @@ static struct _eh_adapt_force_params {
 #define EH_ADAPT_FORCE_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_adapt_force_params.lane_id, "lane id"), \
 OPT_UINTEGER('r', "rate", &eh_adapt_force_params.rate, "PCIe rate (0 - Gen1, 1 - Gen2, 2 - Gen3, 3 - Gen4, 4 - Gen5)"), \
-OPT_UINTEGER('v', "vdd_bias", &eh_adapt_force_params.vdd_bias, "vdd bias (0 = 0.82V, 1 = 0.952V)"), \
+OPT_UINTEGER('b', "vdd_bias", &eh_adapt_force_params.vdd_bias, "vdd bias (0 = 0.82V, 1 = 0.952V)"), \
 OPT_UINTEGER('s', "ssc", &eh_adapt_force_params.ssc, "spread spectrum clocking enable (0 - SSC enable, 1 - SSC disable)"), \
 OPT_UINTEGER('p', "pga_gain", &eh_adapt_force_params.pga_gain, "used to set the value of the PGA_GAIN object when preloading is enabled"), \
 OPT_UINTEGER('q', "pga_a0", &eh_adapt_force_params.pga_a0, "used to set the value of the PGA_A0 object when preloading is enabled"), \
@@ -1524,7 +1524,7 @@ OPT_UINTEGER('d', "cdfe_a3", &eh_adapt_force_params.cdfe_a3, "used to set the va
 OPT_UINTEGER('e', "cdfe_a4", &eh_adapt_force_params.cdfe_a4, "used to set the value of CDFE_A4 (DFE Tap4) when preloading (CDFE_GRP0) is enabled"), \
 OPT_UINTEGER('f', "cdfe_a5", &eh_adapt_force_params.cdfe_a5, "used to set the value of CDFE_A5 (DFE Tap5) when preloading (CDFE_GRP1) is enabled"), \
 OPT_UINTEGER('g', "cdfe_a6", &eh_adapt_force_params.cdfe_a6, "used to set the value of CDFE_A6 (DFE Tap6) when preloading (CDFE_GRP1) is enabled"), \
-OPT_UINTEGER('h', "cdfe_a7", &eh_adapt_force_params.cdfe_a7, "used to set the value of CDFE_A7 (DFE Tap7) when preloading (CDFE_GRP1) is enabled"), \
+OPT_UINTEGER('y', "cdfe_a7", &eh_adapt_force_params.cdfe_a7, "used to set the value of CDFE_A7 (DFE Tap7) when preloading (CDFE_GRP1) is enabled"), \
 OPT_UINTEGER('i', "cdfe_a8", &eh_adapt_force_params.cdfe_a8, "used to set the value of CDFE_A8 (DFE Tap8) when preloading (CDFE_GRP2) is enabled"), \
 OPT_UINTEGER('j', "cdfe_a9", &eh_adapt_force_params.cdfe_a9, "used to set the value of CDFE_A9 (DFE Tap9) when preloading (CDFE_GRP2) is enabled"), \
 OPT_UINTEGER('k', "cdfe_a10", &eh_adapt_force_params.cdfe_a10, "used to set the value of CDFE_A10 (DFE Tap10) when preloading (CDFE_GRP2) is enabled"), \
