@@ -1736,6 +1736,68 @@ static const struct option cmd_conf_read_options[] = {
 	OPT_END(),
 };
 
+static struct _hct_get_config_params {
+	u32 hct_inst;
+	bool verbose;
+} hct_get_config_params;
+
+#define HCT_GET_CONFIG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_get_config_params.verbose, "turn on debug")
+
+#define HCT_GET_CONFIG_OPTIONS() \
+OPT_UINTEGER('h', "hct_inst", &hct_get_config_params.hct_inst, "HCT Instance")
+
+static const struct option cmd_hct_get_config_options[] = {
+	HCT_GET_CONFIG_BASE_OPTIONS(),
+	HCT_GET_CONFIG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _hct_read_buffer_params {
+	u32 hct_inst;
+	u32 num_entries_to_read;
+	bool verbose;
+} hct_read_buffer_params;
+
+#define HCT_READ_BUFFER_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_read_buffer_params.verbose, "turn on debug")
+
+#define HCT_READ_BUFFER_OPTIONS() \
+OPT_UINTEGER('h', "hct_inst", &hct_read_buffer_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('n', "num_entries_to_read", &hct_read_buffer_params.num_entries_to_read, "Number of buffer entries to read")
+
+static const struct option cmd_hct_read_buffer_options[] = {
+	HCT_READ_BUFFER_BASE_OPTIONS(),
+	HCT_READ_BUFFER_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _hct_set_config_params {
+	u32 hct_inst;
+  u32 config_flags;
+  u32 post_trig_depth;
+  u32 ignore_valid;
+  const char trig_config_file;
+	bool verbose;
+} hct_set_config_params;
+
+#define HCT_SET_CONFIG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_set_config_params.verbose, "turn on debug")
+
+#define HCT_SET_CONFIG_OPTIONS() \
+OPT_UINTEGER('h', "hct_inst", &hct_set_config_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('c', "config_flags", &hct_set_config_params.config_flags, "Config Flags"), \
+OPT_UINTEGER('p', "post_trig_depth", &hct_set_config_params.post_trig_depth, "Post Trigger Depth"), \
+OPT_UINTEGER('i', "ignore_valid", &hct_set_config_params.ignore_valid, "Ignore Valid"), \
+OPT_FILENAME('t', "trig_config_file", &hct_set_config_params.trig_config_file, "Trigger Config filepath")
+
+static const struct option cmd_hct_set_config_options[] = {
+	HCT_SET_CONFIG_BASE_OPTIONS(),
+	HCT_SET_CONFIG_OPTIONS(),
+	OPT_END(),
+};
+
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3141,6 +3203,80 @@ static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
   return rc;
 }
 
+static int action_cmd_hct_get_config(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_get_config\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_hct_get_config(memdev, hct_get_config_params.hct_inst);
+}
+
+static int action_cmd_hct_read_buffer(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_read_buffer\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_hct_read_buffer(memdev, hct_read_buffer_params.hct_inst,
+		hct_read_buffer_params.num_entries_to_read);
+}
+
+static int action_cmd_hct_set_config(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  struct stat filestat;
+  int filesize;
+  FILE *trig_config;
+  int fd;
+  int rc;
+  u8 *trig_config_buffer;
+  int conf_read;
+
+  trig_config = fopen(hct_set_config_params.trig_config_file, "rb");
+  if (trig_config == NULL) {
+    fprintf(stderr, "Error: File open returned %s\nCould not open file %s\n",
+                  strerror(errno), hct_set_config_params.trig_config_file);
+    return -ENOENT;
+  }
+
+  printf("Trigger Config filepath: %s\n", hct_set_config_params.trig_config_file);
+  fd = fileno(trig_config);
+  rc = fstat(fd, &filestat);
+
+  if (rc != 0) {
+    fprintf(stderr, "Could not read filesize");
+    fclose(trig_config);
+    return 1;
+  }
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_set_config\n",
+			cxl_memdev_set_devname(memdev));
+		return -EBUSY;
+	}
+
+  filesize = filestat.st_size;
+
+  trig_config_buffer = (u8*) malloc(filesize);
+  conf_read = fread(trig_config_buffer, 1, filesize, trig_config);
+  if (conf_read != filesize){
+    fprintf(stderr, "Expected size: %d\nRead size: %d\n", filesize, conf_read);
+    free(trig_config_buffer);
+    fclose(trig_config);
+    return -ENOENT;
+  }
+  printf("Expected size: %d\nRead size: %d\n", filesize, conf_read);
+
+	return cxl_memdev_hct_set_config(memdev, hct_set_config_params.hct_inst,
+    hct_set_config_params.config_flags, hct_set_config_params.post_trig_depth,
+    hct_set_config_params.ignore_valid, filesize, trig_config_buffer);
+}
+
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4131,6 +4267,30 @@ int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_conf_read, cmd_conf_read_options,
 			"cxl conf_read <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_get_config(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_get_config, cmd_hct_get_config_options,
+			"cxl hct_get_config <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_read_buffer(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_read_buffer, cmd_hct_read_buffer_options,
+			"cxl hct_read_buffer <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_set_config(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_set_config, cmd_hct_set_config_options,
+			"cxl hct_set_config <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

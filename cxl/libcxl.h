@@ -221,6 +221,10 @@ int cxl_memdev_fbist_test_randomsequence(struct cxl_memdev *memdev,
 	u32 seed_dr0, u32 seed_dr1);
 int cxl_memdev_conf_read(struct cxl_memdev *memdev, u32 offset,
 	u32 length);
+int cxl_memdev_hct_get_config(struct cxl_memdev *memdev, u8 hct_inst);
+int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev, u8 hct_inst, u8 num_entries_to_read);
+int cxl_memdev_hct_set_config(struct cxl_memdev *memdev, u8 hct_inst, u8 config_flags,
+	u8 port_trig_depth, u8 ignore_invalid, int filesize, u8 *trig_config_buffer);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

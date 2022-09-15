@@ -163,6 +163,9 @@ static struct cmd_struct commands[] = {
 	{ "fbist-test-movinginversion", .c_fn = cmd_fbist_test_movinginversion },
 	{ "fbist-test-randomsequence", .c_fn = cmd_fbist_test_randomsequence },
 	{ "conf-read", .c_fn = cmd_conf_read },
+	{ "hct-get-config", .c_fn = cmd_hct_get_config },
+	{ "hct-read-buffer", .c_fn = cmd_hct_read_buffer },
+	{ "hct-set-config", .c_fn = cmd_hct_set_config },
 };
 
 int main(int argc, const char **argv)

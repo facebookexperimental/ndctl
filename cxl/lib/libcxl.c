@@ -8837,3 +8837,261 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_OPCODE 50689
+#define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_PAYLOAD_IN_SIZE 1
+#define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_PAYLOAD_OUT_SIZE 132
+
+struct cxl_mbox_hct_get_config_in {
+	u8 hct_inst;
+}  __attribute__((packed));
+
+struct cxl_mbox_hct_get_config_out {
+	u8 post_trig_depth;
+	u8 ignore_valid;
+	u8 rsvd;
+	u8 rsvd3;
+	__le32 trig_config[128];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_hct_get_config(struct cxl_memdev *memdev,
+	u8 hct_inst)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_hct_get_config_in *hct_get_config_in;
+	struct cxl_mbox_hct_get_config_out *hct_get_config_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	hct_get_config_in = (void *) cmd->send_cmd->in.payload;
+
+	hct_get_config_in->hct_inst = hct_inst;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HCT_GET_CONFIG) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG);
+		return -EINVAL;
+	}
+
+	hct_get_config_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "==================== get hif/cxl trace buffer configuration ====================\n");
+	fprintf(stdout, "Post Trigger Depth: %x\n", hct_get_config_out->post_trig_depth);
+	fprintf(stdout, "Ignore Valid: %x\n", hct_get_config_out->ignore_valid);
+	// OPL size
+	for(int i=0; i<32; i++){
+		fprintf(stdout, "Trigger Config [%d]: %x\n", i, le32_to_cpu(hct_get_config_out->trig_config[i]));
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+
+#define CXL_MEM_COMMAND_ID_HCT_READ_BUFFER CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_HCT_READ_BUFFER_OPCODE 50693
+#define CXL_MEM_COMMAND_ID_HCT_READ_BUFFER_PAYLOAD_IN_SIZE 2
+#define CXL_MEM_COMMAND_ID_HCT_READ_BUFFER_PAYLOAD_OUT_SIZE 1024
+
+struct cxl_mbox_hct_read_buffer_in {
+	u8 hct_inst;
+	u8 num_entries_to_read;
+}  __attribute__((packed));
+
+struct cxl_mbox_hct_read_buffer_out {
+	u8 buf_end;
+	u8 num_buf_entries;
+	__le16 rsvd;
+	u8 buf_entry[1024];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev,
+	u8 hct_inst, u8 num_entries_to_read)
+{
+	u8 *buf_out;
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_hct_read_buffer_in *hct_read_buffer_in;
+	struct cxl_mbox_hct_read_buffer_out *hct_read_buffer_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_READ_BUFFER_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_HCT_READ_BUFFER_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	hct_read_buffer_in = (void *) cmd->send_cmd->in.payload;
+
+	hct_read_buffer_in->hct_inst = hct_inst;
+	hct_read_buffer_in->num_entries_to_read = num_entries_to_read;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HCT_READ_BUFFER) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_READ_BUFFER);
+		return -EINVAL;
+	}
+
+	hct_read_buffer_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "========================== read hif/cxl trace buffer ===========================\n");
+	fprintf(stdout, "Buffer End Reached: %x\n", hct_read_buffer_out->buf_end);
+	fprintf(stdout, "Number of buffer entries: %x\n", hct_read_buffer_out->num_buf_entries);
+
+	buf_out = (u8*) cmd->send_cmd->out.payload;
+	for(int i=4; i<cmd->send_cmd->out.size; i++){
+		fprintf(stdout, "Buffer Entry: %x\n", buf_out[i]);
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_OPCODE 50690
+#define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_PAYLOAD_IN_SIZE 136
+
+struct cxl_mbox_hct_set_config_in {
+	u8 hct_inst;
+	u8 config_flags;
+	u8 rsvd;
+	u8 rsvd2;
+	u8 post_trig_depth;
+	u8 ignore_valid;
+	u8 rsvd3;
+	u8 rsvd4;
+	u8 *trig_config[128];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
+	u8 hct_inst, u8 config_flags, u8 port_trig_depth, u8 ignore_invalid, int size, u8 *trig_config_buffer)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_hct_set_config_in *hct_set_config_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_set_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	printf("Output payload size 0x%d\n", size);
+	cinfo->size_in = 8 + size;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	hct_set_config_in = (void *) cmd->send_cmd->in.payload;
+
+	hct_set_config_in->hct_inst = hct_inst;
+	hct_set_config_in->config_flags = config_flags;
+	hct_set_config_in->post_trig_depth = post_trig_depth;
+	hct_set_config_in->ignore_invalid = ignore_invalid;
+	memcpy(hct_set_config_in->trig_config, trig_config_buffer, size);
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_set_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_set_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_set_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_HCT_SET_CONFIG) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_set_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG);
+		return -EINVAL;
+	}
+	fprintf(stdout, "command completed successfully\n");
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
