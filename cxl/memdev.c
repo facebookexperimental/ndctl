@@ -1868,6 +1868,17 @@ const char *TRANSFER_FW_ERRORS[15] = {
  * User must provide available FW slot as indicated from get-fw-info. This slot is provided
  * for every call to transfer-fw, but will only be read during the end_transfer call.
 */
+
+struct cxl_ctx {
+	/* log_ctx must be first member for cxl_set_log_fn compat */
+	struct log_ctx ctx;
+	int refcount;
+	void *userdata;
+	int memdevs_init;
+	struct list_head memdevs;
+	struct kmod_ctx *kmod_ctx;
+	void *private_data;
+};
 static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
   struct stat fileStat;
@@ -1885,6 +1896,8 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   u32 opcode;
   u8 action;
   int sleep_time = 1;
+  int percent_to_print = 0;
+  struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 
   rom = fopen(update_fw_params.filepath, "rb");
   if (rom == NULL) {
@@ -1899,17 +1912,17 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     return -EBUSY;
   }
 
-  printf("Rom filepath: %s\n", update_fw_params.filepath);
+  dbg(ctx, "Rom filepath: %s\n", update_fw_params.filepath);
   fd = fileno(rom);
   rc = fstat(fd, &fileStat);
   if (rc != 0) {
-    fprintf(stderr, "Could not read filesize");
+    dbg(ctx, "Could not read filesize");
     fclose(rom);
     return 1;
   }
 
   filesize = fileStat.st_size;
-  printf("ROM size: %d bytes\n", filesize);
+  dbg(ctx, "ROM size: %d bytes\n", filesize);
 
   num_blocks = filesize / FW_BLOCK_SIZE;
   if (filesize % FW_BLOCK_SIZE != 0)
@@ -1921,12 +1934,11 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   num_read = fread(rom_buffer, 1, filesize, rom);
   if (filesize != num_read)
   {
-    fprintf(stderr, "Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
+    fprintf(stderr, "Number of bytes read: %d\nNumber of bytes expected: %d\n", num_read, num_blocks);
     free(rom_buffer);
     fclose(rom);
     return -ENOENT;
   }
-  printf("Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
 
   offset = 0;
   if (update_fw_params.hbo) {
@@ -1938,7 +1950,13 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   for (int i = 0; i < num_blocks; i++)
   {
     offset = i * (FW_BLOCK_SIZE / FW_BYTE_ALIGN);
-    printf("Transfering block %d of %d at offset 0x%x\n", i, num_blocks, offset);
+
+    if ( (i *  100) / num_blocks >= percent_to_print)
+    {
+      printf("%d percent complete. Transfering block %d of %d at offset 0x%x\n", percent_to_print, i, num_blocks, offset);
+      percent_to_print = percent_to_print + 10;
+    }
+
 
         if (i == 0)
             action = INITIATE_TRANSFER;
@@ -1961,10 +1979,10 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     {
       if (retry_count > max_retries)
       {
-        printf("Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
+        fprintf(stderr, "Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
         goto abort;
       }
-      printf("Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
+      dbg(ctx, "Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
       sleep(sleep_time);
       rc = cxl_memdev_transfer_fw(memdev, action, update_fw_params.slot, offset, size, rom_buffer[i], opcode);
       retry_count++;
@@ -1976,19 +1994,19 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
       goto abort;
     }
 
-    rc = cxl_memdev_hbo_status(memdev);
+    rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count = 0;
     sleep_time = 10;
     while (rc != 0)
     {
       if (retry_count > max_retries)
       {
-        printf("Maximum %d retries exceeded for hbo_status of block %d\n", max_retries, i);
+        dbg(ctx, "Maximum %d retries exceeded for hbo_status of block %d\n", max_retries, i);
         goto abort;
       }
-      printf("HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
+      dbg(ctx, "HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
       sleep(sleep_time);
-      rc = cxl_memdev_hbo_status(memdev);
+      rc = cxl_memdev_hbo_status(memdev, 0);
       retry_count++;
     }
 
@@ -2004,12 +2022,12 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
     }
   }
 
-  printf("Transfer completed successfully and fw was transferred to slot %d\n", update_fw_params.slot);
+  dbg(ctx, "Transfer completed successfully and fw was transferred to slot %d\n", update_fw_params.slot);
   goto out;
 abort:
   sleep(2.0);
   rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, FW_BLOCK_SIZE, rom_buffer[0], opcode);
-  printf("Abort return status %d\n", rc);
+  dbg(ctx, "Abort return status %d\n", rc);
 out:
   free(rom_buffer);
   fclose(rom);
@@ -2182,7 +2200,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
         return rc;
   }
 
-    rc = cxl_memdev_hbo_status(memdev);
+    rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count = 0;
   while (rc != 0) {
         if (retry_count > max_retries) {
@@ -2191,7 +2209,7 @@ static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_conte
       }
         printf("HBO Status Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
         sleep(sleep_time);
-        rc = cxl_memdev_hbo_status(memdev);
+        rc = cxl_memdev_hbo_status(memdev, 0);
     retry_count++;
   }
 
@@ -2697,7 +2715,7 @@ static int action_cmd_hbo_status(struct cxl_memdev *memdev, struct action_contex
     return -EBUSY;
   }
 
-  return cxl_memdev_hbo_status(memdev);
+  return cxl_memdev_hbo_status(memdev, 1);
 }
 
 static int action_cmd_hbo_transfer_fw(struct cxl_memdev *memdev, struct action_context *actx)

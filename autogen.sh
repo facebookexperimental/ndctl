@@ -24,5 +24,5 @@ echo "----------------------------------------------------------------"
 echo "Initialized build system. For a common configuration please run:"
 echo "----------------------------------------------------------------"
 echo
-echo "./configure CFLAGS='-g -O2' $args"
+echo "./configure --enable-debug CFLAGS='-g -O2' $args --disable-docs"
 echo
