@@ -1745,7 +1745,7 @@ static struct _hct_get_config_params {
 OPT_BOOLEAN('v',"verbose", &hct_get_config_params.verbose, "turn on debug")
 
 #define HCT_GET_CONFIG_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_get_config_params.hct_inst, "HCT Instance")
+OPT_UINTEGER('i', "hct_inst", &hct_get_config_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_get_config_options[] = {
 	HCT_GET_CONFIG_BASE_OPTIONS(),
@@ -1763,7 +1763,7 @@ static struct _hct_read_buffer_params {
 OPT_BOOLEAN('v',"verbose", &hct_read_buffer_params.verbose, "turn on debug")
 
 #define HCT_READ_BUFFER_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_read_buffer_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('i', "hct_inst", &hct_read_buffer_params.hct_inst, "HCT Instance"), \
 OPT_UINTEGER('n', "num_entries_to_read", &hct_read_buffer_params.num_entries_to_read, "Number of buffer entries to read")
 
 static const struct option cmd_hct_read_buffer_options[] = {
@@ -1785,10 +1785,10 @@ static struct _hct_set_config_params {
 OPT_BOOLEAN('v',"verbose", &hct_set_config_params.verbose, "turn on debug")
 
 #define HCT_SET_CONFIG_OPTIONS() \
-OPT_UINTEGER('h', "hct_inst", &hct_set_config_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('i', "hct_inst", &hct_set_config_params.hct_inst, "HCT Instance"), \
 OPT_UINTEGER('c', "config_flags", &hct_set_config_params.config_flags, "Config Flags"), \
 OPT_UINTEGER('p', "post_trig_depth", &hct_set_config_params.post_trig_depth, "Post Trigger Depth"), \
-OPT_UINTEGER('i', "ignore_valid", &hct_set_config_params.ignore_valid, "Ignore Valid"), \
+OPT_UINTEGER('n', "ignore_valid", &hct_set_config_params.ignore_valid, "Ignore Valid"), \
 OPT_FILENAME('t', "trig_config_file", &hct_set_config_params.trig_config_file, "Trigger Config filepath", \
   "Filepath containing trigger config")
 

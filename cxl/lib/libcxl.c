@@ -9050,7 +9050,6 @@ CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
 	cinfo = &query->commands[cmd->query_idx];
 
 	/* update payload size */
-	printf("Output payload size 0x%d\n", size);
 	cinfo->size_in = 8 + size;
 	if (cinfo->size_in > 0) {
 		 cmd->input_payload = calloc(1, cinfo->size_in);
