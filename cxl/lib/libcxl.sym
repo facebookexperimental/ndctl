@@ -163,4 +163,7 @@ global:
 	cxl_memdev_hct_get_config;
 	cxl_memdev_hct_read_buffer;
 	cxl_memdev_hct_set_config;
+	cxl_memdev_osa_os_patt_trig_cfg;
+	cxl_memdev_osa_misc_trig_cfg;
+	cxl_memdev_osa_data_read;
 } LIBCXL_3;

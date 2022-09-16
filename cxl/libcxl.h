@@ -225,6 +225,13 @@ int cxl_memdev_hct_get_config(struct cxl_memdev *memdev, u8 hct_inst);
 int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev, u8 hct_inst, u8 num_entries_to_read);
 int cxl_memdev_hct_set_config(struct cxl_memdev *memdev, u8 hct_inst, u8 config_flags,
 	u8 port_trig_depth, u8 ignore_invalid, int filesize, u8 *trig_config_buffer);
+int cxl_memdev_osa_os_patt_trig_cfg(struct cxl_memdev *memdev,
+	u8 cxl_mem_id, u16 lane_mask, u8 lane_dir_mask, u8 rate_mask, u32 *patt_val,
+	u32 *patt_mask);
+int cxl_memdev_osa_misc_trig_cfg(struct cxl_memdev *memdev, u8 cxl_mem_id,
+	u8 trig_en_mask);
+int cxl_memdev_osa_data_read(struct cxl_memdev *memdev, u8 cxl_mem_id,
+	u8 lane_id, u8 lane_dir, u16 start_entry, u8 num_entries);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

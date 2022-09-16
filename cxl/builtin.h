@@ -110,4 +110,7 @@ int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_hct_get_config(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_hct_read_buffer(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_hct_set_config(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_osa_os_patt_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_osa_misc_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_osa_data_read(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
