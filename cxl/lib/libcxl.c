@@ -8776,6 +8776,7 @@ CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_conf_read_in *conf_read_in;
 	int rc = 0;
+	u8 *conf_read_out;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CONF_READ_OPCODE);
 	if (!cmd) {
@@ -8823,7 +8824,6 @@ CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	}
 
 	fprintf(stdout, "command completed successfully\n");
-	u8 conf_read_out;
 	conf_read_out = (u8*)cmd->send_cmd->out.payload;
 	fprintf(stdout, "=========================== Read configuration file ============================\n");
 	fprintf(stdout, "Output Payload:\n");
