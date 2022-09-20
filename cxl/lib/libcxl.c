@@ -9015,8 +9015,9 @@ CXL_EXPORT int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev,
 	buf_out = (u8*) cmd->send_cmd->out.payload;
 	fprintf(stdout, "Buffer Entries:\n");
 	for(int i=4; i<cmd->send_cmd->out.size; i++){
-		fprintf(stdout, "%x\n", le32_to_cpu(buf_out[i]));
+		fprintf(stdout, "%02x", buf_out[i]);
 	}
+	fprintf(stdout, "\n");
 
 out:
 	cxl_cmd_unref(cmd);
