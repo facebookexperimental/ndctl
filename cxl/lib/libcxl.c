@@ -8777,6 +8777,7 @@ CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	struct cxl_mbox_conf_read_in *conf_read_in;
 	u8 *conf_read_out;
 	int rc = 0;
+	u8 *conf_read_out;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CONF_READ_OPCODE);
 	if (!cmd) {
