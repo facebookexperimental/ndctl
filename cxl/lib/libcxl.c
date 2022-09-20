@@ -8768,10 +8768,6 @@ struct cxl_mbox_conf_read_in {
 	__le32 length;
 }  __attribute__((packed));
 
-struct cxl_mbox_conf_read_out {
-	__le32 payload;
-} __attribute__((packed));
-
 CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	u32 offset, u32 length)
 {
@@ -8779,7 +8775,6 @@ CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_conf_read_in *conf_read_in;
-	struct cxl_mbox_conf_read_out *conf_read_out;
 	int rc = 0;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CONF_READ_OPCODE);
@@ -8828,9 +8823,13 @@ CXL_EXPORT int cxl_memdev_conf_read(struct cxl_memdev *memdev,
 	}
 
 	fprintf(stdout, "command completed successfully\n");
-	conf_read_out = (void *)cmd->send_cmd->out.payload;
+	u8 conf_read_out;
+	conf_read_out = (u8*)cmd->send_cmd->out.payload;
 	fprintf(stdout, "=========================== Read configuration file ============================\n");
-	fprintf(stdout, "Payload: %x\n", conf_read_out->payload);
+	fprintf(stdout, "Output Payload:\n");
+	for(int i=0; i<cmd->send_cmd->out.size; i++){
+		fprintf(stdout, "%x", conf_read_out[i]);
+	}
 
 out:
 	cxl_cmd_unref(cmd);
@@ -8864,6 +8863,7 @@ CXL_EXPORT int cxl_memdev_hct_get_config(struct cxl_memdev *memdev,
 	struct cxl_mbox_hct_get_config_in *hct_get_config_in;
 	struct cxl_mbox_hct_get_config_out *hct_get_config_out;
 	int rc = 0;
+	int trig_config_size;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_OPCODE);
 	if (!cmd) {
@@ -8914,7 +8914,8 @@ CXL_EXPORT int cxl_memdev_hct_get_config(struct cxl_memdev *memdev,
 	fprintf(stdout, "Post Trigger Depth: %x\n", hct_get_config_out->post_trig_depth);
 	fprintf(stdout, "Ignore Valid: %x\n", hct_get_config_out->ignore_valid);
 	// OPL size
-	for(int i=0; i<32; i++){
+	trig_config_size = (cmd->send_cmd->out.size - 4) / 4;
+	for(int i=0; i<trig_config_size; i++){
 		fprintf(stdout, "Trigger Config [%d]: %x\n", i, le32_to_cpu(hct_get_config_out->trig_config[i]));
 	}
 
@@ -8939,7 +8940,7 @@ struct cxl_mbox_hct_read_buffer_out {
 	u8 buf_end;
 	u8 num_buf_entries;
 	__le16 rsvd;
-	u8 buf_entry[1024];
+	__le32 buf_entry[1024];
 }  __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev,
@@ -9004,8 +9005,9 @@ CXL_EXPORT int cxl_memdev_hct_read_buffer(struct cxl_memdev *memdev,
 	fprintf(stdout, "Number of buffer entries: %x\n", hct_read_buffer_out->num_buf_entries);
 
 	buf_out = (u8*) cmd->send_cmd->out.payload;
+	fprintf(stdout, "Buffer Entries:\n");
 	for(int i=4; i<cmd->send_cmd->out.size; i++){
-		fprintf(stdout, "Buffer Entry: %x\n", buf_out[i]);
+		fprintf(stdout, "%x\n", le32_to_cpu(buf_out[i]));
 	}
 
 out:
@@ -9087,7 +9089,6 @@ CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_HCT_SET_CONFIG);
 		return -EINVAL;
 	}
-	fprintf(stdout, "command completed successfully\n");
 
 out:
 	cxl_cmd_unref(cmd);
@@ -9176,8 +9177,6 @@ CXL_EXPORT int cxl_memdev_osa_os_patt_trig_cfg(struct cxl_memdev *memdev,
 		return -EINVAL;
 	}
 
-	fprintf(stdout, "command completed successfully\n");
-
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
@@ -9251,8 +9250,6 @@ CXL_EXPORT int cxl_memdev_osa_misc_trig_cfg(struct cxl_memdev *memdev,
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_OSA_MISC_TRIG_CFG);
 		return -EINVAL;
 	}
-
-	fprintf(stdout, "command completed successfully\n");
 
 out:
 	cxl_cmd_unref(cmd);
