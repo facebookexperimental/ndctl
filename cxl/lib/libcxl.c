@@ -8849,6 +8849,8 @@ out:
 #define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_OPCODE 50689
 #define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_PAYLOAD_IN_SIZE 1
 #define CXL_MEM_COMMAND_ID_HCT_GET_CONFIG_PAYLOAD_OUT_SIZE 132
+#define HCT_GET_CONFIG_FIXED_PAYLOAD_OUT_SIZE 4
+#define TRIG_CONFIG_PACKET_SIZE 4
 
 struct cxl_mbox_hct_get_config_in {
 	u8 hct_inst;
@@ -8922,7 +8924,7 @@ CXL_EXPORT int cxl_memdev_hct_get_config(struct cxl_memdev *memdev,
 	fprintf(stdout, "Post Trigger Depth: %x\n", hct_get_config_out->post_trig_depth);
 	fprintf(stdout, "Ignore Valid: %x\n", hct_get_config_out->ignore_valid);
 	// OPL size
-	trig_config_size = (cmd->send_cmd->out.size - 4) / 4;
+	trig_config_size = (cmd->send_cmd->out.size - HCT_GET_CONFIG_FIXED_PAYLOAD_OUT_SIZE) / TRIG_CONFIG_PACKET_SIZE;
 	for(int i=0; i<trig_config_size; i++){
 		fprintf(stdout, "Trigger Config [%d]: %x\n", i, le32_to_cpu(hct_get_config_out->trig_config[i]));
 	}
@@ -9028,6 +9030,7 @@ out:
 #define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_OPCODE 50690
 #define CXL_MEM_COMMAND_ID_HCT_SET_CONFIG_PAYLOAD_IN_SIZE 136
+#define HCT_SET_CONFIG_FIXED_PAYLOAD_IN_SIZE 8
 
 struct cxl_mbox_hct_set_config_in {
 	u8 hct_inst;
@@ -9061,7 +9064,7 @@ CXL_EXPORT int cxl_memdev_hct_set_config(struct cxl_memdev *memdev,
 	cinfo = &query->commands[cmd->query_idx];
 
 	/* update payload size */
-	cinfo->size_in = 8 + size;
+	cinfo->size_in = HCT_SET_CONFIG_FIXED_PAYLOAD_IN_SIZE + size;
 	if (cinfo->size_in > 0) {
 		 cmd->input_payload = calloc(1, cinfo->size_in);
 		if (!cmd->input_payload)
