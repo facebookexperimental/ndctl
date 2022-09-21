@@ -162,6 +162,13 @@ static struct cmd_struct commands[] = {
 	{ "fbist-test-addresstest", .c_fn = cmd_fbist_test_addresstest },
 	{ "fbist-test-movinginversion", .c_fn = cmd_fbist_test_movinginversion },
 	{ "fbist-test-randomsequence", .c_fn = cmd_fbist_test_randomsequence },
+	{ "conf-read", .c_fn = cmd_conf_read },
+	{ "hct-get-config", .c_fn = cmd_hct_get_config },
+	{ "hct-read-buffer", .c_fn = cmd_hct_read_buffer },
+	{ "hct-set-config", .c_fn = cmd_hct_set_config },
+	{ "osa-os-patt-trig-cfg", .c_fn = cmd_osa_os_patt_trig_cfg },
+	{ "osa-misc-trig-cfg", .c_fn = cmd_osa_misc_trig_cfg },
+	{ "osa-data-read", .c_fn = cmd_osa_data_read },
 };
 
 int main(int argc, const char **argv)

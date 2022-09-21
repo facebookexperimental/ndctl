@@ -1717,6 +1717,159 @@ static const struct option cmd_eh_link_dbg_reset_options[] = {
 	OPT_END(),
 };
 
+static struct _conf_read_params {
+	u32 offset;
+	u32 length;
+	bool verbose;
+} conf_read_params;
+
+#define CONF_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &conf_read_params.verbose, "turn on debug")
+
+#define CONF_READ_OPTIONS() \
+OPT_UINTEGER('o', "offset", &conf_read_params.offset, "Starting Offset"), \
+OPT_UINTEGER('l', "length", &conf_read_params.length, "Requested Length")
+
+static const struct option cmd_conf_read_options[] = {
+	CONF_READ_BASE_OPTIONS(),
+	CONF_READ_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _hct_get_config_params {
+	u32 hct_inst;
+	bool verbose;
+} hct_get_config_params;
+
+#define HCT_GET_CONFIG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_get_config_params.verbose, "turn on debug")
+
+#define HCT_GET_CONFIG_OPTIONS() \
+OPT_UINTEGER('i', "hct_inst", &hct_get_config_params.hct_inst, "HCT Instance")
+
+static const struct option cmd_hct_get_config_options[] = {
+	HCT_GET_CONFIG_BASE_OPTIONS(),
+	HCT_GET_CONFIG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _hct_read_buffer_params {
+	u32 hct_inst;
+	u32 num_entries_to_read;
+	bool verbose;
+} hct_read_buffer_params;
+
+#define HCT_READ_BUFFER_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_read_buffer_params.verbose, "turn on debug")
+
+#define HCT_READ_BUFFER_OPTIONS() \
+OPT_UINTEGER('i', "hct_inst", &hct_read_buffer_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('n', "num_entries_to_read", &hct_read_buffer_params.num_entries_to_read, "Number of buffer entries to read")
+
+static const struct option cmd_hct_read_buffer_options[] = {
+	HCT_READ_BUFFER_BASE_OPTIONS(),
+	HCT_READ_BUFFER_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _hct_set_config_params {
+	u32 hct_inst;
+  u32 config_flags;
+  u32 post_trig_depth;
+  u32 ignore_valid;
+  const char *trig_config_file;
+	bool verbose;
+} hct_set_config_params;
+
+#define HCT_SET_CONFIG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_set_config_params.verbose, "turn on debug")
+
+#define HCT_SET_CONFIG_OPTIONS() \
+OPT_UINTEGER('i', "hct_inst", &hct_set_config_params.hct_inst, "HCT Instance"), \
+OPT_UINTEGER('c', "config_flags", &hct_set_config_params.config_flags, "Config Flags"), \
+OPT_UINTEGER('p', "post_trig_depth", &hct_set_config_params.post_trig_depth, "Post Trigger Depth"), \
+OPT_UINTEGER('n', "ignore_valid", &hct_set_config_params.ignore_valid, "Ignore Valid"), \
+OPT_FILENAME('t', "trig_config_file", &hct_set_config_params.trig_config_file, "Trigger Config filepath", \
+  "Filepath containing trigger config")
+
+static const struct option cmd_hct_set_config_options[] = {
+	HCT_SET_CONFIG_BASE_OPTIONS(),
+	HCT_SET_CONFIG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _osa_os_patt_trig_cfg_params {
+	u32 cxl_mem_id;
+	u32 lane_mask;
+	u32 lane_dir_mask;
+	u32 rate_mask;
+	unsigned patt_val;
+	unsigned patt_mask;
+	bool verbose;
+} osa_os_patt_trig_cfg_params;
+
+#define OSA_OS_PATT_TRIG_CFG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_os_patt_trig_cfg_params.verbose, "turn on debug")
+
+#define OSA_OS_PATT_TRIG_CFG_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_os_patt_trig_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('l', "lane_mask", &osa_os_patt_trig_cfg_params.lane_mask, "Lane Mask"), \
+OPT_UINTEGER('m', "lane_dir_mask", &osa_os_patt_trig_cfg_params.lane_dir_mask, "Lane Direction mask (see OSA_LANE_DIR_BITMSK_*)"), \
+OPT_UINTEGER('r', "rate_mask", &osa_os_patt_trig_cfg_params.rate_mask, "Link Rate mask (see OSA_LINK_RATE_BITMSK_*)"), \
+OPT_UINTEGER('p', "patt_val", &osa_os_patt_trig_cfg_params.patt_val, "Pattern Match Value [CXL_MEM_OSA_DATA_LEN_DW]"), \
+OPT_UINTEGER('q', "patt_mask", &osa_os_patt_trig_cfg_params.patt_mask, "Pattern Match mask [CXL_MEM_OSA_DATA_LEN_DW]")
+
+static const struct option cmd_osa_os_patt_trig_cfg_options[] = {
+	OSA_OS_PATT_TRIG_CFG_BASE_OPTIONS(),
+	OSA_OS_PATT_TRIG_CFG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _osa_misc_trig_cfg_params {
+	u32 cxl_mem_id;
+	u32 trig_en_mask;
+	bool verbose;
+} osa_misc_trig_cfg_params;
+
+#define OSA_MISC_TRIG_CFG_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_misc_trig_cfg_params.verbose, "turn on debug")
+
+#define OSA_MISC_TRIG_CFG_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_misc_trig_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('t', "trig_en_mask", &osa_misc_trig_cfg_params.trig_en_mask, "Trigger Enable Mask.")
+
+static const struct option cmd_osa_misc_trig_cfg_options[] = {
+	OSA_MISC_TRIG_CFG_BASE_OPTIONS(),
+	OSA_MISC_TRIG_CFG_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _osa_data_read_params {
+	u32 cxl_mem_id;
+	u32 lane_id;
+	u32 lane_dir;
+	u32 start_entry;
+	u32 num_entries;
+	bool verbose;
+} osa_data_read_params;
+
+#define OSA_DATA_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &osa_data_read_params.verbose, "turn on debug")
+
+#define OSA_DATA_READ_OPTIONS() \
+OPT_UINTEGER('c', "cxl_mem_id", &osa_data_read_params.cxl_mem_id, "CXL.MEM ID"), \
+OPT_UINTEGER('l', "lane_id", &osa_data_read_params.lane_id, "Lane ID"), \
+OPT_UINTEGER('m', "lane_dir", &osa_data_read_params.lane_dir, "lane direction (see osa_lane_dir_enum)"), \
+OPT_UINTEGER('s', "start_entry", &osa_data_read_params.start_entry, "index of the first entry to read"), \
+OPT_UINTEGER('n', "num_entries", &osa_data_read_params.num_entries, "maximum number of entries to read")
+
+static const struct option cmd_osa_data_read_options[] = {
+	OSA_DATA_READ_BASE_OPTIONS(),
+	OSA_DATA_READ_OPTIONS(),
+	OPT_END(),
+};
+
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3092,6 +3245,18 @@ static int action_cmd_fbist_test_randomsequence(struct cxl_memdev *memdev, struc
 		fbist_test_randomsequence_params.seed_dr0, fbist_test_randomsequence_params.seed_dr1);
 }
 
+
+static int action_cmd_conf_read(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort conf_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_conf_read(memdev, conf_read_params.offset, conf_read_params.length);
+}
+
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
   int rc;
@@ -3108,6 +3273,121 @@ static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
       cxl_memdev_get_devname(memdev), strerror(-rc));
 
   return rc;
+}
+
+static int action_cmd_hct_get_config(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_get_config\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_hct_get_config(memdev, hct_get_config_params.hct_inst);
+}
+
+static int action_cmd_hct_read_buffer(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_read_buffer\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_hct_read_buffer(memdev, hct_read_buffer_params.hct_inst,
+		hct_read_buffer_params.num_entries_to_read);
+}
+
+static int action_cmd_hct_set_config(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  struct stat filestat;
+  int filesize;
+  FILE *trig_config;
+  int fd;
+  int rc;
+  u8 *trig_config_buffer;
+  int conf_read;
+
+  trig_config = fopen(hct_set_config_params.trig_config_file, "rb");
+  if (trig_config == NULL) {
+    fprintf(stderr, "Error: File open returned %s\nCould not open file %s\n",
+                  strerror(errno), hct_set_config_params.trig_config_file);
+    return -ENOENT;
+  }
+
+  printf("Trigger Config filepath: %s\n", hct_set_config_params.trig_config_file);
+  fd = fileno(trig_config);
+  rc = fstat(fd, &filestat);
+
+  if (rc != 0) {
+    fprintf(stderr, "Could not read filesize");
+    fclose(trig_config);
+    return 1;
+  }
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_set_config\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+  filesize = filestat.st_size;
+
+  trig_config_buffer = (u8*) malloc(filesize);
+  conf_read = fread(trig_config_buffer, 1, filesize, trig_config);
+  if (conf_read != filesize){
+    fprintf(stderr, "Expected size: %d\nRead size: %d\n", filesize, conf_read);
+    free(trig_config_buffer);
+    fclose(trig_config);
+    return -ENOENT;
+  }
+  printf("Expected size: %d\nRead size: %d\n", filesize, conf_read);
+
+	return cxl_memdev_hct_set_config(memdev, hct_set_config_params.hct_inst,
+    hct_set_config_params.config_flags, hct_set_config_params.post_trig_depth,
+    hct_set_config_params.ignore_valid, filesize, trig_config_buffer);
+}
+
+static int action_cmd_osa_os_patt_trig_cfg(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  u32 pattern_val;
+  u32 pattern_mask;
+  pattern_val = (u32) osa_os_patt_trig_cfg_params.patt_val;
+  pattern_mask = (u32) osa_os_patt_trig_cfg_params.patt_mask;
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_os_patt_trig_cfg\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_os_patt_trig_cfg(memdev, osa_os_patt_trig_cfg_params.cxl_mem_id,
+		osa_os_patt_trig_cfg_params.lane_mask, osa_os_patt_trig_cfg_params.lane_dir_mask,
+		osa_os_patt_trig_cfg_params.rate_mask, &pattern_val, &pattern_mask);
+}
+
+static int action_cmd_osa_misc_trig_cfg(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_misc_trig_cfg\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_misc_trig_cfg(memdev, osa_misc_trig_cfg_params.cxl_mem_id,
+		osa_misc_trig_cfg_params.trig_en_mask);
+}
+
+static int action_cmd_osa_data_read(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort osa_data_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_osa_data_read(memdev, osa_data_read_params.cxl_mem_id,
+		osa_data_read_params.lane_id, osa_data_read_params.lane_dir, osa_data_read_params.start_entry,
+		osa_data_read_params.num_entries);
 }
 
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
@@ -4092,6 +4372,62 @@ int cmd_fbist_test_randomsequence(int argc, const char **argv, struct cxl_ctx *c
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_fbist_test_randomsequence, cmd_fbist_test_randomsequence_options,
 			"cxl fbist_test_randomsequence <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_conf_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_conf_read, cmd_conf_read_options,
+			"cxl conf_read <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_get_config(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_get_config, cmd_hct_get_config_options,
+			"cxl hct_get_config <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_read_buffer(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_read_buffer, cmd_hct_read_buffer_options,
+			"cxl hct_read_buffer <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_hct_set_config(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_set_config, cmd_hct_set_config_options,
+			"cxl hct_set_config <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_os_patt_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_os_patt_trig_cfg, cmd_osa_os_patt_trig_cfg_options,
+			"cxl osa_os_patt_trig_cfg <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_misc_trig_cfg(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_misc_trig_cfg, cmd_osa_misc_trig_cfg_options,
+			"cxl osa_misc_trig_cfg <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_osa_data_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_osa_data_read, cmd_osa_data_read_options,
+			"cxl osa_data_read <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
