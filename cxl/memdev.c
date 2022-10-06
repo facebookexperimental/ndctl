@@ -1869,6 +1869,31 @@ static const struct option cmd_osa_data_read_options[] = {
 	OPT_END(),
 };
 
+static struct _dimm_spd_read_params {
+	u32 spd_id;
+	u32 offset;
+	u32 num_bytes;
+	bool verbose;
+} dimm_spd_read_params;
+
+#define DIMM_SPD_READ_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &dimm_spd_read_params.verbose, "turn on debug")
+
+#define DIMM_SPD_READ_OPTIONS() \
+OPT_UINTEGER('s', "spd_id", &dimm_spd_read_params.spd_id, "SPD ID"), \
+OPT_UINTEGER('o', "offset", &dimm_spd_read_params.offset, "Offset"), \
+OPT_UINTEGER('n', "num_bytes", &dimm_spd_read_params.num_bytes, "Num bytes")
+
+static const struct option cmd_dimm_spd_read_options[] = {
+	DIMM_SPD_READ_BASE_OPTIONS(),
+	DIMM_SPD_READ_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option cmd_ddr_training_status_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
 
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -3390,6 +3415,29 @@ static int action_cmd_osa_data_read(struct cxl_memdev *memdev, struct action_con
 		osa_data_read_params.num_entries);
 }
 
+static int action_cmd_dimm_spd_read(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort dimm_spd_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_dimm_spd_read(memdev, dimm_spd_read_params.spd_id,
+		dimm_spd_read_params.offset, dimm_spd_read_params.num_bytes);
+}
+
+static int action_cmd_ddr_training_status(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, ddr_training_status\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_ddr_training_status(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4430,4 +4478,20 @@ int cmd_osa_data_read(int argc, const char **argv, struct cxl_ctx *ctx)
 			"cxl osa_data_read <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_dimm_spd_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_dimm_spd_read, cmd_dimm_spd_read_options,
+			"cxl dimm_spd_read <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_training_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_training_status, cmd_ddr_training_status_options,
+      "cxl ddr-training-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
 }

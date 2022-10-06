@@ -169,6 +169,8 @@ static struct cmd_struct commands[] = {
 	{ "osa-os-patt-trig-cfg", .c_fn = cmd_osa_os_patt_trig_cfg },
 	{ "osa-misc-trig-cfg", .c_fn = cmd_osa_misc_trig_cfg },
 	{ "osa-data-read", .c_fn = cmd_osa_data_read },
+	{ "dimm-spd-read", .c_fn = cmd_dimm_spd_read },
+	{ "ddr-training-status", .c_fn = cmd_ddr_training_status },
 };
 
 int main(int argc, const char **argv)
