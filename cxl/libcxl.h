@@ -232,6 +232,9 @@ int cxl_memdev_osa_misc_trig_cfg(struct cxl_memdev *memdev, u8 cxl_mem_id,
 	u8 trig_en_mask);
 int cxl_memdev_osa_data_read(struct cxl_memdev *memdev, u8 cxl_mem_id,
 	u8 lane_id, u8 lane_dir, u16 start_entry, u8 num_entries);
+int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev, u32 spd_id,
+	u32 offset, u32 num_bytes);
+int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

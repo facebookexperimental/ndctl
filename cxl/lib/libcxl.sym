@@ -166,4 +166,6 @@ global:
 	cxl_memdev_osa_os_patt_trig_cfg;
 	cxl_memdev_osa_misc_trig_cfg;
 	cxl_memdev_osa_data_read;
+	cxl_memdev_dimm_spd_read;
+	cxl_memdev_ddr_training_status;
 } LIBCXL_3;

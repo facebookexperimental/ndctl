@@ -9374,3 +9374,171 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_DIMM_SPD_READ CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DIMM_SPD_READ_OPCODE 50448
+#define CXL_MEM_COMMAND_ID_DIMM_SPD_READ_PAYLOAD_IN_SIZE 12
+
+struct cxl_mbox_dimm_spd_read_in {
+	__le32 spd_id;
+	__le32 offset;
+	__le32 num_bytes;
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
+	u32 spd_id, u32 offset, u32 num_bytes)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_dimm_spd_read_in *dimm_spd_read_in;
+	u8 *dimm_spd_read_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DIMM_SPD_READ_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_DIMM_SPD_READ_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	dimm_spd_read_in = (void *) cmd->send_cmd->in.payload;
+
+	dimm_spd_read_in->spd_id = cpu_to_le32(spd_id);
+	dimm_spd_read_in->offset = cpu_to_le32(offset);
+	dimm_spd_read_in->num_bytes = cpu_to_le32(num_bytes);
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DIMM_SPD_READ) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_DIMM_SPD_READ);
+		return -EINVAL;
+	}
+
+	dimm_spd_read_out = (u8*)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== DIMM SPD READ Data ============================\n");
+	fprintf(stdout, "Output Payload:");
+	for(int i=0; i<cmd->send_cmd->out.size; i++){
+		if (i % 16 == 0)
+		{
+			fprintf(stdout, "\n%04x  %02x ", i+offset, dimm_spd_read_out[i]);
+		}
+		else
+		{
+			fprintf(stdout, "%02x ", dimm_spd_read_out[i]);
+		}
+	}
+	fprintf(stdout, "\n");
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_LOG_INFO CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_LOG_INFO_OPCODE 0X0401
+#define DDR_TRAINING_STATUS_UUID "2f070da4-431c-4538-b41d-0c50c8f2e292"
+#define CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE 24
+
+CXL_EXPORT int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mbox_get_log *get_log_input;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	u8 *ddr_training_status;
+	int rc = 0;
+	int offset = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_LOG_INFO_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	get_log_input = (void *) cmd->send_cmd->in.payload;
+	uuid_parse(DDR_TRAINING_STATUS_UUID, get_log_input->uuid);
+	get_log_input->offset = 0;
+	get_log_input->length = cmd->memdev->payload_max;
+
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_LOG_INFO) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_LOG_INFO);
+		return -EINVAL;
+	}
+
+	ddr_training_status = (u8*)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== DDR Training Status ============================\n");
+	fprintf(stdout, "Output Payload:\n");
+	for(int i=0; i<cmd->send_cmd->out.size; i++){
+		if (i % 16 == 0)
+		{
+			fprintf(stdout, "\n%04x  %02x ", i+offset, ddr_training_status[i]);
+		}
+		else
+		{
+			fprintf(stdout, "%02x ", ddr_training_status[i]);
+		}
+	}
+	fprintf(stdout, "\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
