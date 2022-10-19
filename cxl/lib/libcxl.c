@@ -9385,6 +9385,70 @@ struct cxl_mbox_dimm_spd_read_in {
 	__le32 num_bytes;
 }  __attribute__((packed));
 
+static char * decode_ddr4_module_type(u8 *bytes) {
+    char *type;
+	switch (bytes[3]) {
+    case 0x01: type = "RDIMM (Registered DIMM)"; break;
+    case 0x02: type = "UDIMM (Unbuffered DIMM)"; break;
+    case 0x03: type = "SODIMM (Small Outline Unbuffered DIMM)"; break;
+    case 0x04: type = "LRDIMM (Load-Reduced DIMM)"; break;
+    case 0x05: type = "Mini-RDIMM (Mini Registered DIMM)"; break;
+    case 0x06: type = "Mini-UDIMM (Mini Unbuffered DIMM)"; break;
+    case 0x08: type = "72b-SO-RDIMM (Small Outline Registered DIMM, 72-bit data bus)"; break;
+    case 0x09: type = "72b-SO-UDIMM (Small Outline Unbuffered DIMM, 72-bit data bus)"; break;
+    case 0x0c: type = "16b-SO-UDIMM (Small Outline Unbuffered DIMM, 16-bit data bus)"; break;
+    case 0x0d: type = "32b-SO-UDIMM (Small Outline Unbuffered DIMM, 32-bit data bus)"; break;
+    default: type = NULL;
+    }
+	return type;
+}
+
+static float ddr4_mtb_ftb_calc(unsigned char b1, signed char b2) {
+    float mtb = 0.125;
+    float ftb = 0.001;
+    return b1 * mtb + b2 * ftb;
+}
+
+static void decode_ddr4_module_speed(u8 *bytes, float *ddr_clock, int *pc4_speed) {
+    float ctime;
+    float ddrclk;
+    int tbits, pcclk;
+
+    ctime = ddr4_mtb_ftb_calc(bytes[18], bytes[125]);
+    ddrclk = 2 * (1000 / ctime);
+    tbits = 8 << (bytes[13] & 7);
+
+    pcclk = ddrclk * tbits / 8;
+    pcclk -= pcclk % 100;
+
+    if (ddr_clock) { *ddr_clock = (int)ddrclk; }
+    if (pc4_speed) { *pc4_speed = pcclk; }
+}
+
+static double decode_ddr4_module_size(u8 *bytes) {
+	double size;
+	int sdrcap = 256 << (bytes[4] & 15);
+    int buswidth = 8 << (bytes[13] & 7);
+    int sdrwidth = 4 << (bytes[12] & 7);
+    int signal_loading = bytes[6] & 3;
+    int lranks_per_dimm = ((bytes[12] >> 3) & 7) + 1;
+
+    if (signal_loading == 2) lranks_per_dimm *= ((bytes[6] >> 4) & 7) + 1;
+	size = sdrcap / 8 * buswidth / sdrwidth * lranks_per_dimm;
+	return size;
+}
+
+
+static char * decode_ddr4_module_detail(u8 *bytes) {
+    char *type_detail = malloc(256);
+	float ddr_clock;
+    int pc4_speed;
+    if (type_detail) {
+        decode_ddr4_module_speed(bytes, &ddr_clock, &pc4_speed);
+        snprintf(type_detail, 255, "DDR4-%.0f (PC4-%d)", ddr_clock, pc4_speed);
+    }
+	return type_detail;
+}
 
 CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	u32 spd_id, u32 offset, u32 num_bytes)
@@ -9455,7 +9519,10 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 			fprintf(stdout, "%02x ", dimm_spd_read_out[i]);
 		}
 	}
-	fprintf(stdout, "\n");
+	fprintf(stdout, "\n\n");
+	fprintf(stdout, "DDR4 Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
+	fprintf(stdout, "DDR4 Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
+	fprintf(stdout, "DDR4 Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
 
 out:
 	cxl_cmd_unref(cmd);
@@ -9477,6 +9544,7 @@ CXL_EXPORT int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev)
 	u8 *ddr_training_status;
 	int rc = 0;
 	int offset = 0;
+
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_LOG_INFO_OPCODE);
 	if (!cmd) {
