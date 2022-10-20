@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: LGPL-2.1
 // Copyright (C) 2020-2021, Intel Corporation. All rights reserved.
+/*
+	* SPD decoding portion of this code is copied from spd-decode.c
+	* spd-vendor.c, source of this code can be located at:
+	* https://github.com/lpereira/hardinfo/blob/master/modules/devices/spd-decode.c
+	* https://github.com/lpereira/hardinfo/blame/master/modules/devices/spd-vendors.c
+*/
 #include <stdio.h>
 #include <errno.h>
 #include <limits.h>
@@ -9712,19 +9718,65 @@ static char * decode_ddr4_manufacturer(u8 *bytes){
 
 	if (code == 0x00 || code == 0xFF) {
 		manufacturer = NULL;
-		return;
+		return manufacturer;
 
 	}
 
-	int bank = count & 0x7f;
-	int index = code & 0x7f;
+	u8 bank = count & 0x7f;
+	u8 index = code & 0x7f;
 	if(bank >= VENDORS_BANKS) {
 		manufacturer = NULL;
-		return;
+		return manufacturer;
 	}
 	manufacturer = (char *) vendors[bank][index];
 	return manufacturer;
 }
+
+typedef enum {
+    UNKNOWN           = 0,
+    DIRECT_RAMBUS     = 1,
+    RAMBUS            = 2,
+    FPM_DRAM          = 3,
+    EDO               = 4,
+    PIPELINED_NIBBLE  = 5,
+    SDR_SDRAM         = 6,
+    MULTIPLEXED_ROM   = 7,
+    DDR_SGRAM         = 8,
+    DDR_SDRAM         = 9,
+    DDR2_SDRAM        = 10,
+    DDR3_SDRAM        = 11,
+    DDR4_SDRAM        = 12,
+    N_RAM_TYPES       = 13
+} RamType;
+
+static int decode_ram_type(u8 *bytes) {
+	if (bytes[0] < 4) {
+        switch (bytes[2]) {
+        case 1: return DIRECT_RAMBUS;
+        case 17: return RAMBUS;
+        }
+    } else {
+        switch (bytes[2]) {
+        case 1: return FPM_DRAM;
+        case 2: return EDO;
+        case 3: return PIPELINED_NIBBLE;
+        case 4: return SDR_SDRAM;
+        case 5: return MULTIPLEXED_ROM;
+        case 6: return DDR_SGRAM;
+        case 7: return DDR_SDRAM;
+        case 8: return DDR2_SDRAM;
+        case 11: return DDR3_SDRAM;
+        case 12: return DDR4_SDRAM;
+        }
+    }
+
+    return UNKNOWN;
+}
+
+static const char *ram_types[] = {"Unknown",   "Direct Rambus",    "Rambus",     "FPM DRAM",
+                                  "EDO",       "Pipelined Nibble", "SDR SDRAM",  "Multiplexed ROM",
+                                  "DDR SGRAM", "DDR SDRAM",        "DDR2 SDRAM", "DDR3 SDRAM",
+                                  "DDR4 SDRAM"};
 
 CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	u32 spd_id, u32 offset, u32 num_bytes)
@@ -9735,6 +9787,7 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	struct cxl_mbox_dimm_spd_read_in *dimm_spd_read_in;
 	u8 *dimm_spd_read_out;
 	int rc = 0;
+	RamType ram_type;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DIMM_SPD_READ_OPCODE);
 	if (!cmd) {
@@ -9783,6 +9836,7 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	}
 
 	dimm_spd_read_out = (u8*)cmd->send_cmd->out.payload;
+	ram_type = decode_ram_type(dimm_spd_read_out);
 	fprintf(stdout, "=========================== DIMM SPD READ Data ============================\n");
 	fprintf(stdout, "Output Payload:");
 	for(int i=0; i<cmd->send_cmd->out.size; i++){
@@ -9795,11 +9849,15 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 			fprintf(stdout, "%02x ", dimm_spd_read_out[i]);
 		}
 	}
-	fprintf(stdout, "\n\n");
-	fprintf(stdout, "DDR4 Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
-	fprintf(stdout, "DDR4 Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
-	fprintf(stdout, "DDR4 Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
-	fprintf(stdout, "DDR4 Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
+	// Decoding SPD data for only DDR4 SDRAM.
+	if (ram_type == DDR4_SDRAM) {
+		fprintf(stdout, "\n\n");
+		fprintf(stdout, "DDR4 RAM Type: %s\n", ram_types[ram_type]);
+		fprintf(stdout, "DDR4 Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
+		fprintf(stdout, "DDR4 Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
+		fprintf(stdout, "DDR4 Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
+		fprintf(stdout, "DDR4 Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
+	}
 
 out:
 	cxl_cmd_unref(cmd);

@@ -23,3 +23,6 @@ CC0-1.0 and MIT licenses according with:
 	LICENSES/other/MIT
 
 All contributions to the ndctl project are subject to this COPYING file.
+
+SPD Decoding part included in libcxl.c in NDCTL project is copied from hardinfo.
+Source: https://github.com/lpereira/hardinfo
