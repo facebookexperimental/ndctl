@@ -9853,10 +9853,10 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	if (ram_type == DDR4_SDRAM) {
 		fprintf(stdout, "\n\n");
 		fprintf(stdout, "DDR RAM Type: %s\n", ram_types[ram_type]);
-		fprintf(stdout, "DDR4 Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
-		fprintf(stdout, "DDR4 Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
-		fprintf(stdout, "DDR4 Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
-		fprintf(stdout, "DDR4 Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
+		fprintf(stdout, "DDR Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
+		fprintf(stdout, "DDR Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
+		fprintf(stdout, "DDR Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
+		fprintf(stdout, "DDR Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
 	}
 
 out:
