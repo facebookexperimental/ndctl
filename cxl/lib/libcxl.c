@@ -2568,12 +2568,12 @@ struct cxl_mbox_ddr_info_out {
 
 CXL_EXPORT int cxl_memdev_ddr_info(struct cxl_memdev *memdev, u8 ddr_id)
 {
-	const char *dram_width_descriptions[4] = {
+	/*const char *dram_width_descriptions[4] = {
 		"DRAM Width x4 device",
 		"DRAM Width x8 device",
 		"DRAM Width x16 device",
 		"DRAM Width x32 device"
-	};
+	};*/
 
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -6327,16 +6327,16 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 
 	health_counters_get_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "============================= get health counters ==============================\n");
-	fprintf(stdout, "Number of times temperature has exceeded threshold: %x\n", le32_to_cpu(health_counters_get_out->temperature_threshold_exceeded));
-	fprintf(stdout, "Number of Power On events: %x\n", le32_to_cpu(health_counters_get_out->power_on_events));
-	fprintf(stdout, "Number of Power On hours: %x\n", le32_to_cpu(health_counters_get_out->power_on_hours));
-	fprintf(stdout, "Number of CXL.mem Link CRC errors: %x\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
-	fprintf(stdout, "Number of CXL.io Link LCRC errors: %x\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
-	fprintf(stdout, "Number of CXL.io Link ECRC errors: %x\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
-	fprintf(stdout, "Number of DDR single ECC errors: %x\n", le32_to_cpu(health_counters_get_out->num_ddr_single_ecc_errors));
-	fprintf(stdout, "Number of DDR double ECC errors: %x\n", le32_to_cpu(health_counters_get_out->num_ddr_double_ecc_errors));
-	fprintf(stdout, "Number of Link recovery events: %x\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
-	fprintf(stdout, "Amount of time spent in throttled state (in seconds): %x\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
+	fprintf(stdout, "Number of times temperature has exceeded threshold: %d\n", le32_to_cpu(health_counters_get_out->temperature_threshold_exceeded));
+	fprintf(stdout, "Number of Power On events: %d\n", le32_to_cpu(health_counters_get_out->power_on_events));
+	fprintf(stdout, "Number of Power On hours: %d\n", le32_to_cpu(health_counters_get_out->power_on_hours));
+	fprintf(stdout, "Number of CXL.mem Link CRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
+	fprintf(stdout, "Number of CXL.io Link LCRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
+	fprintf(stdout, "Number of CXL.io Link ECRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
+	fprintf(stdout, "Number of DDR single ECC errors: %d\n", le32_to_cpu(health_counters_get_out->num_ddr_single_ecc_errors));
+	fprintf(stdout, "Number of DDR double ECC errors: %d\n", le32_to_cpu(health_counters_get_out->num_ddr_double_ecc_errors));
+	fprintf(stdout, "Number of Link recovery events: %d\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
+	fprintf(stdout, "Amount of time spent in throttled state (in seconds): %d\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
 
 out:
 	cxl_cmd_unref(cmd);
@@ -9713,6 +9713,7 @@ static char * decode_ddr4_module_detail(u8 *bytes) {
 
 static char * decode_ddr4_manufacturer(u8 *bytes){
 	char *manufacturer;
+	u8 bank, index;
 	u8 count = bytes[320];
 	u8 code = bytes[321];
 
@@ -9722,8 +9723,8 @@ static char * decode_ddr4_manufacturer(u8 *bytes){
 
 	}
 
-	u8 bank = count & 0x7f;
-	u8 index = code & 0x7f;
+	bank = count & 0x7f;
+	index = code & 0x7f;
 	if(bank >= VENDORS_BANKS) {
 		manufacturer = NULL;
 		return manufacturer;
