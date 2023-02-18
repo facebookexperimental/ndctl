@@ -9855,6 +9855,7 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 			fprintf(stdout, "%02x ", dimm_spd_read_out[i]);
 		}
 	}
+	fprintf(stdout, "\n\n");
 
 	// Decoding SPD data for only DDR4 SDRAM.
 
