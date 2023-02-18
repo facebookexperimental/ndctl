@@ -9646,6 +9646,26 @@ struct cxl_mbox_dimm_spd_read_in {
 	__le32 num_bytes;
 }  __attribute__((packed));
 
+#define SPD_MODULE_SERIAL_NUMBER_LEN (328 - 325 + 1) // 4 Bytes
+
+void static
+IntToString (u8 *String, u8 *Integer, u8 SizeInByte) {
+  u8 Index;
+
+  for (Index = 0; Index < SizeInByte; Index++) {
+    *(String + Index * 2) = (*(Integer + Index) >> 4) & 0x0F;
+    *(String + Index * 2 + 1) = *(Integer + Index) & 0x0F;
+  }
+  for (Index = 0; Index < (SizeInByte * 2); Index++) {
+    if (*(String + Index) >= 0x0A) {
+      *(String + Index) += 0x37;
+    } else {
+      *(String + Index) += 0x30;
+    }
+  }
+  *(String + SizeInByte * 2) = 0x0;
+}
+
 static char * decode_ddr4_module_type(u8 *bytes) {
     char *type;
 	switch (bytes[3]) {
@@ -9670,23 +9690,17 @@ static float ddr4_mtb_ftb_calc(unsigned char b1, signed char b2) {
     return b1 * mtb + b2 * ftb;
 }
 
-static void decode_ddr4_module_speed(u8 *bytes, float *ddr_clock, int *pc4_speed) {
+static int decode_ddr4_module_speed(u8 *bytes) {
     float ctime;
     float ddrclk;
-    int tbits, pcclk;
 
     ctime = ddr4_mtb_ftb_calc(bytes[18], bytes[125]);
     ddrclk = 2 * (1000 / ctime);
-    tbits = 8 << (bytes[13] & 7);
 
-    pcclk = ddrclk * tbits / 8;
-    pcclk -= pcclk % 100;
-
-    if (ddr_clock) { *ddr_clock = (int)ddrclk; }
-    if (pc4_speed) { *pc4_speed = pcclk; }
+    return ddrclk;
 }
 
-static double decode_ddr4_module_size(u8 *bytes) {
+static int decode_ddr4_module_size(u8 *bytes) {
 	double size;
 	int sdrcap = 256 << (bytes[4] & 15);
     int buswidth = 8 << (bytes[13] & 7);
@@ -9696,19 +9710,7 @@ static double decode_ddr4_module_size(u8 *bytes) {
 
     if (signal_loading == 2) lranks_per_dimm *= ((bytes[6] >> 4) & 7) + 1;
 	size = sdrcap / 8 * buswidth / sdrwidth * lranks_per_dimm;
-	return size;
-}
-
-
-static char * decode_ddr4_module_detail(u8 *bytes) {
-    char *type_detail = malloc(256);
-	float ddr_clock;
-    int pc4_speed;
-    if (type_detail) {
-        decode_ddr4_module_speed(bytes, &ddr_clock, &pc4_speed);
-        snprintf(type_detail, 255, "DDR4-%.0f (PC4-%d)", ddr_clock, pc4_speed);
-    }
-	return type_detail;
+	return (int) size/1024;
 }
 
 static char * decode_ddr4_manufacturer(u8 *bytes){
@@ -9729,7 +9731,7 @@ static char * decode_ddr4_manufacturer(u8 *bytes){
 		manufacturer = NULL;
 		return manufacturer;
 	}
-	manufacturer = (char *) vendors[bank][index];
+	manufacturer = (char *) vendors[bank][index-1];
 	return manufacturer;
 }
 
@@ -9776,8 +9778,8 @@ static int decode_ram_type(u8 *bytes) {
 
 static const char *ram_types[] = {"Unknown",   "Direct Rambus",    "Rambus",     "FPM DRAM",
                                   "EDO",       "Pipelined Nibble", "SDR SDRAM",  "Multiplexed ROM",
-                                  "DDR SGRAM", "DDR SDRAM",        "DDR2 SDRAM", "DDR3 SDRAM",
-                                  "DDR4 SDRAM"};
+                                  "DDR SGRAM", "DDR SDRAM",        "DDR2", "DDR3",
+                                  "DDR4"};
 
 CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	u32 spd_id, u32 offset, u32 num_bytes)
@@ -9787,7 +9789,9 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_dimm_spd_read_in *dimm_spd_read_in;
 	u8 *dimm_spd_read_out;
+	u8 serial[9];
 	int rc = 0;
+	int buswidth;
 	RamType ram_type;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DIMM_SPD_READ_OPCODE);
@@ -9838,6 +9842,7 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 
 	dimm_spd_read_out = (u8*)cmd->send_cmd->out.payload;
 	ram_type = decode_ram_type(dimm_spd_read_out);
+
 	fprintf(stdout, "=========================== DIMM SPD READ Data ============================\n");
 	fprintf(stdout, "Output Payload:");
 	for(int i=0; i<cmd->send_cmd->out.size; i++){
@@ -9850,15 +9855,25 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 			fprintf(stdout, "%02x ", dimm_spd_read_out[i]);
 		}
 	}
+
 	// Decoding SPD data for only DDR4 SDRAM.
-	if (ram_type == DDR4_SDRAM) {
-		fprintf(stdout, "\n\n");
-		fprintf(stdout, "DDR RAM Type: %s\n", ram_types[ram_type]);
-		fprintf(stdout, "DDR Module Type: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
-		fprintf(stdout, "DDR Module Size: %1f\n", decode_ddr4_module_size(dimm_spd_read_out));
-		fprintf(stdout, "DDR Module Detail: %s\n", decode_ddr4_module_detail(dimm_spd_read_out));
-		fprintf(stdout, "DDR Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
-	}
+
+	buswidth = 8 << (dimm_spd_read_out[13] & 7);
+
+	fprintf(stdout, "Total Width: %s\n", "TBD");
+	fprintf(stdout, "Data Width: %d bits\n", buswidth);
+	fprintf(stdout, "Size: %d GB\n", decode_ddr4_module_size(dimm_spd_read_out));
+	fprintf(stdout, "Form Factor: %s\n", "TBD");
+	fprintf(stdout, "Set: %s\n", "TBD");
+	fprintf(stdout, "Locator: %s\n", "DIMM_X");
+	fprintf(stdout, "Bank Locator: %s\n", "_Node1_ChannelX_DimmX");
+	fprintf(stdout, "Type: %s\n", ram_types[ram_type]);
+	fprintf(stdout, "Type Detail: %s\n", decode_ddr4_module_type(dimm_spd_read_out));
+	fprintf(stdout, "Speed: %d MT/s\n", decode_ddr4_module_speed(dimm_spd_read_out));
+	fprintf(stdout, "Manufacturer: %s\n", decode_ddr4_manufacturer(dimm_spd_read_out));
+	IntToString(serial, &dimm_spd_read_out[325], SPD_MODULE_SERIAL_NUMBER_LEN);
+	fprintf(stdout, "Serial Number: %s\n", serial);
+	fprintf(stdout, "Asset Tag: %s\n", "TBD");
 
 out:
 	cxl_cmd_unref(cmd);
@@ -9939,6 +9954,79 @@ CXL_EXPORT int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev)
 		else
 		{
 			fprintf(stdout, "%02x ", ddr_training_status[i]);
+		}
+	}
+	fprintf(stdout, "\n");
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_OPCODE 0xC520
+#define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_PAYLOAD_IN_SIZE 0
+
+CXL_EXPORT int cxl_memdev_dimm_slot_info(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	u8 *dimm_slot_info;
+	int rc = 0;
+	int offset = 0;
+
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO);
+		return -EINVAL;
+	}
+
+	dimm_slot_info = (u8*)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== DIMM SLOT INFO ============================\n");
+	fprintf(stdout, "Output Payload:\n");
+	for(int i=0; i<cmd->send_cmd->out.size; i++){
+		if (i % 16 == 0)
+		{
+			fprintf(stdout, "\n%04x  %02x ", i+offset, dimm_slot_info[i]);
+		}
+		else
+		{
+			fprintf(stdout, "%02x ", dimm_slot_info[i]);
 		}
 	}
 	fprintf(stdout, "\n");
