@@ -9861,6 +9861,7 @@ CXL_EXPORT int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev,
 
 	buswidth = 8 << (dimm_spd_read_out[13] & 7);
 
+	fprintf(stdout, "\n\n====== DIMM SPD DECODE ============\n");
 	fprintf(stdout, "Total Width: %s\n", "TBD");
 	fprintf(stdout, "Data Width: %d bits\n", buswidth);
 	fprintf(stdout, "Size: %d GB\n", decode_ddr4_module_size(dimm_spd_read_out));
