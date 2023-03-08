@@ -1483,13 +1483,19 @@ struct cel_entry {
 	__le16 effect;
 } __attribute__((packed));
 
-CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev)
+CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev, const char* uuid)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_get_log *get_log_input;
 	struct cel_entry *cel_entries;
 	int no_cel_entries;
 	int rc = 0;
+
+	if (!uuid) {
+		fprintf(stderr, "%s: Please specify log uuid argument\n",
+				cxl_memdev_get_devname(memdev));
+		return -EINVAL;
+	}
 
 	cmd = cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_LOG);
 	if (!cmd) {
@@ -1499,7 +1505,7 @@ CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev)
 	}
 
 	get_log_input = (void *) cmd->send_cmd->in.payload;
-	uuid_parse(CEL_UUID, get_log_input->uuid);
+	uuid_parse(uuid, get_log_input->uuid);
 	get_log_input->offset = 0;
 	get_log_input->length = cmd->memdev->payload_max;
 

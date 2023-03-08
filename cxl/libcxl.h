@@ -63,7 +63,7 @@ int cxl_memdev_transfer_fw(struct cxl_memdev *memdev, u8 action,
 int cxl_memdev_activate_fw(struct cxl_memdev *memdev, u8 action,
 	u8 slot);
 int cxl_memdev_get_supported_logs(struct cxl_memdev *memdev);
-int cxl_memdev_get_cel_log(struct cxl_memdev *memdev);
+int cxl_memdev_get_cel_log(struct cxl_memdev *memdev, const char *uuid);
 int cxl_memdev_get_event_interrupt_policy(struct cxl_memdev *memdev);
 int cxl_memdev_set_event_interrupt_policy(struct cxl_memdev *memdev, u32 int_policy);
 int cxl_memdev_get_timestamp(struct cxl_memdev *memdev);

@@ -84,8 +84,17 @@ static const struct option cmd_get_supported_logs_options[] = {
   OPT_END(),
 };
 
+static struct _log_uuid {
+	const char* uuid;
+} log_uuid;
+
+#define LOG_UUID_OPTIONS() \
+OPT_STRING('l', "log_uuid", &log_uuid.uuid, "log-uuid", \
+  "CEL Log UUID")
+
 static const struct option cmd_get_cel_log_options[] = {
   BASE_OPTIONS(),
+  LOG_UUID_OPTIONS(),
   OPT_END(),
 };
 
@@ -2247,7 +2256,7 @@ static int action_cmd_get_cel_log(struct cxl_memdev *memdev, struct action_conte
     return -EBUSY;
   }
 
-  return cxl_memdev_get_cel_log(memdev);
+  return cxl_memdev_get_cel_log(memdev, log_uuid.uuid);
 }
 
 static int action_cmd_get_supported_logs(struct cxl_memdev *memdev, struct action_context *actx)
