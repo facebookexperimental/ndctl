@@ -6272,14 +6272,12 @@ out:
 	return 0;
 }
 
-
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_GET CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_GET_OPCODE 52737
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_GET_PAYLOAD_OUT_SIZE 40
 
-
 struct cxl_mbox_health_counters_get_out {
-	__le32 temperature_threshold_exceeded;
+	__le32 critical_over_temperature_exceeded;
 	__le32 power_on_events;
 	__le32 power_on_hours;
 	__le32 cxl_mem_link_crc_errors;
@@ -6289,6 +6287,12 @@ struct cxl_mbox_health_counters_get_out {
 	__le32 num_ddr_double_ecc_errors;
 	__le32 link_recovery_events;
 	__le32 time_in_throttled;
+	__le32 over_temperature_warning_level_exceeded;
+	__le32 critical_under_temperature_exceeded;
+	__le32 under_temperature_warning_level_exceeded;
+	__le32 rx_retry_request;
+	__le32 rcmd_qs0_hi_threshold_detect;
+	__le32 rcmd_qs1_hi_threshold_detect;
 }  __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
@@ -6327,16 +6331,22 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 
 	health_counters_get_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "============================= get health counters ==============================\n");
-	fprintf(stdout, "Number of times temperature has exceeded threshold: %d\n", le32_to_cpu(health_counters_get_out->temperature_threshold_exceeded));
-	fprintf(stdout, "Number of Power On events: %d\n", le32_to_cpu(health_counters_get_out->power_on_events));
-	fprintf(stdout, "Number of Power On hours: %d\n", le32_to_cpu(health_counters_get_out->power_on_hours));
-	fprintf(stdout, "Number of CXL.mem Link CRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
-	fprintf(stdout, "Number of CXL.io Link LCRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
-	fprintf(stdout, "Number of CXL.io Link ECRC errors: %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
-	fprintf(stdout, "Number of DDR single ECC errors: %d\n", le32_to_cpu(health_counters_get_out->num_ddr_single_ecc_errors));
-	fprintf(stdout, "Number of DDR double ECC errors: %d\n", le32_to_cpu(health_counters_get_out->num_ddr_double_ecc_errors));
-	fprintf(stdout, "Number of Link recovery events: %d\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
-	fprintf(stdout, "Amount of time spent in throttled state (in seconds): %d\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
+	fprintf(stdout, "0: CRITICAL_OVER_TEMPERATURE_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->critical_over_temperature_exceeded));
+	fprintf(stdout, "1: OVER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->over_temperature_warning_level_exceeded));
+	fprintf(stdout, "2: CRITICAL_UNDER_TEMPERATURE_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->critical_under_temperature_exceeded));
+	fprintf(stdout, "3: UNDER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->under_temperature_warning_level_exceeded));
+	fprintf(stdout, "4: POWER_ON_EVENTS = %d\n", le32_to_cpu(health_counters_get_out->power_on_events));
+	fprintf(stdout, "5: POWER_ON_HOURS = %d\n", le32_to_cpu(health_counters_get_out->power_on_hours));
+	fprintf(stdout, "6: CXL_MEM_LINK_CRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
+	fprintf(stdout, "7: CXL_IO_LINK_LCRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
+	fprintf(stdout, "8: CXL_IO_LINK_ECRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
+	fprintf(stdout, "9: NUM_DDR_SINGLE_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_single_ecc_errors));
+	fprintf(stdout, "10: NUM_DDR_DOUBLE_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_double_ecc_errors));
+	fprintf(stdout, "11: LINK_RECOVERY_EVENTS = %d\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
+	fprintf(stdout, "12: TIME_IN_THROTTLED = %d\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
+	fprintf(stdout, "13: RX_RETRY_REQUEST = %d\n", le32_to_cpu(health_counters_get_out->rx_retry_request));
+	fprintf(stdout, "14: RCMD_QS0_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs0_hi_threshold_detect));
+	fprintf(stdout, "15: RCMD_QS1_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs1_hi_threshold_detect));
 
 out:
 	cxl_cmd_unref(cmd);
