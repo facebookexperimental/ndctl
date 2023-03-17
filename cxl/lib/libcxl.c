@@ -9992,6 +9992,31 @@ out:
 	return rc;
 }
 
+struct cxl_dimm_slot_info_out {
+	u8 num_dimm_slots;
+	u8 rsvd[3];
+	u8 slot0_spd_i2c_addr;
+	u8 slot0_channel_id;
+	u8 slot0_dimm_silk_screen;
+	u8 slot0_dimm_present;
+	u8 rsvd1[12];
+	u8 slot1_spd_i2c_addr;
+	u8 slot1_channel_id;
+	u8 slot1_dimm_silk_screen;
+	u8 slot1_dimm_present;
+	u8 rsvd2[12];
+	u8 slot2_spd_i2c_addr;
+	u8 slot2_channel_id;
+	u8 slot2_dimm_silk_screen;
+	u8 slot2_dimm_present;
+	u8 rsvd3[12];
+	u8 slot3_spd_i2c_addr;
+	u8 slot3_channel_id;
+	u8 slot3_dimm_silk_screen;
+	u8 slot3_dimm_present;
+	u8 rsvd4[12];
+}  __attribute__((packed));
+
 #define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_OPCODE 0xC520
 #define CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_PAYLOAD_IN_SIZE 0
@@ -10001,10 +10026,12 @@ CXL_EXPORT int cxl_memdev_dimm_slot_info(struct cxl_memdev *memdev)
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
-	u8 *dimm_slot_info;
+	struct cxl_dimm_slot_info_out *dimm_slot_info;
+	u8 *dimm_slots;
 	int rc = 0;
 	int offset = 0;
-
+	int indent = 2;
+	char silk_screen_char;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DIMM_SLOT_INFO_OPCODE);
 	if (!cmd) {
@@ -10046,20 +10073,52 @@ CXL_EXPORT int cxl_memdev_dimm_slot_info(struct cxl_memdev *memdev)
 		return -EINVAL;
 	}
 
-	dimm_slot_info = (u8*)cmd->send_cmd->out.payload;
+	dimm_slot_info = (void *)cmd->send_cmd->out.payload;
+	dimm_slots = (u8*)cmd->send_cmd->out.payload;
 	fprintf(stdout, "=========================== DIMM SLOT INFO ============================\n");
 	fprintf(stdout, "Output Payload:\n");
 	for(int i=0; i<cmd->send_cmd->out.size; i++){
 		if (i % 16 == 0)
 		{
-			fprintf(stdout, "\n%04x  %02x ", i+offset, dimm_slot_info[i]);
+			fprintf(stdout, "\n%04x  %02x ", i+offset, dimm_slots[i]);
 		}
 		else
 		{
-			fprintf(stdout, "%02x ", dimm_slot_info[i]);
+			fprintf(stdout, "%02x ", dimm_slots[i]);
 		}
 	}
-	fprintf(stdout, "\n");
+	fprintf(stdout, "\n\n");
+
+	// Decoding slot info data.
+	fprintf(stdout, "\n\n====== DIMM SLOTS INFO DECODE ============\n");
+
+	fprintf(stdout, "Number of DIMM Slots: %d\n", dimm_slot_info->num_dimm_slots);
+	fprintf(stdout, "DIMM SPD Index: 0\n");
+	fprintf(stdout, "%*sDIMM Present: 0x%x\n", indent+2, "", dimm_slot_info->slot0_dimm_present);
+	silk_screen_char = dimm_slot_info->slot0_dimm_silk_screen;
+	fprintf(stdout, "%*sDIMM Silk Screen: %c\n", indent+2, "", silk_screen_char);
+	fprintf(stdout, "%*sChannel ID: 0x%x\n", indent+2, "", dimm_slot_info->slot0_channel_id);
+	fprintf(stdout, "%*sI2C Address: 0x%x\n", indent+2, "", dimm_slot_info->slot0_spd_i2c_addr);
+	fprintf(stdout, "DIMM SPD Index: 1\n");
+	fprintf(stdout, "%*sDIMM Present: 0x%x\n", indent+2, "", dimm_slot_info->slot1_dimm_present);
+	silk_screen_char = dimm_slot_info->slot1_dimm_silk_screen;
+	fprintf(stdout, "%*sDIMM Silk Screen: %c\n", indent+2, "", silk_screen_char);
+	fprintf(stdout, "%*sChannel ID: 0x%x\n", indent+2, "", dimm_slot_info->slot1_channel_id);
+	fprintf(stdout, "%*sI2C Address: 0x%x\n", indent+2, "", dimm_slot_info->slot1_spd_i2c_addr);
+	fprintf(stdout, "DIMM SPD Index: 2\n");
+	fprintf(stdout, "%*sDIMM Present: 0x%x\n", indent+2, "", dimm_slot_info->slot2_dimm_present);
+	silk_screen_char = dimm_slot_info->slot2_dimm_silk_screen;
+	fprintf(stdout, "%*sDIMM Silk Screen: %c\n", indent+2, "", silk_screen_char);
+	fprintf(stdout, "%*sChannel ID: 0x%x\n", indent+2, "", dimm_slot_info->slot2_channel_id);
+	fprintf(stdout, "%*sI2C Address: 0x%x\n", indent+2, "", dimm_slot_info->slot2_spd_i2c_addr);
+	fprintf(stdout, "DIMM SPD Index: 3\n");
+	fprintf(stdout, "%*sDIMM Present: 0x%x\n", indent+2, "", dimm_slot_info->slot3_dimm_present);
+	silk_screen_char = dimm_slot_info->slot3_dimm_silk_screen;
+	fprintf(stdout, "%*sDIMM Silk Screen: %c\n", indent+2, "", silk_screen_char);
+	fprintf(stdout, "%*sChannel ID: 0x%x\n", indent+2, "", dimm_slot_info->slot3_channel_id);
+	fprintf(stdout, "%*sI2C Address: 0x%x\n", indent+2, "", dimm_slot_info->slot3_spd_i2c_addr);
+
+	fprintf(stdout, "\n\n");
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
