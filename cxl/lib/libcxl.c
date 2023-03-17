@@ -2027,8 +2027,8 @@ struct cxl_dram_event_record {
 	u8 row[3];
 	__le16 column;
 	u8 correction_mask[0x20];
-	u8 component_identifier[0x10];
-	u8 sub_channel;
+        u8 component_identifier[0x10];
+        u8 sub_channel;
 	u8 reserved[0x6];
 } __attribute__((packed));
 
