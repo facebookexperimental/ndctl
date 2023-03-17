@@ -2027,7 +2027,9 @@ struct cxl_dram_event_record {
 	u8 row[3];
 	__le16 column;
 	u8 correction_mask[0x20];
-	u8 reserved[0x17];
+        u8 component_identifier[0x10];
+        u8 sub_channel;
+	u8 reserved[0x6];
 } __attribute__((packed));
 
 struct cxl_memory_module_record {
@@ -2166,6 +2168,16 @@ CXL_EXPORT int cxl_memdev_get_event_records(struct cxl_memdev *memdev, u8 event_
 			fprintf(stdout, "%*srow: 0x%02x%02x%02x\n", indent+2, "", dram_event->row[0],
 				dram_event->row[1], dram_event->row[2]);
 			fprintf(stdout, "%*scolumn: 0x%x\n", indent+2, "", le16_to_cpu(dram_event->column));
+			for (int i=0; i < 4; i++) {
+				fprintf(stdout, "%*scorrection mask[%d]: 0x", indent+2, "", i);
+				for (int j=0; j < 8; j++) {
+					fprintf(stdout, "%02x", dram_event->correction_mask[i*j+j]);
+				}
+				fprintf(stdout, "\n");
+			}
+			fprintf(stdout, "%*scomponent identifier: 0x%02x%02x%02x\n", indent+2, "",
+				dram_event->component_identifier[0], dram_event->component_identifier[1],
+				dram_event->component_identifier[2]);
 		}
 	}
 
