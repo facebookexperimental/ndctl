@@ -236,6 +236,7 @@ int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev, u32 spd_id,
 	u32 offset, u32 num_bytes);
 int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev);
 int cxl_memdev_dimm_slot_info(struct cxl_memdev *memdev);
+int cxl_memdev_pmic_vtmon_info(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

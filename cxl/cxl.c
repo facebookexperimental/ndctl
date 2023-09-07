@@ -172,6 +172,7 @@ static struct cmd_struct commands[] = {
 	{ "dimm-spd-read", .c_fn = cmd_dimm_spd_read },
 	{ "ddr-training-status", .c_fn = cmd_ddr_training_status },
 	{ "dimm-slot-info", .c_fn = cmd_dimm_slot_info },
+	{ "pmic-vtmon-info", .c_fn = cmd_pmic_vtmon_info },
 };
 
 int main(int argc, const char **argv)

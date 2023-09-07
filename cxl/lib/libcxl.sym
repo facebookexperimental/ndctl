@@ -169,4 +169,5 @@ global:
 	cxl_memdev_dimm_spd_read;
 	cxl_memdev_ddr_training_status;
     cxl_memdev_dimm_slot_info;
+    cxl_memdev_pmic_vtmon_info;
 } LIBCXL_3;

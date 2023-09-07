@@ -10123,3 +10123,86 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define MAX_PMIC 8
+#define PMIC_NAME_MAX_SIZE 20
+
+struct pmic_data {
+	char pmic_name[PMIC_NAME_MAX_SIZE];
+	float vin;
+	float vout;
+	float iout;
+	float powr;
+	float temp;
+};
+struct cxl_pmic_vtmon_info_out {
+	struct pmic_data pmic_data[MAX_PMIC];
+}  __attribute__((packed));
+
+#define CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO_OPCODE 0xFB00
+#define CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO_PAYLOAD_IN_SIZE 0
+
+CXL_EXPORT int cxl_memdev_pmic_vtmon_info(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_pmic_vtmon_info_out *pmic_vtmon_info;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	cinfo->size_in = CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_PMIC_VTMON_INFO);
+		return -EINVAL;
+	}
+
+	pmic_vtmon_info = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "=========================== PMIC VTMON SLOT INFO ============================\n");
+	for (int i = 0; i < MAX_PMIC; i++) {
+		fprintf(stdout, "pmic name: %s\n", pmic_vtmon_info->pmic_data[i].pmic_name);
+		fprintf(stdout, "vin: %f\n", pmic_vtmon_info->pmic_data[i].vin);
+		fprintf(stdout, "vout: %f\n", pmic_vtmon_info->pmic_data[i].vout);
+		fprintf(stdout, "iout: %f\n", pmic_vtmon_info->pmic_data[i].iout);
+		fprintf(stdout, "powr: %f\n", pmic_vtmon_info->pmic_data[i].powr);
+		fprintf(stdout, "temp: %f\n", pmic_vtmon_info->pmic_data[i].temp);
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
