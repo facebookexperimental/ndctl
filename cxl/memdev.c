@@ -1914,6 +1914,45 @@ static const struct option cmd_pmic_vtmon_info_options[] = {
   OPT_END(),
 };
 
+static struct _pcie_eye_run_params {
+	u32 lane;
+	u32 sw_scan;
+	u32 ber;
+	bool verbose;
+} pcie_eye_run_params;
+
+#define PCIE_EYE_RUN_OPTIONS() \
+OPT_UINTEGER('l', "lane", &pcie_eye_run_params.lane, "LANE ID"), \
+OPT_UINTEGER('s', "sw_scan", &pcie_eye_run_params.sw_scan, "SW SCAN"), \
+OPT_UINTEGER('b', "ber", &pcie_eye_run_params.ber, "BER")
+
+static const struct option cmd_pcie_eye_run_options[] = {
+  BASE_OPTIONS(),
+  PCIE_EYE_RUN_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_pcie_eye_status_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _pcie_eye_get_params {
+	u32 sw_scan;
+	u32 ber;
+	bool verbose;
+} pcie_eye_get_params;
+
+#define PCIE_EYE_GET_OPTIONS() \
+OPT_UINTEGER('s', "sw_scan", &pcie_eye_get_params.sw_scan, "SW SCAN"), \
+OPT_UINTEGER('b', "ber", &pcie_eye_get_params.ber, "BER")
+
+static const struct option cmd_pcie_eye_get_options[] = {
+  BASE_OPTIONS(),
+  PCIE_EYE_GET_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3479,6 +3518,79 @@ static int action_cmd_pmic_vtmon_info(struct cxl_memdev *memdev, struct action_c
 	return cxl_memdev_pmic_vtmon_info(memdev);
 }
 
+static int action_cmd_pcie_eye_run(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort pcie_eye_run\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_pcie_eye_run(memdev, pcie_eye_run_params.lane,
+				       pcie_eye_run_params.sw_scan,
+				       pcie_eye_run_params.ber);
+}
+
+static int action_cmd_pcie_eye_status(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort pcie_eye_status\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_pcie_eye_status(memdev);
+}
+
+static int action_cmd_pcie_eye_get(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	#define NUM_EYESCOPE_VERT_VALS 511
+	#define TOTAL_EYESCOPE_VERT_VALS ((NUM_EYESCOPE_VERT_VALS * 2) + 1)
+	#define VERT_SKIP 15
+
+	int rc = 0;
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort pcie_eye_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	if(pcie_eye_get_params.sw_scan) {
+		for (int i = 0; i < TOTAL_EYESCOPE_VERT_VALS; i += VERT_SKIP) {
+			rc  = cxl_memdev_pcie_eye_get_sw(memdev, i);
+			if (rc != 0)
+			{
+				fprintf(stderr,
+					"pcie_eye_get read failed or sw_scan not enabled\n");
+				goto abort;
+			}
+		}
+		if(pcie_eye_get_params.ber) {
+			rc  = cxl_memdev_pcie_eye_get_sw_ber(memdev);
+			if (rc != 0)
+			{
+				fprintf(stderr,
+					"pcie_eye_get read failed OR BER is not enabled\n");
+				goto abort;
+			}
+		}
+	} else {
+		rc = cxl_memdev_pcie_eye_get_hw(memdev);
+		if(rc)
+		{
+			fprintf(stderr,
+				"pcie_eye_get read failed hw scan not enabled");
+			goto abort;
+		}
+	}
+abort:
+  return rc;
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4549,6 +4661,30 @@ int cmd_pmic_vtmon_info(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_pmic_vtmon_info, cmd_pmic_vtmon_info_options,
       "cxl pmic-vtmon-info <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_pcie_eye_run(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_pcie_eye_run, cmd_pcie_eye_run_options,
+      "cxl pcie-eye-run <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_pcie_eye_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_pcie_eye_status, cmd_pcie_eye_status_options,
+      "cxl pcie-eye-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_pcie_eye_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_pcie_eye_get, cmd_pcie_eye_get_options,
+      "cxl pcie-eye-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

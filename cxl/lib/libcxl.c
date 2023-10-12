@@ -10206,3 +10206,440 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN_OPCODE 0xFB02
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN_PAYLOAD_IN_SIZE 4
+
+struct cxl_mbox_pcie_eye_run_in {
+	u8 lane;
+	u8 sw_scan;
+	u8 ber;
+}  __attribute__((packed));
+
+struct cxl_pcie_eye_run_out {
+	int pcie_eye_run_status;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_pcie_eye_run(struct cxl_memdev *memdev,
+	u8 lane, u8 sw_scan, u8 ber)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_pcie_eye_run_in *pcie_eye_run_in;
+	struct cxl_pcie_eye_run_out *pcie_eye_run_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	pcie_eye_run_in = (void *) cmd->send_cmd->in.payload;
+
+	pcie_eye_run_in->lane = lane;
+	pcie_eye_run_in->sw_scan = sw_scan;
+	pcie_eye_run_in->ber = ber;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				 cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				 CXL_MEM_COMMAND_ID_PCIE_EYE_SW_RUN);
+		return -EINVAL;
+	}
+
+	pcie_eye_run_out = (void *)cmd->send_cmd->out.payload;
+	if (!pcie_eye_run_out->pcie_eye_run_status)
+		fprintf(stdout, "pcie eye is running\n");
+	else
+		fprintf(stdout, "pcie eye already running OR fault, error : %d\n",
+				pcie_eye_run_out->pcie_eye_run_status);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_STATUS_OPCODE 0xFB03
+
+struct cxl_pcie_eye_status_out {
+	int pcie_eye_status;
+	int error;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_pcie_eye_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_pcie_eye_status_out *pcie_eye_status_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PCIE_EYE_SW_STATUS_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PCIE_EYE_SW_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_PCIE_EYE_SW_STATUS);
+		return -EINVAL;
+	}
+	pcie_eye_status_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "%s\n", pcie_eye_status_out->pcie_eye_status ?
+			"PCIE EYE SW IS RUNNING" : "PCIE EYE SW IS NOT RUNNING/FINISHED");
+	if(pcie_eye_status_out->error)
+		fprintf(stdout, "pcie eye run error %d:\n", pcie_eye_status_out->error);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_GET_SW CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_GET_SW_OPCODE 0xFB04
+
+#define NUM_EYESCOPE_HORIZ_VALS 40
+#define TOTAL_EYESCOPE_HORIZ_VALS ((NUM_EYESCOPE_HORIZ_VALS * 2) + 1)
+
+struct cxl_pcie_eye_get_sw_out {
+	char pcie_eye_data[TOTAL_EYESCOPE_HORIZ_VALS + 1];
+}  __attribute__((packed));
+
+struct cxl_pcie_eye_get_sw_in {
+	uint offset;
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_pcie_eye_get_sw(struct cxl_memdev *memdev, uint offset)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_pcie_eye_get_sw_in *pcie_eye_get_sw_in;
+	struct cxl_pcie_eye_get_sw_out *pcie_eye_get_sw_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PCIE_EYE_GET_SW_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	pcie_eye_get_sw_in = (void *) cmd->send_cmd->in.payload;
+	pcie_eye_get_sw_in->offset = offset;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PCIE_EYE_GET_SW) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_PCIE_EYE_GET_SW);
+		return -EINVAL;
+	}
+	pcie_eye_get_sw_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "%s\n", pcie_eye_get_sw_out->pcie_eye_data);
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_GET_HW CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_GET_HW_OPCODE 0xFB05
+
+struct eyescope_results {
+        double merged_horizontal_eye_left;
+        double merged_horizontal_eye_right;
+        double merged_vertical_eye_top;
+        double merged_vertical_eye_bottom;
+};
+
+struct rx_settings_t {
+        int iskew_signed;
+        int qskew_signed;
+        int dlev00_signed;
+        int dlev01_signed;
+        int dlev10_signed;
+        int dlev11_signed;
+        int irphase_signed;
+        int h1po;
+        int h1no;
+        int h1pe;
+        int h1ne;
+        int h2;
+        int h3;
+        int h4;
+        int h5;
+        int h6;
+        int h7;
+        int h8;
+        int h9;
+        int aeq;
+        int vga;
+        int appmd;
+        int rxrt;
+        int shd;
+        int step;
+        int wm;
+};
+
+
+struct cxl_pcie_eye_get_hw_out {
+	struct eyescope_results eyescope_results;
+	struct rx_settings_t rx_settings_t;
+	int eyescope_request_status;
+}  __attribute__((packed));
+
+
+void display_rx_setttings(struct rx_settings_t *settings);
+void display_rx_setttings(struct rx_settings_t *settings)
+{
+        fprintf(stdout, "rx_settings: \n");
+        fprintf(stdout, "dlv0123 = [%d, %d, %d, %d],", settings->dlev00_signed, settings->dlev01_signed,
+           settings->dlev10_signed, settings->dlev11_signed);
+        fprintf(stdout, "*vga, aeq = [%d, %d],", settings->vga, settings->aeq);
+        fprintf(stdout, "h2-9 = [%d, %d, %d, %d, %d, %d, %d, %d],",
+           settings->h2, settings->h3, settings->h4, settings->h5,
+           settings->h6, settings->h7, settings->h8, settings->h9);
+        fprintf(stdout, "appmd, rxrt, shd, wm = [%d, %d, 'g%d', %d],",
+           settings->appmd, settings->rxrt, settings->shd, settings->wm);
+        fprintf(stdout, "h1ne/0, pe/o = [%d %d %d %d],", settings->h1ne, settings->h1no,
+           settings->h1pe, settings->h1po);
+        fprintf(stdout, "iskw, qskw = [%d %d]", settings->iskew_signed, settings->qskew_signed);
+        fprintf(stdout, "\n");
+}
+
+void display_merged_eye_results(struct eyescope_results *eyescope_results);
+void display_merged_eye_results(struct eyescope_results *eyescope_results){
+
+        fprintf(stdout, "Merged Top (mV): %f\n",
+              eyescope_results->merged_vertical_eye_top);
+        fprintf(stdout, "Merged Bottom (mV): %f\n",
+              eyescope_results->merged_vertical_eye_bottom);
+        fprintf(stdout, "Merged Right Eye (UI): %f\n",
+              eyescope_results->merged_horizontal_eye_right);
+        fprintf(stdout, "Merged Left Eye (UI): %f\n",
+                    eyescope_results->merged_horizontal_eye_left);
+}
+
+CXL_EXPORT int cxl_memdev_pcie_eye_get_hw(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_pcie_eye_get_hw_out *pcie_eye_get_hw_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PCIE_EYE_GET_HW_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PCIE_EYE_GET_HW) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_PCIE_EYE_GET_HW);
+		return -EINVAL;
+	}
+	pcie_eye_get_hw_out = (void *)cmd->send_cmd->out.payload;
+	if (pcie_eye_get_hw_out->eyescope_request_status) {
+		fprintf(stdout, "eyescope request status: PASS\n");
+		display_rx_setttings(&pcie_eye_get_hw_out->rx_settings_t);
+		display_merged_eye_results(&pcie_eye_get_hw_out->eyescope_results);
+	} else {
+		fprintf(stdout, "eyescope request status: FAIL\n");
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_BER CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PCIE_EYE_SW_BER_OPCODE 0xFB06
+
+struct cxl_pcie_eye_get_sw_ber_out {
+	float horiz_margin;
+	float vert_margin;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_pcie_eye_get_sw_ber(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_pcie_eye_get_sw_ber_out *pcie_eye_get_sw_ber_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PCIE_EYE_SW_BER_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed OR BER is not enabled, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PCIE_EYE_SW_BER) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_PCIE_EYE_SW_BER);
+		return -EINVAL;
+	}
+	pcie_eye_get_sw_ber_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "Extrapolation for BER at 1e-12\n");
+	if(pcie_eye_get_sw_ber_out->vert_margin > 18 && pcie_eye_get_sw_ber_out->horiz_margin > 0.2) {
+		fprintf(stdout, "Eye Height and width margins are > 0.2UI and 18mV, Test PASSED\n");
+		fprintf(stdout, "Eye width margin at 1e-12 is %f UI\n", pcie_eye_get_sw_ber_out->horiz_margin);
+		fprintf(stdout, "Eye height margin at 1e-12 is %f mV\n", pcie_eye_get_sw_ber_out->vert_margin);
+	} else {
+		fprintf(stdout, "Eye Height and width margins are not greater than 0.2UI and 18mV, Test FAILED\n");
+	}
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
