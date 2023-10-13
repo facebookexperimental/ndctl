@@ -1953,6 +1953,11 @@ static const struct option cmd_pcie_eye_get_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_get_cxl_link_status_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3591,6 +3596,18 @@ abort:
   return rc;
 }
 
+static int action_cmd_get_cxl_link_status(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort get_cxl_link_status\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_cxl_link_status(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4685,6 +4702,14 @@ int cmd_pcie_eye_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_pcie_eye_get, cmd_pcie_eye_get_options,
       "cxl pcie-eye-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_cxl_link_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_cxl_link_status, cmd_get_cxl_link_status_options,
+      "cxl get_cxl_link_status <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

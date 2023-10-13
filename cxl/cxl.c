@@ -176,6 +176,7 @@ static struct cmd_struct commands[] = {
 	{ "pcie-eye-run", .c_fn = cmd_pcie_eye_run },
 	{ "pcie-eye-status", .c_fn = cmd_pcie_eye_status },
 	{ "pcie-eye-get", .c_fn = cmd_pcie_eye_get },
+	{ "get-cxl-link-status", .c_fn = cmd_get_cxl_link_status },
 };
 
 int main(int argc, const char **argv)

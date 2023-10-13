@@ -120,4 +120,5 @@ int cmd_pmic_vtmon_info(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_pcie_eye_run(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_pcie_eye_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_pcie_eye_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_cxl_link_status(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
