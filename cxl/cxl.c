@@ -173,6 +173,11 @@ static struct cmd_struct commands[] = {
 	{ "ddr-training-status", .c_fn = cmd_ddr_training_status },
 	{ "dimm-slot-info", .c_fn = cmd_dimm_slot_info },
 	{ "pmic-vtmon-info", .c_fn = cmd_pmic_vtmon_info },
+	{ "pcie-eye-run", .c_fn = cmd_pcie_eye_run },
+	{ "pcie-eye-status", .c_fn = cmd_pcie_eye_status },
+	{ "pcie-eye-get", .c_fn = cmd_pcie_eye_get },
+	{ "get-cxl-link-status", .c_fn = cmd_get_cxl_link_status },
+	{ "get-device-info", .c_fn = cmd_get_device_info },
 };
 
 int main(int argc, const char **argv)
