@@ -10773,3 +10773,73 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_READ_DDR_TEMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_READ_DDR_TEMP_OPCODE 0xC531
+
+struct cxl_read_ddr_temp_out {
+    uint8_t num_sensors;
+    uint8_t dimm_id[4];
+    uint8_t spd_idx[4];
+    float dimm_temp[4];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_read_ddr_temp_out *read_ddr_temp_out;
+	int rc = 0;
+	int idx;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_READ_DDR_TEMP_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_READ_DDR_TEMP) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_READ_DDR_TEMP);
+		return -EINVAL;
+	}
+	read_ddr_temp_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "Number of DDR temperature sensors reported: %d\n", read_ddr_temp_out->num_sensors);
+	for(idx = 0; idx < read_ddr_temp_out->num_sensors; idx++) {
+		fprintf(stdout, "dimm_id : 0x%x\n", read_ddr_temp_out->dimm_id[idx]);
+		fprintf(stdout, "spd_idx: 0x%x\n", read_ddr_temp_out->spd_idx[idx]);
+		fprintf(stdout, "dimm temp: %f\n", read_ddr_temp_out->dimm_temp[idx]);
+	}
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}

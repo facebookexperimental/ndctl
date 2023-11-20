@@ -177,4 +177,5 @@ global:
     cxl_memdev_pcie_eye_get_sw_ber;
     cxl_memdev_get_cxl_link_status;
     cxl_memdev_get_device_info;
+    cxl_memdev_read_ddr_temp;
 } LIBCXL_3;
