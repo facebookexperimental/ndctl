@@ -1963,6 +1963,11 @@ static const struct option cmd_get_device_info_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_read_ddr_temp_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3625,6 +3630,18 @@ static int action_cmd_get_device_info(struct cxl_memdev *memdev,
 	return cxl_memdev_get_device_info(memdev);
 }
 
+static int action_cmd_read_ddr_temp(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort read_ddr_temp\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_read_ddr_temp(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4735,6 +4752,14 @@ int cmd_get_device_info(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_get_device_info, cmd_get_device_info_options,
       "cxl get_device_info <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_read_ddr_temp(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_read_ddr_temp, cmd_read_ddr_temp_options,
+      "cxl read_ddr_temp <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

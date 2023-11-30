@@ -10647,6 +10647,46 @@ out:
 #define CXL_MEM_COMMAND_ID_GET_CXL_LINK_STATUS CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_GET_CXL_LINK_STATUS_OPCODE 0xFB07
 
+char ltssm_state_name[][20] =
+{
+	"DETECT_QUIET",
+	"DETECT_ACT",
+	"POLL_ACTIVE",
+	"POLL_COMPLIANCE",
+	"POLL_CONFIG",
+	"PRE_DETECT_QUIET",
+	"DETECT_WAIT",
+	"CFG_LINKWD_START",
+	"CFG_LINKWD_ACEPT",
+	"CFG_LANENUM_WAIT",
+	"CFG_LANENUM_ACEPT",
+	"CFG_COMPLETE",
+	"CFG_IDLE",
+	"RCVRY_LOCK",
+	"RCVRY_SPEED",
+	"RCVRY_RCVRCFG",
+	"RCVRY_IDLE",
+	"L0",
+	"L0S",
+	"L123_SEND_EIDLE",
+	"L1_IDLE",
+	"L2_IDLE",
+	"L2_WAKE",
+	"DISABLED_ENTRY",
+	"DISABLED_IDLE",
+	"DISABLED",
+	"LPBK_ENTRY",
+	"LPBK_ACTIVE",
+	"LPBK_EXIT",
+	"LPBK_EXIT_TIMEOUT",
+	"HOT_RESET_ENTRY",
+	"HOT_RESET",
+	"RCVRY_EQ0",
+	"RCVRY_EQ1",
+	"RCVRY_EQ2",
+	"RCVRY_EQ3"
+};
+
 struct cxl_get_cxl_link_status_out {
 	float cxl_link_status;
 	uint32_t link_width;
@@ -10705,7 +10745,7 @@ CXL_EXPORT int cxl_memdev_get_cxl_link_status(struct cxl_memdev *memdev)
 	fprintf(stdout, "Link is in CXL%0.1f mode\n", get_cxl_link_status_out->cxl_link_status);
 	fprintf(stdout, "Negotiated link width: x%d\n", get_cxl_link_status_out->link_width);
 	fprintf(stdout, "Negotiated link speed: Gen%d\n", get_cxl_link_status_out->link_speed);
-	fprintf(stdout, "ltssm state 0x%x\n", get_cxl_link_status_out->ltssm_val);
+	fprintf(stdout, "ltssm state: %s, code 0x%x\n", ltssm_state_name[get_cxl_link_status_out->ltssm_val], get_cxl_link_status_out->ltssm_val);
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
@@ -10769,6 +10809,76 @@ CXL_EXPORT int cxl_memdev_get_device_info(struct cxl_memdev *memdev)
 	get_device_info_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "Device id: 0x%x\n", get_device_info_out->device_id);
 	fprintf(stdout, "Revision id: 0x%x\n", get_device_info_out->revision_id);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_READ_DDR_TEMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_READ_DDR_TEMP_OPCODE 0xC531
+
+struct cxl_read_ddr_temp_out {
+    uint8_t num_sensors;
+    uint8_t dimm_id[4];
+    uint8_t spd_idx[4];
+    float dimm_temp[4];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_read_ddr_temp_out *read_ddr_temp_out;
+	int rc = 0;
+	int idx;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_READ_DDR_TEMP_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_READ_DDR_TEMP) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_READ_DDR_TEMP);
+		return -EINVAL;
+	}
+	read_ddr_temp_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "Number of DDR temperature sensors reported: %d\n", read_ddr_temp_out->num_sensors);
+	for(idx = 0; idx < read_ddr_temp_out->num_sensors; idx++) {
+		fprintf(stdout, "dimm_id : 0x%x\n", read_ddr_temp_out->dimm_id[idx]);
+		fprintf(stdout, "spd_idx: 0x%x\n", read_ddr_temp_out->spd_idx[idx]);
+		fprintf(stdout, "dimm temp: %f\n", read_ddr_temp_out->dimm_temp[idx]);
+	}
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
