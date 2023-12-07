@@ -10978,3 +10978,169 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_I2C_READ CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_I2C_READ_OPCODE 0xFB10
+#define I2C_MAX_SIZE_NUM_BYTES 64
+
+struct cxl_i2c_read_in {
+	u16 slave_addr;
+	u8 reg_addr;
+	u8 num_bytes;
+}  __attribute__((packed));
+
+struct cxl_i2c_read_out {
+	char buf[I2C_MAX_SIZE_NUM_BYTES];
+	u8 num_bytes;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_i2c_read(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 num_bytes)
+{
+        struct cxl_cmd *cmd;
+        struct cxl_mem_query_commands *query;
+        struct cxl_command_info *cinfo;
+        struct cxl_i2c_read_in *i2c_read_in;
+        struct cxl_i2c_read_out *i2c_read_out;
+        int rc = 0;
+        int i;
+
+	if(num_bytes > I2C_MAX_SIZE_NUM_BYTES) {
+                fprintf(stderr, "%s: Max number of bytes supported is %d, cmd submission failed: %d (%s)\n",
+                                cxl_memdev_get_devname(memdev), I2C_MAX_SIZE_NUM_BYTES, rc, strerror(-rc));
+                return -EINVAL;
+	}
+
+        cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_I2C_READ_OPCODE);
+        if (!cmd) {
+                fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                                cxl_memdev_get_devname(memdev));
+                return -ENOMEM;
+        }
+
+        query = cmd->query_cmd;
+        cinfo = &query->commands[cmd->query_idx];
+
+        /* used to force correct payload size */
+        cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+        if (cinfo->size_in > 0) {
+                cmd->input_payload = calloc(1, cinfo->size_in);
+                if (!cmd->input_payload)
+                        return -ENOMEM;
+                cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+                cmd->send_cmd->in.size = cinfo->size_in;
+        }
+
+        i2c_read_in = (void *) cmd->send_cmd->in.payload;
+
+        i2c_read_in->slave_addr = slave_addr;
+        i2c_read_in->reg_addr = reg_addr;
+        i2c_read_in->num_bytes= num_bytes;
+
+        rc = cxl_cmd_submit(cmd);
+        if (rc < 0) {
+                fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+                goto out;
+        }
+
+        rc = cxl_cmd_get_mbox_status(cmd);
+        if (rc != 0) {
+                fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+                                cxl_memdev_get_devname(memdev), rc);
+                goto out;
+        }
+
+        if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_I2C_READ) {
+                fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                                cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_I2C_READ);
+                return -EINVAL;
+        }
+        i2c_read_out = (void *)cmd->send_cmd->out.payload;
+        fprintf(stdout, "i2c read output:");
+        for(i = 0; i < i2c_read_out->num_bytes; i++) {
+                fprintf(stdout, "0x%x\t", i2c_read_out->buf[i]);
+        }
+        fprintf(stdout, "\n");
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_I2C_WRITE CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_I2C_WRITE_OPCODE 0xFB11
+
+struct cxl_i2c_write_in {
+        u16 slave_addr;
+        u8 reg_addr;
+        u8 data;
+}  __attribute__((packed));
+
+struct cxl_i2c_write_out {
+        s32 status;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 data)
+{
+        struct cxl_cmd *cmd;
+        struct cxl_mem_query_commands *query;
+        struct cxl_command_info *cinfo;
+        struct cxl_i2c_write_in *i2c_write_in;
+        struct cxl_i2c_write_out *i2c_write_out;
+        int rc = 0;
+
+        cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_I2C_WRITE_OPCODE);
+        if (!cmd) {
+                fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                                cxl_memdev_get_devname(memdev));
+                return -ENOMEM;
+        }
+
+        query = cmd->query_cmd;
+        cinfo = &query->commands[cmd->query_idx];
+
+        /* used to force correct payload size */
+        cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+        if (cinfo->size_in > 0) {
+                cmd->input_payload = calloc(1, cinfo->size_in);
+                if (!cmd->input_payload)
+                        return -ENOMEM;
+                cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+                cmd->send_cmd->in.size = cinfo->size_in;
+        }
+
+        i2c_write_in = (void *) cmd->send_cmd->in.payload;
+
+        i2c_write_in->slave_addr = slave_addr;
+        i2c_write_in->reg_addr = reg_addr;
+        i2c_write_in->data = data;
+
+        rc = cxl_cmd_submit(cmd);
+        if (rc < 0) {
+                fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+                goto out;
+        }
+
+        rc = cxl_cmd_get_mbox_status(cmd);
+        if (rc != 0) {
+                fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+                                cxl_memdev_get_devname(memdev), rc);
+                goto out;
+        }
+
+        if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_I2C_WRITE) {
+                fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                                cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_I2C_WRITE);
+                return -EINVAL;
+        }
+        i2c_write_out = (void *)cmd->send_cmd->out.payload;
+	if(!i2c_write_out->status)
+		fprintf(stdout, "i2c write success\n");
+	else
+		fprintf(stdout, "i2c write failed, status:%d\n", i2c_write_out->status);
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}

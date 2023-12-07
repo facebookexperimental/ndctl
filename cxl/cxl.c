@@ -180,6 +180,8 @@ static struct cmd_struct commands[] = {
 	{ "get-device-info", .c_fn = cmd_get_device_info },
 	{ "read-ddr-temp", .c_fn = cmd_read_ddr_temp },
 	{ "get-ddr-bw", .c_fn = cmd_get_ddr_bw },
+	{ "i2c-read", .c_fn = cmd_i2c_read },
+	{ "i2c-write", .c_fn = cmd_i2c_write },
 };
 
 int main(int argc, const char **argv)

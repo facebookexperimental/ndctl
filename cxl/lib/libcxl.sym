@@ -179,4 +179,6 @@ global:
     cxl_memdev_get_device_info;
     cxl_memdev_read_ddr_temp;
     cxl_memdev_get_ddr_bw;
+    cxl_memdev_i2c_read;
+    cxl_memdev_i2c_write;
 } LIBCXL_3;
