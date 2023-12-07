@@ -2008,6 +2008,41 @@ static const struct option cmd_get_ddr_bw_options[] = {
   OPT_END(),
 };
 
+static struct _i2c_read_params {
+	u32 slave_addr;
+	u32 reg_addr;
+	u32 num_bytes;
+	bool verbose;
+} i2c_read_params;
+
+#define I2C_READ_OPTIONS() \
+OPT_UINTEGER('s', "slave_addr", &i2c_read_params.slave_addr, "Slave addr"), \
+OPT_UINTEGER('r', "reg_addr", &i2c_read_params.reg_addr, "Reg addr"), \
+OPT_UINTEGER('n', "num_bytes", &i2c_read_params.num_bytes, "Number of bytes")
+
+static const struct option cmd_i2c_read_options[] = {
+  BASE_OPTIONS(),
+  I2C_READ_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _i2c_write_params {
+	u32 slave_addr;
+	u32 reg_addr;
+	u32 data;
+	bool verbose;
+} i2c_write_params;
+
+#define I2C_WRITE_OPTIONS() \
+OPT_UINTEGER('s', "slave_addr", &i2c_write_params.slave_addr, "Slave addr"), \
+OPT_UINTEGER('r', "reg_addr", &i2c_write_params.reg_addr, "Reg addr"), \
+OPT_UINTEGER('d', "data", &i2c_write_params.data, "Data")
+
+static const struct option cmd_i2c_write_options[] = {
+  BASE_OPTIONS(),
+  I2C_WRITE_OPTIONS(),
+  OPT_END(),
+};
 
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -3725,6 +3760,30 @@ static int action_cmd_get_ddr_bw(struct cxl_memdev *memdev,
 	return cxl_memdev_get_ddr_bw(memdev, get_ddr_bw_params.timeout, get_ddr_bw_params.iterations);
 }
 
+static int action_cmd_i2c_read(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort i2c_read\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_i2c_read(memdev, i2c_read_params.slave_addr, i2c_read_params.reg_addr, i2c_read_params.num_bytes);
+}
+
+static int action_cmd_i2c_write(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort i2c_write\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_i2c_write(memdev, i2c_write_params.slave_addr, i2c_write_params.reg_addr, i2c_write_params.data);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4867,6 +4926,22 @@ int cmd_get_ddr_bw(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_get_ddr_bw, cmd_get_ddr_bw_options,
       "cxl get-ddr-bw <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_i2c_read(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_i2c_read, cmd_i2c_read_options,
+      "cxl i2c-read <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_i2c_write(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_i2c_write, cmd_i2c_write_options,
+      "cxl i2c-write <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

@@ -249,6 +249,8 @@ int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev);
 int cxl_memdev_cxl_hpa_to_dpa(struct cxl_memdev *memdev, u64 hpa_address);
 int cxl_memdev_get_cxl_membridge_errors(struct cxl_memdev *memdev);
 int cxl_memdev_get_ddr_bw(struct cxl_memdev *memdev, u32 timeout, u32 iterations);
+int cxl_memdev_i2c_read(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 num_bytes);
+int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 data);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
