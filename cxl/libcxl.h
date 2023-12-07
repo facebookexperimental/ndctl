@@ -246,6 +246,7 @@ int cxl_memdev_pcie_eye_get_sw_ber(struct cxl_memdev *memdev);
 int cxl_memdev_get_cxl_link_status(struct cxl_memdev *memdev);
 int cxl_memdev_get_device_info(struct cxl_memdev *memdev);
 int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev);
+int cxl_memdev_get_ddr_bw(struct cxl_memdev *memdev, u32 timeout, u32 iterations);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

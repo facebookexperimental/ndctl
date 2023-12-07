@@ -123,4 +123,5 @@ int cmd_pcie_eye_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_cxl_link_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_device_info(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_read_ddr_temp(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_ddr_bw(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
