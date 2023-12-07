@@ -1992,6 +1992,23 @@ static const struct option cmd_get_cxl_membridge_errors_options[] = {
   OPT_END(),
 };
 
+static struct _get_ddr_bw_params {
+	u32 timeout;
+	u32 iterations;
+	bool verbose;
+} get_ddr_bw_params;
+
+#define GET_DDR_BW_OPTIONS() \
+OPT_UINTEGER('t', "temeout", &get_ddr_bw_params.timeout, "Timeout"), \
+OPT_UINTEGER('i', "iterations", &get_ddr_bw_params.iterations, "No Iterations")
+
+static const struct option cmd_get_ddr_bw_options[] = {
+  BASE_OPTIONS(),
+  GET_DDR_BW_OPTIONS(),
+  OPT_END(),
+};
+
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3696,6 +3713,18 @@ static int action_cmd_get_cxl_membridge_errors(struct cxl_memdev *memdev,
 	return cxl_memdev_get_cxl_membridge_errors(memdev);
 }
 
+static int action_cmd_get_ddr_bw(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort get_ddr_bw\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_ddr_bw(memdev, get_ddr_bw_params.timeout, get_ddr_bw_params.iterations);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4830,6 +4859,14 @@ int cmd_get_cxl_membridge_errors(int argc, const char **argv, struct cxl_ctx *ct
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_get_cxl_membridge_errors, cmd_get_cxl_membridge_errors_options,
       "cxl get_cxl_membridge_errors");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_ddr_bw(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_ddr_bw, cmd_get_ddr_bw_options,
+      "cxl get-ddr-bw <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

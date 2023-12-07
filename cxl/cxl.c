@@ -181,6 +181,7 @@ static struct cmd_struct commands[] = {
 	{ "read-ddr-temp", .c_fn = cmd_read_ddr_temp },
 	{ "cxl-hpa-to-dpa", .c_fn = cmd_cxl_hpa_to_dpa },
 	{ "get-cxl-membridge-errors", .c_fn = cmd_get_cxl_membridge_errors },
+	{ "get-ddr-bw", .c_fn = cmd_get_ddr_bw },
 };
 
 int main(int argc, const char **argv)

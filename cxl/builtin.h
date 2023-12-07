@@ -125,5 +125,5 @@ int cmd_get_device_info(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_read_ddr_temp(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_hpa_to_dpa(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_cxl_membridge_errors(int argc, const char **argv, struct cxl_ctx *ctx);
-
+int cmd_get_ddr_bw(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

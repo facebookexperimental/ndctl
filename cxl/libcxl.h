@@ -248,6 +248,7 @@ int cxl_memdev_get_device_info(struct cxl_memdev *memdev);
 int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev);
 int cxl_memdev_cxl_hpa_to_dpa(struct cxl_memdev *memdev, u64 hpa_address);
 int cxl_memdev_get_cxl_membridge_errors(struct cxl_memdev *memdev);
+int cxl_memdev_get_ddr_bw(struct cxl_memdev *memdev, u32 timeout, u32 iterations);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

@@ -11234,3 +11234,86 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_GET_DDR_BW CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_DDR_BW_OPCODE 0xFB09
+
+struct cxl_get_ddr_bw_in {
+	u32 timeout;
+	u32 iterations;
+}  __attribute__((packed));
+
+typedef enum {
+  DDR_CTRL0 = 0,
+  DDR_CTRL1 = 1,
+  DDR_MAX_SUBSYS,
+} ddr_subsys;
+
+struct cxl_get_ddr_bw_out {
+	float peak_bw[DDR_MAX_SUBSYS];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_get_ddr_bw(struct cxl_memdev *memdev, u32 timeout, u32 iterations)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_get_ddr_bw_in *get_ddr_bw_in;
+	struct cxl_get_ddr_bw_out *get_ddr_bw_out;
+	float total_peak_bw = 0;
+	int rc = 0;
+	int i;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_DDR_BW_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	get_ddr_bw_in = (void *) cmd->send_cmd->in.payload;
+
+	get_ddr_bw_in->timeout = timeout;
+	get_ddr_bw_in->iterations = iterations;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_DDR_BW) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_DDR_BW);
+		return -EINVAL;
+	}
+	get_ddr_bw_out = (void *)cmd->send_cmd->out.payload;
+	for(i = 0; i < DDR_MAX_SUBSYS; i++) {
+		fprintf(stdout, "ddr%d peak bandwidth = %f GB/s\n", i, get_ddr_bw_out->peak_bw[i]);
+		total_peak_bw += get_ddr_bw_out->peak_bw[i];
+	}
+	fprintf(stdout, "total peak bandwidth = %f GB/s\n", total_peak_bw);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
