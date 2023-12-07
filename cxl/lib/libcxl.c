@@ -10957,3 +10957,280 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_ERRORS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_ERRORS_OPCODE 0xFB13
+
+typedef enum {
+	WSTRB_PARITY_ERROR = 0,
+	WDATA_PARITY_ERROR,
+	RDATA_RRESP_PARITY_ERROR,
+	RDATA_RESP_RID_PARITY_ERROR,
+	RDATA_PARITY_ERROR,
+	R_RESP_PARITY_ERROR,
+	B_RESP_PARITY_ERROR,
+	AW_QOS_PARITY_ERROR,
+	AW_MISC_PARITY_ERROR,
+	AW_ID_PARITY_ERROR,
+	AW_ADDR_RANGE_PARITY_ERROR,
+	AW_ADDR_PARITY_ERROR,
+	AR_QOS_PARITY_ERROR,
+	AR_MISC_PARITY_ERROR,
+	AR_ID_PARITY_ERROR,
+	AR_ADDR_RANGE_PARITY_ERROR,
+	AR_ADDR_PARITY_ERROR,
+	AXI_B_ID_PARITY_ERROR,
+	AXI_B_PARITY_ERROR,
+	AXI_R_ID_PARITY_ERROR,
+	AXI_R_DATA_PARITY_ERROR,
+	AXI_R_PARITY_ERROR,
+	DDR_PARITY_ERROR_COUNT = 22,
+} ddr_parity_errors;
+
+char *ddr_parity_error_strings[DDR_PARITY_ERROR_COUNT] = {
+	"WSTRB_PARITY_ERROR",
+	"WDATA_PARITY_ERROR",
+	"RDATA_RRESP_PARITY_ERROR",
+	"RDATA_RESP_RID_PARITY_ERROR",
+	"RDATA_PARITY_ERROR",
+	"R_RESP_PARITY_ERROR",
+	"B_RESP_PARITY_ERROR",
+	"AW_QOS_PARITY_ERROR",
+	"AW_MISC_PARITY_ERROR",
+	"AW_ID_PARITY_ERROR",
+	"AW_ADDR_RANGE_PARITY_ERROR",
+	"AW_ADDR_PARITY_ERROR",
+	"AR_QOS_PARITY_ERROR",
+	"AR_MISC_PARITY_ERROR",
+	"AR_ID_PARITY_ERROR",
+	"AR_ADDR_RANGE_PARITY_ERROR",
+	"AR_ADDR_PARITY_ERROR",
+	"AXI_B_ID_PARITY_ERROR",
+	"AXI_B_PARITY_ERROR",
+	"AXI_R_ID_PARITY_ERROR",
+	"AXI_R_DATA_PARITY_ERROR",
+	"AXI_R_PARITY_ERROR",
+};
+
+typedef enum {
+	S2M_NDR_FIFO = 0,
+	S2M_DRC_FIFO,
+	M2S_RWD_FIFO,
+	M2S_REQ_FIFO,
+	DDR1_W_REQ_FIFO,
+	DDR1_RDATA_RESP_FIFO,
+	DDR1_R_RESP_FIFO,
+	DDR1_B_RESP_FIFO,
+	DDR1_AW_REQ_FIFO,
+	DDR1_AR_REQ_FIFO,
+	DDR0_W_REQ_FIFO,
+	DDR0_RDATA_RESP_FIFO,
+	DDR0_R_RESP_FIFO,
+	DDR0_B_RESP_FIFO,
+	DDR0_AW_REQ_FIFO,
+	DDR0_AR_REQ_FIFO,
+	FIFO_ERROR_COUNT = 16,
+} fifo_errors;
+
+char *fifo_error_strings[FIFO_ERROR_COUNT] = {
+	"S2M_NDR_FIFO",
+	"S2M_DRC_FIFO",
+	"M2S_RWD_FIFO",
+	"M2S_REQ_FIFO",
+	"DDR1_W_REQ_FIFO",
+	"DDR1_RDATA_RESP_FIFO",
+	"DDR1_R_RESP_FIFO",
+	"DDR1_B_RESP_FIFO",
+	"DDR1_AW_REQ_FIFO",
+	"DDR1_AR_REQ_FIFO",
+	"DDR0_W_REQ_FIFO",
+	"DDR0_RDATA_RESP_FIFO",
+	"DDR0_R_RESP_FIFO",
+	"DDR0_B_RESP_FIFO",
+	"DDR0_AW_REQ_FIFO",
+	"DDR0_AR_REQ_FIFO"
+};
+
+typedef enum {
+	NDR_TAG_PARITY_ERROR = 0,
+	NDR_RESP_PARITY_ERROR,
+	M2S_RWD_ECC_CHECK_ERR_MULTPL_FAIL,
+	M2S_RWD_ECC_CHECK_ERR_DETECT_FAIL,
+	M2S_REQ_ECC_CHECK_ERR_MULTPL_FAIL,
+	M2S_REQ_ECC_CHECK_ERR_DETECT_FAIL,
+	DRC_TAG_PARITY_ERROR,
+	DRC_RESP_PARITY_ERROR,
+	DRC_DATA_PARITY_ERROR,
+	AW_MST_RWD_PARITY_ERROR,
+	AR_MST_REQ_PARITY_ERROR,
+	M2S_REQ_DUP_ADDR_PARITY_ERROR,
+	M2S_RWD_DUP_ADDR_PARITY_ERROR,
+	PARITY_ERROR_COUNT = 13,
+} parity_errors;
+
+char *parity_error_strings[PARITY_ERROR_COUNT] = {
+	"NDR_TAG_PARITY_ERROR",
+	"NDR_RESP_PARITY_ERROR",
+	"M2S_RWD_ECC_CHECK_ERR_MULTPL_FAIL",
+	"M2S_RWD_ECC_CHECK_ERR_DETECT_FAIL",
+	"M2S_REQ_ECC_CHECK_ERR_MULTPL_FAIL",
+	"M2S_REQ_ECC_CHECK_ERR_DETECT_FAIL",
+	"DRC_TAG_PARITY_ERROR",
+	"DRC_RESP_PARITY_ERROR",
+	"DRC_DATA_PARITY_ERROR",
+	"AW_MST_RWD_PARITY_ERROR",
+	"AR_MST_REQ_PARITY_ERROR",
+	"M2S_REQ_DUP_ADDR_PARITY_ERROR",
+	"M2S_RWD_DUP_ADDR_PARITY_ERROR",
+};
+
+typedef enum {
+	MST_M2S_RWD_ERR_MULTPL = 0,
+	MST_M2S_RWD_ERR_DETECT,
+	MST_M2S_REQ_ERR_MULTPL,
+	MST_M2S_REQ_ERR_DETECT,
+	POISON_RECEIVED_IN_RWD,
+	RWD_ADDRESS_INVALID,
+	REQ_ADDRESS_INVALID,
+	DDR1_RRESP_ERROR,
+	DDR1_BRESP_ERROR,
+	DDR0_RRESP_ERROR,
+	DDR0_BRESP_ERROR,
+	DDR1_RPARITY_ERROR,
+	DDR1_BPARITY_ERROR,
+	DDR0_RPARITY_ERROR,
+	DDR0_BPARITY_ERROR,
+	HDM_DEC1_ERR_NOT_COMMITED,
+	RX_DEINIT_TIMEOUT,
+	TX_DEINIT_TIMEOUT,
+	VIRAL,
+	DDR0_BRESP_DEC_ERROR,
+	DDR1_BRESP_DEC_ERROR,
+	DDR0_RRESP_DEC_ERROR,
+	DDR1_RRESP_DEC_ERROR,
+	MEMBRIDGE_COMMON_ERROR_COUNT = 23
+} membridge_common_errors;
+
+char *membridge_common_error_strings[MEMBRIDGE_COMMON_ERROR_COUNT] = {
+	"MST_M2S_RWD_ERR_MULTPL",
+	"MST_M2S_RWD_ERR_DETECT",
+	"MST_M2S_REQ_ERR_MULTPL",
+	"MST_M2S_REQ_ERR_DETECT",
+	"POISON_RECEIVED_IN_RWD",
+	"RWD_ADDRESS_INVALID",
+	"REQ_ADDRESS_INVALID",
+	"DDR1_RRESP_ERROR",
+	"DDR1_BRESP_ERROR",
+	"DDR0_RRESP_ERROR",
+	"DDR0_BRESP_ERROR",
+	"DDR1_RPARITY_ERROR",
+	"DDR1_BPARITY_ERROR",
+	"DDR0_RPARITY_ERROR",
+	"DDR0_BPARITY_ERROR",
+	"HDM_DEC1_ERR_NOT_COMMITED",
+	"RX_DEINIT_TIMEOUT",
+	"TX_DEINIT_TIMEOUT",
+	"VIRAL",
+	"DDR0_BRESP_DEC_ERROR",
+	"DDR1_BRESP_DEC_ERROR",
+	"DDR0_RRESP_DEC_ERROR",
+	"DDR1_RRESP_DEC_ERROR",
+};
+
+struct cxl_membridge_errors_out {
+  uint32_t fifo_overflow;
+  uint32_t fifo_overflows[FIFO_ERROR_COUNT];
+  uint32_t fifo_underflow;
+  uint32_t fifo_underflows[FIFO_ERROR_COUNT];
+  uint32_t ddr0_parity_error;
+  uint32_t ddr0_parity_errors[DDR_PARITY_ERROR_COUNT];
+  uint32_t ddr1_parity_error;
+  uint32_t ddr1_parity_errors[DDR_PARITY_ERROR_COUNT];
+  uint32_t parity_error;
+  uint32_t parity_errors[PARITY_ERROR_COUNT];
+  uint32_t common_errors[MEMBRIDGE_COMMON_ERROR_COUNT];
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_get_cxl_membridge_errors(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_membridge_errors_out *get_cxl_membridge_errors_out;
+	int rc = 0;
+	int idx;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_ERRORS_OPCODE);
+
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_ERRORS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_ERRORS);
+		return -EINVAL;
+	}
+
+	get_cxl_membridge_errors_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "fifo_overflow errors : %d\n", get_cxl_membridge_errors_out->fifo_overflow);
+	for(idx = 0; idx < FIFO_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->fifo_overflows[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", fifo_error_strings[idx],
+					get_cxl_membridge_errors_out->fifo_overflows[idx]);
+	}
+
+	fprintf(stdout, "fifo_underflow errors : %d\n", get_cxl_membridge_errors_out->fifo_underflow);
+	for(idx = 0; idx < FIFO_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->fifo_underflows[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", fifo_error_strings[idx],
+					get_cxl_membridge_errors_out->fifo_underflows[idx]);
+	}
+
+	fprintf(stdout, "ddr0 parity errors : %d\n", get_cxl_membridge_errors_out->ddr0_parity_error);
+	for(idx = 0; idx < DDR_PARITY_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->ddr0_parity_errors[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", ddr_parity_error_strings[idx],
+					get_cxl_membridge_errors_out->ddr0_parity_errors[idx]);
+	}
+
+	fprintf(stdout, "ddr1 parity errors : %d\n", get_cxl_membridge_errors_out->ddr1_parity_error);
+	for(idx = 0; idx < DDR_PARITY_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->ddr1_parity_errors[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", ddr_parity_error_strings[idx],
+					get_cxl_membridge_errors_out->ddr1_parity_errors[idx]);
+	}
+
+	fprintf(stdout, "membridge common errors :\n");
+	for(idx = 0; idx < MEMBRIDGE_COMMON_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->common_errors[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", membridge_common_error_strings[idx],
+					get_cxl_membridge_errors_out->common_errors[idx]);
+	}
+
+	fprintf(stdout, "parity errors : %d\n", get_cxl_membridge_errors_out->parity_error);
+	for(idx = 0; idx < PARITY_ERROR_COUNT; idx++) {
+		if (get_cxl_membridge_errors_out->parity_errors[idx] != 0)
+			fprintf(stdout, "%s : 0x%x\n", parity_error_strings[idx],
+					get_cxl_membridge_errors_out->parity_errors[idx]);
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
