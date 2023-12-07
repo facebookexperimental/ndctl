@@ -10828,12 +10828,17 @@ out:
 
 #define CXL_MEM_COMMAND_ID_READ_DDR_TEMP CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_READ_DDR_TEMP_OPCODE 0xC531
+#define DDR_MAX_DIMM_CNT 4
+
+struct ddr_dimm_temp_info {
+    uint8_t ddr_temp_valid;
+    uint8_t dimm_id;
+    uint8_t spd_idx;
+    float dimm_temp;
+};
 
 struct cxl_read_ddr_temp_out {
-    uint8_t num_sensors;
-    uint8_t dimm_id[4];
-    uint8_t spd_idx[4];
-    float dimm_temp[4];
+    struct ddr_dimm_temp_info ddr_dimm_temp_info[DDR_MAX_DIMM_CNT];
 }  __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev)
@@ -10885,11 +10890,12 @@ CXL_EXPORT int cxl_memdev_read_ddr_temp(struct cxl_memdev *memdev)
 		return -EINVAL;
 	}
 	read_ddr_temp_out = (void *)cmd->send_cmd->out.payload;
-	fprintf(stdout, "Number of DDR temperature sensors reported: %d\n", read_ddr_temp_out->num_sensors);
-	for(idx = 0; idx < read_ddr_temp_out->num_sensors; idx++) {
-		fprintf(stdout, "dimm_id : 0x%x\n", read_ddr_temp_out->dimm_id[idx]);
-		fprintf(stdout, "spd_idx: 0x%x\n", read_ddr_temp_out->spd_idx[idx]);
-		fprintf(stdout, "dimm temp: %f\n", read_ddr_temp_out->dimm_temp[idx]);
+	fprintf(stdout, "DDR DIMM temperature info:\n");
+	for(idx = 0; idx < DDR_MAX_DIMM_CNT; idx++) {
+		fprintf(stdout, "dimm_id : 0x%x\n", read_ddr_temp_out->ddr_dimm_temp_info[idx].dimm_id);
+		fprintf(stdout, "spd_idx: 0x%x\n", read_ddr_temp_out->ddr_dimm_temp_info[idx].spd_idx);
+		fprintf(stdout, "dimm temp: %f\n", read_ddr_temp_out->ddr_dimm_temp_info[idx].dimm_temp);
+		fprintf(stdout, "ddr temperature is %s\n\n", read_ddr_temp_out->ddr_dimm_temp_info[idx].ddr_temp_valid ? "valid" : "invalid");
 	}
 out:
 	cxl_cmd_unref(cmd);
