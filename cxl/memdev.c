@@ -54,6 +54,10 @@ OPT_UINTEGER('s', "size", &param.len, "number of label bytes to operate"), \
 OPT_UINTEGER('O', "offset", &param.offset, \
   "offset into the label area to start operation")
 
+u64 hpa_address;
+#define HPA_OPTIONS() \
+OPT_U64('h', "hpa", &hpa_address, "host physical address")
+
 static const struct option read_options[] = {
   BASE_OPTIONS(),
   LABEL_OPTIONS(),
@@ -1968,6 +1972,12 @@ static const struct option cmd_read_ddr_temp_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_cxl_hpa_to_dpa_options[] = {
+  BASE_OPTIONS(),
+  HPA_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3642,6 +3652,17 @@ static int action_cmd_read_ddr_temp(struct cxl_memdev *memdev,
 	return cxl_memdev_read_ddr_temp(memdev);
 }
 
+static int action_cmd_cxl_hpa_to_dpa(struct cxl_memdev *memdev,
+                                     struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+        	fprintf(stderr, "%s: memdev active, abort hpa to dpa\n",
+				cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+	return cxl_memdev_cxl_hpa_to_dpa(memdev, hpa_address);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4760,6 +4781,14 @@ int cmd_read_ddr_temp(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_read_ddr_temp, cmd_read_ddr_temp_options,
       "cxl read_ddr_temp <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_cxl_hpa_to_dpa(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_hpa_to_dpa, cmd_cxl_hpa_to_dpa_options,
+      "cxl hpa to dpa");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
