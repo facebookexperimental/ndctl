@@ -146,6 +146,13 @@ static struct _update_fw_params {
   bool verbose;
 } update_fw_params;
 
+static struct _fw_img_params {
+	bool is_os;
+} fw_img_params;
+
+#define FW_IMG_OPTIONS() \
+OPT_BOOLEAN('z', "osimage", &fw_img_params.is_os, "select OS(a.k.a boot1) image")
+
 #define UPDATE_FW_OPTIONS() \
 OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
   "filepath to read ROM for firmware update"), \
@@ -156,6 +163,7 @@ OPT_BOOLEAN('m', "mock", &update_fw_params.mock, "For testing purposes. Mock tra
 static const struct option cmd_update_fw_options[] = {
   BASE_OPTIONS(),
   UPDATE_FW_OPTIONS(),
+  FW_IMG_OPTIONS(),
   OPT_END(),
 };
 
@@ -172,6 +180,7 @@ static const struct option cmd_device_info_get_options[] = {
 
 static const struct option cmd_get_fw_info_options[] = {
   BASE_OPTIONS(),
+  FW_IMG_OPTIONS(),
   OPT_END(),
 };
 
@@ -2192,10 +2201,16 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
   }
 
   offset = 0;
-  if (update_fw_params.hbo) {
-    opcode = 0xCD01; // Pioneer vendor opcode for hbo-transfer-fw
+
+  if (fw_img_params.is_os) {
+    printf("firmware update selected for OS Image\n");
+    opcode = 0xCD04; // Vistara opcode for OS(boot1) image update
   } else {
-    opcode = 0x0201; // Spec defined transfer-fw
+    if (update_fw_params.hbo) {
+      opcode = 0xCD01; // Pioneer vendor opcode for hbo-transfer-fw
+    } else {
+      opcode = 0x0201; // Spec defined transfer-fw
+    }
   }
 
   for (int i = 0; i < num_blocks; i++)
@@ -2417,7 +2432,7 @@ static int action_cmd_get_fw_info(struct cxl_memdev *memdev, struct action_conte
     return -EBUSY;
   }
 
-  return cxl_memdev_get_fw_info(memdev);
+  return cxl_memdev_get_fw_info(memdev, fw_img_params.is_os);
 }
 
 static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_context *actx)
