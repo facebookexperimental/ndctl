@@ -180,6 +180,7 @@ static struct cmd_struct commands[] = {
 	{ "get-device-info", .c_fn = cmd_get_device_info },
 	{ "read-ddr-temp", .c_fn = cmd_read_ddr_temp },
 	{ "cxl-hpa-to-dpa", .c_fn = cmd_cxl_hpa_to_dpa },
+	{ "get-cxl-membridge-errors", .c_fn = cmd_get_cxl_membridge_errors },
 };
 
 int main(int argc, const char **argv)

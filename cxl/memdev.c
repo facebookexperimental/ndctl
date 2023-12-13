@@ -1987,6 +1987,11 @@ static const struct option cmd_cxl_hpa_to_dpa_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_get_cxl_membridge_errors_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3675,7 +3680,20 @@ static int action_cmd_cxl_hpa_to_dpa(struct cxl_memdev *memdev,
 				cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
+
 	return cxl_memdev_cxl_hpa_to_dpa(memdev, hpa_address);
+}
+
+static int action_cmd_get_cxl_membridge_errors(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort cxl membridge errors\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_cxl_membridge_errors(memdev);
 }
 
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
@@ -4804,6 +4822,14 @@ int cmd_cxl_hpa_to_dpa(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_hpa_to_dpa, cmd_cxl_hpa_to_dpa_options,
       "cxl hpa to dpa");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_cxl_membridge_errors(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_cxl_membridge_errors, cmd_get_cxl_membridge_errors_options,
+      "cxl get_cxl_membridge_errors");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
