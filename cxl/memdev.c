@@ -2044,6 +2044,11 @@ static const struct option cmd_i2c_write_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_get_ddr_ecc_err_info_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3784,6 +3789,18 @@ static int action_cmd_i2c_write(struct cxl_memdev *memdev,
 	return cxl_memdev_i2c_write(memdev, i2c_write_params.slave_addr, i2c_write_params.reg_addr, i2c_write_params.data);
 }
 
+static int action_cmd_get_ddr_ecc_err_info(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort get-ddr-ecc-err-info\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_ddr_ecc_err_info(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -4942,6 +4959,14 @@ int cmd_i2c_write(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_i2c_write, cmd_i2c_write_options,
       "cxl i2c-write <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_ddr_ecc_err_info(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_ddr_ecc_err_info, cmd_get_ddr_ecc_err_info_options,
+      "cxl get-ddr-ecc-err-info <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

@@ -183,4 +183,5 @@ global:
     cxl_memdev_get_ddr_bw;
     cxl_memdev_i2c_read;
     cxl_memdev_i2c_write;
+    cxl_memdev_get_ddr_ecc_err_info;
 } LIBCXL_3;
