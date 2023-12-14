@@ -1927,6 +1927,53 @@ static const struct option cmd_pmic_vtmon_info_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_margin_run_params {
+	u32 slice_num;
+	u32 rd_wr_margin;
+	u32 ddr_id;
+	bool verbose;
+} ddr_margin_run_params;
+
+#define DDR_MARGIN_RUN_OPTIONS() \
+OPT_UINTEGER('s', "slice_num", &ddr_margin_run_params.slice_num, "SLICE NUMBER"), \
+OPT_UINTEGER('m', "rd_wr_margin", &ddr_margin_run_params.rd_wr_margin, "RD/WR MARGIN"), \
+OPT_UINTEGER('i', "ddr_id", &ddr_margin_run_params.ddr_id, "DDR ID")
+
+static const struct option cmd_ddr_margin_run_options[] = {
+  BASE_OPTIONS(),
+  DDR_MARGIN_RUN_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_margin_status_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_margin_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _reboot_mode_set_params {
+	u32 reboot_mode;
+	bool verbose;
+} reboot_mode_set_params;
+
+#define REBOOT_MODE_SET_OPTIONS() \
+OPT_UINTEGER('m', "reboot_mode", &reboot_mode_set_params.reboot_mode, "0:CXL-IO-MEM or 0xCE:CXL-IO")
+
+static const struct option cmd_reboot_mode_set_options[] = {
+  BASE_OPTIONS(),
+  REBOOT_MODE_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_curr_cxl_boot_mode_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _pcie_eye_run_params {
 	u32 lane;
 	u32 sw_scan;
@@ -3620,6 +3667,90 @@ static int action_cmd_pmic_vtmon_info(struct cxl_memdev *memdev, struct action_c
 	return cxl_memdev_pmic_vtmon_info(memdev);
 }
 
+static int action_cmd_ddr_margin_run(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_margin_run\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_margin_run(memdev, ddr_margin_run_params.slice_num,
+				       ddr_margin_run_params.rd_wr_margin,
+				       ddr_margin_run_params.ddr_id);
+}
+
+static int action_cmd_ddr_margin_status(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_margin_status\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_margin_status(memdev);
+}
+
+static int action_cmd_ddr_margin_get(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	int rc = 0;
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_margin_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	rc = cxl_memdev_ddr_margin_get(memdev);
+	if(rc)
+	{
+		fprintf(stderr,
+			"ddr_margin_get read failed");
+		goto abort;
+	}
+
+abort:
+  return rc;
+}
+
+static int action_cmd_reboot_mode_set(struct cxl_memdev *memdev,
+                                   struct action_context *actx)
+{
+        if (cxl_memdev_is_active(memdev)) {
+                fprintf(stderr, "%s: memdev active, abort reboot mode set\n",
+                        cxl_memdev_get_devname(memdev));
+                return -EBUSY;
+        }
+
+        return cxl_memdev_reboot_mode_set(memdev, reboot_mode_set_params.reboot_mode);
+}
+
+static int action_cmd_curr_cxl_boot_mode_get(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	int rc = 0;
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort curr cxl boot mode get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	rc = cxl_memdev_curr_cxl_boot_mode_get(memdev);
+	if(rc)
+	{
+		fprintf(stderr,
+			"curr_cxl_boot_mode_get failed");
+		goto abort;
+	}
+
+abort:
+  return rc;
+}
+
 static int action_cmd_pcie_eye_run(struct cxl_memdev *memdev,
 				   struct action_context *actx)
 {
@@ -4871,6 +5002,46 @@ int cmd_pmic_vtmon_info(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_pmic_vtmon_info, cmd_pmic_vtmon_info_options,
       "cxl pmic-vtmon-info <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_margin_run(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_margin_run, cmd_ddr_margin_run_options,
+      "cxl ddr-margin-run <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_margin_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_margin_status, cmd_ddr_margin_status_options,
+      "cxl ddr-margin-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_margin_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_margin_get, cmd_ddr_margin_get_options,
+      "cxl ddr-margin-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_curr_cxl_boot_mode_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_curr_cxl_boot_mode_get, cmd_curr_cxl_boot_mode_get_options,
+      "cxl curr-cxl-boot-mode-get  <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_reboot_mode_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_reboot_mode_set, cmd_reboot_mode_set_options,
+      "cxl reboot-mode-set <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

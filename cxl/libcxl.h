@@ -238,6 +238,11 @@ int cxl_memdev_dimm_spd_read(struct cxl_memdev *memdev, u32 spd_id,
 int cxl_memdev_ddr_training_status(struct cxl_memdev *memdev);
 int cxl_memdev_dimm_slot_info(struct cxl_memdev *memdev);
 int cxl_memdev_pmic_vtmon_info(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_margin_run(struct cxl_memdev *memdev, u8 slice_num, u8 rd_wr_margin, u8 ddr_id);
+int cxl_memdev_ddr_margin_status(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_margin_get(struct cxl_memdev *memdev);
+int cxl_memdev_reboot_mode_set(struct cxl_memdev *memdev, u8 reboot_mode);
+int cxl_memdev_curr_cxl_boot_mode_get(struct cxl_memdev *memdev);
 int cxl_memdev_pcie_eye_run(struct cxl_memdev *memdev, u8 lane, u8 sw_scan, u8 ber);
 int cxl_memdev_pcie_eye_status(struct cxl_memdev *memdev);
 int cxl_memdev_pcie_eye_get_sw(struct cxl_memdev *memdev, uint offset);
