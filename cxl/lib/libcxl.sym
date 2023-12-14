@@ -170,6 +170,11 @@ global:
 	cxl_memdev_ddr_training_status;
     cxl_memdev_dimm_slot_info;
     cxl_memdev_pmic_vtmon_info;
+    cxl_memdev_ddr_margin_run;
+    cxl_memdev_ddr_margin_status;
+    cxl_memdev_ddr_margin_get;
+    cxl_memdev_reboot_mode_set;
+    cxl_memdev_curr_cxl_boot_mode_get;
     cxl_memdev_pcie_eye_run;
     cxl_memdev_pcie_eye_status;
     cxl_memdev_pcie_eye_get_sw;
