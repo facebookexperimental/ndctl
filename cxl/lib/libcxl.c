@@ -11481,3 +11481,265 @@ out:
         cxl_cmd_unref(cmd);
         return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO_OPCODE 0xFB0F
+
+struct ddr_parity_err {
+  uint32_t parity_crit_bit2_cnt; /* Parity error on the address/control bus*/
+  uint32_t parity_crit_bit1_cnt; /* Overlapping write data parity error */
+  uint32_t parity_crit_bit0_cnt; /* Write data parity error */
+};
+
+struct ddr_dfi_err {
+  uint32_t dfi_crit_bit5_cnt; /* DFI tINIT_COMPLETE value has timed out */
+  uint32_t dfi_crit_bit2_cnt; /* Error received from the PHY on the DFI bus */
+
+  uint32_t dfi_warn_bit1_cnt; /* DFI PHY Master Interface error has occurred */
+  uint32_t dfi_warn_bit0_cnt; /* DFI update error has occurred */
+};
+
+struct ddr_crc_err {
+  uint32_t crc_crit_bit1_cnt; /* CA Parity or a CRC error happened during CRC
+                                Retry. */
+  uint32_t crc_crit_bit0_cnt; /* CRC error occurred on the write data bus */
+};
+
+struct ddr_userif_err {
+  uint32_t
+      userif_crit_bit2_cnt; /* Error occurred on the port command channel. */
+  uint32_t userif_crit_bit1_cnt; /* Multiple accesses outside the defined
+                                    PHYSICAL memory space have occurred. */
+  uint32_t userif_crit_bit0_cnt; /* A Memory access outside the defined PHYSICAL
+                                    memory space has occurred */
+};
+
+struct ddr_ecc_err {
+  uint32_t ecc_warn_bit6_cnt; /* One or more ECC writeback commands
+                                could not be executed */
+  uint32_t ecc_crit_bit3_cnt; /* Multiple uncorrectable ECC events
+                                have been detected */
+  uint32_t ecc_crit_bit2_cnt; /* A uncorrectable ECC event has been detected */
+  uint32_t ecc_crit_bit8_cnt; /* An ECC correctable error has been detected in a
+                                 scrubbing read operation */
+  uint32_t ecc_warn_bit1_cnt; /* Multiple correctable ECC events
+                                 have been detected */
+  uint32_t ecc_warn_bit0_cnt; /* A correctable ECC event has been detected */
+};
+
+struct ddr_controller_errors {
+  struct ddr_parity_err parity;
+  struct ddr_dfi_err dfi;
+  struct ddr_crc_err crc;
+  struct ddr_userif_err userif;
+  struct ddr_ecc_err ecc;
+};
+
+struct cxl_get_ddr_ecc_err_info_out {
+	struct ddr_controller_errors ddr_ctrl_err[DDR_MAX_SUBSYS];
+} __attribute__((packed));
+
+void display_error_count(struct ddr_controller_errors *ddr_ctrl_err, ddr_subsys ddr_id);
+
+void display_error_count(struct ddr_controller_errors *ddr_ctrl_err, ddr_subsys ddr_id) {
+  if (ddr_ctrl_err[ddr_id].parity.parity_crit_bit2_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: Parity error on the address/control bus "
+        "(parity_crit_bit2_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].parity.parity_crit_bit2_cnt);
+  }
+  if (ddr_ctrl_err[ddr_id].parity.parity_crit_bit1_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: Overlapping write data parity error "
+        "(parity_crit_bit1_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].parity.parity_crit_bit1_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].parity.parity_crit_bit0_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: Write data parity error "
+        "(parity_crit_bit0_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].parity.parity_crit_bit0_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].dfi.dfi_crit_bit5_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: DFI tINIT_COMPLETE value has timed out "
+        "(dfi_crit_bit5_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].dfi.dfi_crit_bit5_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].dfi.dfi_crit_bit2_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL : Error received from the PHY on the DFI bus "
+        "(dfi_crit_bit2_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].dfi.dfi_crit_bit2_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].dfi.dfi_warn_bit1_cnt) {
+    fprintf(stdout,
+        "DDR-%d: WARN: DFI PHY Master Interface error has occurred "
+        "(dfi_warn_bit1_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].dfi.dfi_warn_bit1_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].dfi.dfi_warn_bit0_cnt) {
+    fprintf(stdout,
+        "DDR-%d: WARN: DFI update error has occurred "
+        "(dfi_warn_bit0_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].dfi.dfi_warn_bit0_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].crc.crc_crit_bit1_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: CA Parity or a CRC error happened during CRC Retry "
+        "(crc_crit_bit1_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].crc.crc_crit_bit1_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].crc.crc_crit_bit0_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: CRC error occurred on the write data bus "
+        "(crc_crit_bit0_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].crc.crc_crit_bit0_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].userif.userif_crit_bit2_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: Error occurred on the port command channel "
+        "(userif_crit_bit2_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].userif.userif_crit_bit2_cnt);
+  }
+  if (ddr_ctrl_err[ddr_id].userif.userif_crit_bit1_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: Multiple accesses outside the defined PHYSICAL "
+        "memory space have occurred "
+        "(userif_crit_bit1_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].userif.userif_crit_bit1_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].userif.userif_crit_bit0_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: A Memory access outside the defined PHYSICAL "
+        "memory space has occurred "
+        "(userif_crit_bit0_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].userif.userif_crit_bit0_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit6_cnt) {
+    fprintf(stdout,
+        "DDR-%d: WARN: One or more ECC writeback commands "
+        "could not be executed "
+        "(ecc_warn_bit6_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit6_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit3_cnt) {
+    fprintf(stdout,
+        "DDR-%d:FATAL: Multiple uncorrectable ECC events have been detected "
+        "(ecc_crit_bit3_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit3_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit2_cnt) {
+    fprintf(stdout,
+        "DDR-%d: FATAL: A uncorrectable ECC event has been detected "
+        "(ecc_crit_bit2_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit2_cnt);
+  }
+ if (ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit8_cnt) {
+    fprintf(stdout,
+        "DDR-%d: CRIT: An ECC correctable error has been detected "
+        "in a scrubbing read operation "
+        "(ecc_crit_bit8_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_crit_bit8_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit1_cnt) {
+    fprintf(stdout,
+        "DDR-%d: WARN: Multiple correctable ECC events have been detected "
+        "(ecc_warn_bit1_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit1_cnt);
+  }
+
+  if (ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit0_cnt) {
+    fprintf(stdout,
+        "DDR-%d: WARN: A correctable ECC event has been detected "
+        "(ecc_warn_bit0_cnt= %u)\n",
+        ddr_id,
+        ddr_ctrl_err[ddr_id].ecc.ecc_warn_bit0_cnt);
+  }
+}
+
+CXL_EXPORT int cxl_memdev_get_ddr_ecc_err_info(struct cxl_memdev *memdev)
+{
+        struct cxl_cmd *cmd;
+        struct cxl_mem_query_commands *query;
+        struct cxl_command_info *cinfo;
+        struct cxl_get_ddr_ecc_err_info_out *get_ddr_ecc_err_info_out;
+        int rc = 0;
+
+        cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO_OPCODE);
+        if (!cmd) {
+                fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                                cxl_memdev_get_devname(memdev));
+                return -ENOMEM;
+        }
+
+        query = cmd->query_cmd;
+        cinfo = &query->commands[cmd->query_idx];
+
+        /* used to force correct payload size */
+        cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+        if (cinfo->size_in > 0) {
+                cmd->input_payload = calloc(1, cinfo->size_in);
+                if (!cmd->input_payload)
+                        return -ENOMEM;
+                cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+                cmd->send_cmd->in.size = cinfo->size_in;
+        }
+
+        rc = cxl_cmd_submit(cmd);
+        if (rc < 0) {
+                fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+                goto out;
+        }
+
+        rc = cxl_cmd_get_mbox_status(cmd);
+        if (rc != 0) {
+                fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+                                cxl_memdev_get_devname(memdev), rc);
+                goto out;
+        }
+
+        if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO) {
+                fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                                cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO);
+                return -EINVAL;
+        }
+        get_ddr_ecc_err_info_out = (void *)cmd->send_cmd->out.payload;
+	display_error_count(get_ddr_ecc_err_info_out->ddr_ctrl_err, DDR_CTRL0);
+	display_error_count(get_ddr_ecc_err_info_out->ddr_ctrl_err, DDR_CTRL1);
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}
