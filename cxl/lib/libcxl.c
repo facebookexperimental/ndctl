@@ -11427,7 +11427,6 @@ CXL_EXPORT int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u
         struct cxl_mem_query_commands *query;
         struct cxl_command_info *cinfo;
         struct cxl_i2c_write_in *i2c_write_in;
-        struct cxl_i2c_write_out *i2c_write_out;
         int rc = 0;
 
         cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_I2C_WRITE_OPCODE);
