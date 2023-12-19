@@ -11701,7 +11701,7 @@ out:
 
 #define CXL_MEM_COMMAND_ID_I2C_READ CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_I2C_READ_OPCODE 0xFB10
-#define I2C_MAX_SIZE_NUM_BYTES 64
+#define I2C_MAX_SIZE_NUM_BYTES 128
 
 struct cxl_i2c_read_in {
 	u16 slave_addr;
