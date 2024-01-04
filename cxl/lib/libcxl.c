@@ -11209,6 +11209,7 @@ struct ddr_dimm_temp_info {
     uint8_t ddr_temp_valid;
     uint8_t dimm_id;
     uint8_t spd_idx;
+    uint8_t rsvd;
     float dimm_temp;
 };
 
