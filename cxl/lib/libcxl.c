@@ -11857,6 +11857,99 @@ out:
         return rc;
 }
 
+#define CXL_MEM_COMMAND_ID_GET_DDR_LATENCY CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_DDR_LATENCY_OPCODE 0xFB12
+
+struct ddr_lat_op {
+    uint64_t readlat;
+    uint64_t writelat;
+    uint32_t rdsamplecnt;
+    uint32_t wrsamplecnt;
+    float avg_rdlatency;
+    float avg_wrlatency;
+};
+
+struct cxl_get_ddr_latency_in {
+	u32 measure_time;
+}  __attribute__((packed));
+
+struct cxl_get_ddr_latency_out {
+	struct ddr_lat_op ddr_lat_op[DDR_MAX_SUBSYS];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_get_ddr_latency(struct cxl_memdev *memdev, u32 measure_time)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_get_ddr_latency_in *get_ddr_lat_in;
+	struct cxl_get_ddr_latency_out *get_ddr_lat_out;
+	int rc = 0;
+	int ddr_id;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_DDR_LATENCY_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	get_ddr_lat_in = (void *) cmd->send_cmd->in.payload;
+
+	get_ddr_lat_in->measure_time = measure_time;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_DDR_LATENCY) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_DDR_LATENCY);
+		return -EINVAL;
+	}
+	get_ddr_lat_out = (void *)cmd->send_cmd->out.payload;
+	for(ddr_id = 0; ddr_id < DDR_MAX_SUBSYS; ddr_id++) {
+		fprintf(stdout, "\nDDR%d Latency:\n", ddr_id);
+		fprintf(stdout,
+		       "readLat: %lu, rdSampleCnt: %u\n, writeLat: %lu, wrSampleCnt: %u\n",
+		       get_ddr_lat_out->ddr_lat_op[ddr_id].readlat,
+		       get_ddr_lat_out->ddr_lat_op[ddr_id].rdsamplecnt,
+		       get_ddr_lat_out->ddr_lat_op[ddr_id].writelat,
+		       get_ddr_lat_out->ddr_lat_op[ddr_id].wrsamplecnt);
+
+		fprintf(stdout, "Average Latency:\n");
+		fprintf(stdout,
+			"Avg Read Latency  : %f ns \n Avg Write Latency : %f ns \n",
+			get_ddr_lat_out->ddr_lat_op[ddr_id].avg_rdlatency,
+			get_ddr_lat_out->ddr_lat_op[ddr_id].avg_wrlatency);
+	}
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
 #define CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_GET_DDR_ECC_ERR_INFO_OPCODE 0xFB0F
 
