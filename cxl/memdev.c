@@ -2055,6 +2055,20 @@ static const struct option cmd_get_ddr_bw_options[] = {
   OPT_END(),
 };
 
+static struct _get_ddr_latency_params {
+	u32 measure_time;
+	bool verbose;
+} get_ddr_latency_params;
+
+#define GET_DDR_LATENCY_OPTIONS() \
+OPT_UINTEGER('t', "measure time", &get_ddr_latency_params.measure_time, "Measure Time in msec")
+
+static const struct option cmd_get_ddr_latency_options[] = {
+  BASE_OPTIONS(),
+  GET_DDR_LATENCY_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _i2c_read_params {
 	u32 slave_addr;
 	u32 reg_addr;
@@ -3896,6 +3910,18 @@ static int action_cmd_get_ddr_bw(struct cxl_memdev *memdev,
 	return cxl_memdev_get_ddr_bw(memdev, get_ddr_bw_params.timeout, get_ddr_bw_params.iterations);
 }
 
+static int action_cmd_get_ddr_latency(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort get_ddr_latency\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_ddr_latency(memdev, get_ddr_latency_params.measure_time);
+}
+
 static int action_cmd_i2c_read(struct cxl_memdev *memdev,
 				      struct action_context *actx)
 {
@@ -5114,6 +5140,14 @@ int cmd_get_ddr_bw(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_get_ddr_bw, cmd_get_ddr_bw_options,
       "cxl get-ddr-bw <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_ddr_latency(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_ddr_latency, cmd_get_ddr_latency_options,
+      "cxl get-ddr-latency <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
