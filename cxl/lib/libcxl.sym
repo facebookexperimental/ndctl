@@ -186,6 +186,7 @@ global:
     cxl_memdev_cxl_hpa_to_dpa;
     cxl_memdev_get_cxl_membridge_errors;
     cxl_memdev_get_ddr_bw;
+    cxl_memdev_get_ddr_latency;
     cxl_memdev_i2c_read;
     cxl_memdev_i2c_write;
     cxl_memdev_get_ddr_ecc_err_info;
