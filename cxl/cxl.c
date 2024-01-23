@@ -191,6 +191,8 @@ static struct cmd_struct commands[] = {
 	{ "i2c-read", .c_fn = cmd_i2c_read },
 	{ "i2c-write", .c_fn = cmd_i2c_write },
 	{ "get-ddr-ecc-err-info", .c_fn = cmd_get_ddr_ecc_err_info },
+	{ "start-ddr-ecc-scrub", .c_fn = cmd_start_ddr_ecc_scrub },
+	{ "ddr-ecc-scrub-status", .c_fn = cmd_ddr_ecc_scrub_status },
 };
 
 int main(int argc, const char **argv)

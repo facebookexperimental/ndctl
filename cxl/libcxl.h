@@ -258,6 +258,8 @@ int cxl_memdev_get_ddr_latency(struct cxl_memdev *memdev, u32 measure_time);
 int cxl_memdev_i2c_read(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 num_bytes);
 int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr, u8 data);
 int cxl_memdev_get_ddr_ecc_err_info(struct cxl_memdev *memdev);
+int cxl_memdev_start_ddr_ecc_scrub(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_ecc_scrub_status(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

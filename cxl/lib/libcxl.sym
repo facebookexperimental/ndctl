@@ -190,4 +190,6 @@ global:
     cxl_memdev_i2c_read;
     cxl_memdev_i2c_write;
     cxl_memdev_get_ddr_ecc_err_info;
+    cxl_memdev_start_ddr_ecc_scrub;
+    cxl_memdev_ddr_ecc_scrub_status;
 } LIBCXL_3;
