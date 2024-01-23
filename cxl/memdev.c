@@ -2120,6 +2120,11 @@ static const struct option cmd_ddr_ecc_scrub_status_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_get_cxl_membridge_stats_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -3992,6 +3997,18 @@ static int action_cmd_ddr_ecc_scrub_status(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_ecc_scrub_status(memdev);
 }
 
+static int action_cmd_get_cxl_membridge_stats(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort cxl membridge stats\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_cxl_membridge_stats(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5222,6 +5239,14 @@ int cmd_ddr_ecc_scrub_status(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_ecc_scrub_status, cmd_ddr_ecc_scrub_status_options,
       "cxl ddr-ecc-scrub-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_cxl_membridge_stats(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_cxl_membridge_stats, cmd_get_cxl_membridge_stats_options,
+      "cxl get_cxl_membridge_errors");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

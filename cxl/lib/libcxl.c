@@ -12336,3 +12336,124 @@ out:
         cxl_cmd_unref(cmd);
         return rc;
 }
+
+struct cxl_cmd_membridge_stats_out {
+  // mem transaction counters
+  uint64_t m2s_req_count;
+  uint64_t m2s_rwd_count;
+  uint64_t s2m_drs_count;
+  uint64_t s2m_ndr_count;
+  // HPA logs for poison & out-of-range
+  uint64_t rwd_first_poison_hpa_log;
+  uint64_t rwd_latest_poison_hpa_log;
+  uint64_t req_first_hpa_log;
+  uint64_t rwd_first_hpa_log;
+  // correctible errors counters
+  uint32_t mst_m2s_req_corr_err_count;
+  uint32_t mst_m2s_rwd_corr_err_count;
+  // membridge fifo full/empty status
+  uint32_t fifo_full_status;
+  uint32_t fifo_empty_status;
+  // credit counters
+  uint8_t m2s_rwd_credit_count;
+  uint8_t m2s_req_credit_count;
+  uint8_t s2m_ndr_credit_count;
+  uint8_t s2m_drc_credit_count;
+  // rx state machine status 0
+  uint8_t rx_fsm_status_rx_deinit;
+  uint8_t rx_fsm_status_m2s_req;
+  uint8_t rx_fsm_status_m2s_rwd;
+  uint8_t rx_fsm_status_ddr0_ar_req;
+  uint8_t rx_fsm_status_ddr0_aw_req;
+  uint8_t rx_fsm_status_ddr0_w_req;
+  // rx state machine status 1
+  uint8_t rx_fsm_status_ddr1_ar_req;
+  uint8_t rx_fsm_status_ddr1_aw_req;
+  uint8_t rx_fsm_status_ddr1_w_req;
+  // tx state machine status 0
+  uint8_t tx_fsm_status_tx_deinit;
+  uint8_t tx_fsm_status_s2m_ndr;
+  uint8_t tx_fsm_status_s2m_drc;
+  // stat QoS TEL
+  uint8_t stat_qos_tel_dev_load_read;
+  uint8_t stat_qos_tel_dev_load_type2_read;
+  uint8_t stat_qos_tel_dev_load_write;
+  uint8_t resvd;
+} __attribute__((packed));
+
+#define CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS_OPCODE 0xFB18
+
+CXL_EXPORT int cxl_memdev_get_cxl_membridge_stats(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_cmd_membridge_stats_out *stats;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS_OPCODE);
+
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+
+	if (rc != 0) {
+		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS);
+		return -EINVAL;
+	}
+
+	stats = (void *)cmd->send_cmd->out.payload;
+	// print membridge statistics info
+	fprintf(stderr, "m2s_req_count:              %lu\n", stats->m2s_req_count);
+	fprintf(stderr, "m2s_rwd_count:              %lu\n", stats->m2s_rwd_count);
+	fprintf(stderr, "s2m_drs_count:              %lu\n", stats->s2m_drs_count);
+	fprintf(stderr, "s2m_ndr_count:              %lu\n", stats->s2m_ndr_count);
+	fprintf(stderr, "rwd_first_poison_hpa:       0x%lx\n", stats->rwd_first_poison_hpa_log);
+	fprintf(stderr, "rwd_latest_poison_hpa:      0x%lx\n", stats->rwd_latest_poison_hpa_log);
+	fprintf(stderr, "req_first_hpa_log:          0x%lx\n", stats->req_first_hpa_log);
+	fprintf(stderr, "rwd_first_hpa_log:          0x%lx\n", (u64)stats->rwd_first_hpa_log);
+	fprintf(stderr, "m2s_req_corr_err_count:     %u\n", stats->mst_m2s_req_corr_err_count);
+	fprintf(stderr, "m2s_rwd_corr_err_count:     %u\n", stats->mst_m2s_rwd_corr_err_count);
+	fprintf(stderr, "fifo_full_status:           0x%x\n", stats->fifo_full_status);
+	fprintf(stderr, "fifo_empty_status:          0x%x\n", stats->fifo_empty_status);
+	fprintf(stderr, "m2s_rwd_credit_count:       %u\n", stats->m2s_rwd_credit_count);
+	fprintf(stderr, "m2s_req_credit_count:       %u\n", stats->m2s_req_credit_count);
+	fprintf(stderr, "s2m_ndr_credit_count:       %u\n", stats->s2m_ndr_credit_count);
+	fprintf(stderr, "s2m_drc_credit_count:       %u\n", stats->s2m_drc_credit_count);
+	fprintf(stderr, "rx_status_rx_deinit:        %u\n", stats->rx_fsm_status_rx_deinit);
+	fprintf(stderr, "rx_status_m2s_req:          0x%x\n", stats->rx_fsm_status_m2s_req);
+	fprintf(stderr, "rx_status_m2s_rwd:          0x%x\n", stats->rx_fsm_status_m2s_rwd);
+	fprintf(stderr, "rx_status_ddr0_ar_req:      0x%x\n", stats->rx_fsm_status_ddr0_ar_req);
+	fprintf(stderr, "rx_status_ddr0_aw_req:      0x%x\n", stats->rx_fsm_status_ddr0_aw_req);
+	fprintf(stderr, "rx_status_ddr0_w_req:       0x%x\n", stats->rx_fsm_status_ddr0_w_req);
+	fprintf(stderr, "rx_status_ddr1_ar_req:      0x%x\n", stats->rx_fsm_status_ddr1_ar_req);
+	fprintf(stderr, "rx_status_ddr1_aw_req:      0x%x\n", stats->rx_fsm_status_ddr1_aw_req);
+	fprintf(stderr, "rx_status_ddr1_w_req:       0x%x\n", stats->rx_fsm_status_ddr1_w_req);
+	fprintf(stderr, "tx_status_tx_deinit:        0x%x\n", stats->tx_fsm_status_tx_deinit);
+	fprintf(stderr, "tx_status_s2m_ndr:          0x%x\n", stats->tx_fsm_status_s2m_ndr);
+	fprintf(stderr, "tx_status_s2m_drc:          0x%x\n", stats->tx_fsm_status_s2m_drc);
+	fprintf(stderr, "qos_tel_dev_load_read:      %u\n", stats->stat_qos_tel_dev_load_read);
+	fprintf(stderr, "qos_tel_dev_load_type2_read:%u\n", stats->stat_qos_tel_dev_load_type2_read);
+	fprintf(stderr, "qos_tel_dev_load_write:     %u\n", stats->stat_qos_tel_dev_load_write);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
