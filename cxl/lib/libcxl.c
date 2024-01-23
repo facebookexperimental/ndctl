@@ -12336,3 +12336,120 @@ out:
         cxl_cmd_unref(cmd);
         return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_DDR_INIT_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_INIT_STATUS_OPCODE 0xFB17
+
+typedef enum {
+  DDR_INIT_INPROGRESS = 0,
+  DDR_INIT_PASSED = 1,
+  DDR_INIT_FAILED = -1,
+  DDR_INIT_FAILED_NO_CH0_DIMM0 = -2,
+  DDR_INIT_FAILED_UNKNOWN_DIMM = -3,
+} ddr_status;
+
+typedef enum {
+  CH_0 = 0,
+  CH_1 = 1,
+  CH_NA = -1,
+} f_channel_id;
+
+struct ddr_init_boot_status {
+  int8_t ddr_init_status;
+  int8_t failed_channel_id;
+  char failed_dimm_silk_screen;
+};
+
+struct cxl_ddr_init_status_out {
+struct ddr_init_boot_status init_status;
+} __packed;
+
+CXL_EXPORT int cxl_memdev_ddr_init_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_init_status_out *ddr_init_status_out;
+	int rc = 0;
+	int8_t status;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_INIT_STATUS_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_INIT_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_DDR_INIT_STATUS);
+		return -EINVAL;
+	}
+	ddr_init_status_out = (void *)cmd->send_cmd->out.payload;
+	status = ddr_init_status_out->init_status.ddr_init_status;
+	switch (status)
+	{
+		case DDR_INIT_INPROGRESS:
+				fprintf(stdout, "DDR INIT IS IN PROGRESS\n");
+				break;
+		case DDR_INIT_PASSED:
+				fprintf(stdout, "DDR INIT PASSED\n");
+				break;
+		case DDR_INIT_FAILED:
+				fprintf(stdout, "DDR INIT FAILED for CH:%d DIMM:%c\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: REPLACE CH:%d DIMM:%c and RE-TRY\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+				break;
+		case DDR_INIT_FAILED_NO_CH0_DIMM0:
+				fprintf(stdout, "DDR INIT FAILED. CH:%d DIMM:%c is NOT PLUGGED IN\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: PLUG IN CH:%d DIMM:%c\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+				break;
+		case DDR_INIT_FAILED_UNKNOWN_DIMM:
+				fprintf(stdout, "DDR INIT FAILED. UN-SUPPORTED/UNKNOWN DIMM\n");
+				fprintf(stdout, "RECOVERY REMEDY: PLUG IN SUPPORTED DIMMs\n");
+				break;
+		default:
+				fprintf(stdout, "DDR INIT STATUS invalid\n");
+	}
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}
