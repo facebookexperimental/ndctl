@@ -195,4 +195,5 @@ global:
     cxl_memdev_ddr_init_status;
     cxl_memdev_get_cxl_membridge_stats;
     cxl_memdev_trigger_coredump;
+    cxl_memdev_ddr_err_inj_en;
 } LIBCXL_3;

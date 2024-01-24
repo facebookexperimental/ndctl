@@ -196,6 +196,7 @@ static struct cmd_struct commands[] = {
 	{ "ddr-init-status", .c_fn = cmd_ddr_init_status },
 	{ "get-cxl-membridge-stats", .c_fn = cmd_get_cxl_membridge_stats },
 	{ "trigger-coredump", .c_fn = cmd_trigger_coredump },
+	{ "ddr-err-inj-en", .c_fn = cmd_ddr_err_inj_en },
 };
 
 int main(int argc, const char **argv)
