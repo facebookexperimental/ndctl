@@ -192,4 +192,5 @@ global:
     cxl_memdev_get_ddr_ecc_err_info;
     cxl_memdev_start_ddr_ecc_scrub;
     cxl_memdev_ddr_ecc_scrub_status;
+    cxl_memdev_ddr_init_status;
 } LIBCXL_3;
