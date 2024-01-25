@@ -5269,6 +5269,5 @@ int cmd_get_cxl_membridge_stats(int argc, const char **argv, struct cxl_ctx *ctx
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_get_cxl_membridge_stats, cmd_get_cxl_membridge_stats_options,
       "cxl get_cxl_membridge_errors");
-
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
