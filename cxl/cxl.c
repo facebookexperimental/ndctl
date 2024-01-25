@@ -193,7 +193,7 @@ static struct cmd_struct commands[] = {
 	{ "get-ddr-ecc-err-info", .c_fn = cmd_get_ddr_ecc_err_info },
 	{ "start-ddr-ecc-scrub", .c_fn = cmd_start_ddr_ecc_scrub },
 	{ "ddr-ecc-scrub-status", .c_fn = cmd_ddr_ecc_scrub_status },
-  { "ddr-init-status", .c_fn = cmd_ddr_init_status },
+	{ "ddr-init-status", .c_fn = cmd_ddr_init_status },
 	{ "get-cxl-membridge-stats", .c_fn = cmd_get_cxl_membridge_stats },
 };
 
