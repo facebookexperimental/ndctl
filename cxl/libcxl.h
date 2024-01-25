@@ -260,6 +260,7 @@ int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr,
 int cxl_memdev_get_ddr_ecc_err_info(struct cxl_memdev *memdev);
 int cxl_memdev_start_ddr_ecc_scrub(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_ecc_scrub_status(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_init_status(struct cxl_memdev *memdev);
 int cxl_memdev_get_cxl_membridge_stats(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \

@@ -12337,6 +12337,123 @@ out:
         return rc;
 }
 
+#define CXL_MEM_COMMAND_ID_DDR_INIT_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_INIT_STATUS_OPCODE 0xFB17
+
+typedef enum {
+  DDR_INIT_INPROGRESS = 0,
+  DDR_INIT_PASSED = 1,
+  DDR_INIT_FAILED = -1,
+  DDR_INIT_FAILED_NO_CH0_DIMM0 = -2,
+  DDR_INIT_FAILED_UNKNOWN_DIMM = -3,
+} ddr_status;
+
+typedef enum {
+  CH_0 = 0,
+  CH_1 = 1,
+  CH_NA = -1,
+} f_channel_id;
+
+struct ddr_init_boot_status {
+  int8_t ddr_init_status;
+  int8_t failed_channel_id;
+  char failed_dimm_silk_screen;
+};
+
+struct cxl_ddr_init_status_out {
+struct ddr_init_boot_status init_status;
+} __packed;
+
+CXL_EXPORT int cxl_memdev_ddr_init_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_init_status_out *ddr_init_status_out;
+	int rc = 0;
+	int8_t status;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_INIT_STATUS_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_INIT_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_DDR_INIT_STATUS);
+		return -EINVAL;
+	}
+	ddr_init_status_out = (void *)cmd->send_cmd->out.payload;
+	status = ddr_init_status_out->init_status.ddr_init_status;
+	switch (status)
+	{
+		case DDR_INIT_INPROGRESS:
+				fprintf(stdout, "DDR INIT IS IN PROGRESS\n");
+				break;
+		case DDR_INIT_PASSED:
+				fprintf(stdout, "DDR INIT PASSED\n");
+				break;
+		case DDR_INIT_FAILED:
+				fprintf(stdout, "DDR INIT FAILED for CH:%d DIMM:%c\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: REPLACE CH:%d DIMM:%c and RE-TRY\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+				break;
+		case DDR_INIT_FAILED_NO_CH0_DIMM0:
+				fprintf(stdout, "DDR INIT FAILED. CH:%d DIMM:%c is NOT PLUGGED IN\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: PLUG IN CH:%d DIMM:%c\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+				break;
+		case DDR_INIT_FAILED_UNKNOWN_DIMM:
+				fprintf(stdout, "DDR INIT FAILED. UN-SUPPORTED/UNKNOWN DIMM\n");
+				fprintf(stdout, "RECOVERY REMEDY: PLUG IN SUPPORTED DIMMs\n");
+				break;
+		default:
+				fprintf(stdout, "DDR INIT STATUS invalid\n");
+	}
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}
+
 struct cxl_cmd_membridge_stats_out {
   // mem transaction counters
   uint64_t m2s_req_count;
@@ -12364,7 +12481,7 @@ struct cxl_cmd_membridge_stats_out {
   uint8_t rx_fsm_status_m2s_req;
   uint8_t rx_fsm_status_m2s_rwd;
   uint8_t rx_fsm_status_ddr0_ar_req;
-  uint8_t rx_fsm_status_ddr0_aw_req;
+    uint8_t rx_fsm_status_ddr0_aw_req;
   uint8_t rx_fsm_status_ddr0_w_req;
   // rx state machine status 1
   uint8_t rx_fsm_status_ddr1_ar_req;
@@ -12386,74 +12503,74 @@ struct cxl_cmd_membridge_stats_out {
 
 CXL_EXPORT int cxl_memdev_get_cxl_membridge_stats(struct cxl_memdev *memdev)
 {
-	struct cxl_cmd *cmd;
-	struct cxl_cmd_membridge_stats_out *stats;
-	int rc = 0;
+        struct cxl_cmd *cmd;
+        struct cxl_cmd_membridge_stats_out *stats;
+        int rc = 0;
 
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS_OPCODE);
+        cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS_OPCODE);
 
-	if (!cmd) {
-		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
-				cxl_memdev_get_devname(memdev));
-		return -ENOMEM;
-	}
+        if (!cmd) {
+                fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                                cxl_memdev_get_devname(memdev));
+                return -ENOMEM;
+        }
 
-	rc = cxl_cmd_submit(cmd);
-	if (rc < 0) {
-		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
-		goto out;
-	}
+        rc = cxl_cmd_submit(cmd);
+        if (rc < 0) {
+                fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+                goto out;
+        }
 
-	rc = cxl_cmd_get_mbox_status(cmd);
+        rc = cxl_cmd_get_mbox_status(cmd);
 
-	if (rc != 0) {
-		fprintf(stderr, "%s: Read failed, firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
-		goto out;
-	}
+        if (rc != 0) {
+                fprintf(stderr, "%s: Read failed, firmware status: %d\n",
+                                cxl_memdev_get_devname(memdev), rc);
+                goto out;
+        }
 
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS) {
-		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS);
-		return -EINVAL;
-	}
+        if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS) {
+                fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                                cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_CXL_MEMBRIDGE_STATS);
+                return -EINVAL;
+        }
 
-	stats = (void *)cmd->send_cmd->out.payload;
-	// print membridge statistics info
-	fprintf(stderr, "m2s_req_count:              %lu\n", stats->m2s_req_count);
-	fprintf(stderr, "m2s_rwd_count:              %lu\n", stats->m2s_rwd_count);
-	fprintf(stderr, "s2m_drs_count:              %lu\n", stats->s2m_drs_count);
-	fprintf(stderr, "s2m_ndr_count:              %lu\n", stats->s2m_ndr_count);
-	fprintf(stderr, "rwd_first_poison_hpa:       0x%lx\n", stats->rwd_first_poison_hpa_log);
-	fprintf(stderr, "rwd_latest_poison_hpa:      0x%lx\n", stats->rwd_latest_poison_hpa_log);
-	fprintf(stderr, "req_first_hpa_log:          0x%lx\n", stats->req_first_hpa_log);
-	fprintf(stderr, "rwd_first_hpa_log:          0x%lx\n", (u64)stats->rwd_first_hpa_log);
-	fprintf(stderr, "m2s_req_corr_err_count:     %u\n", stats->mst_m2s_req_corr_err_count);
-	fprintf(stderr, "m2s_rwd_corr_err_count:     %u\n", stats->mst_m2s_rwd_corr_err_count);
-	fprintf(stderr, "fifo_full_status:           0x%x\n", stats->fifo_full_status);
-	fprintf(stderr, "fifo_empty_status:          0x%x\n", stats->fifo_empty_status);
-	fprintf(stderr, "m2s_rwd_credit_count:       %u\n", stats->m2s_rwd_credit_count);
-	fprintf(stderr, "m2s_req_credit_count:       %u\n", stats->m2s_req_credit_count);
-	fprintf(stderr, "s2m_ndr_credit_count:       %u\n", stats->s2m_ndr_credit_count);
-	fprintf(stderr, "s2m_drc_credit_count:       %u\n", stats->s2m_drc_credit_count);
-	fprintf(stderr, "rx_status_rx_deinit:        %u\n", stats->rx_fsm_status_rx_deinit);
-	fprintf(stderr, "rx_status_m2s_req:          0x%x\n", stats->rx_fsm_status_m2s_req);
-	fprintf(stderr, "rx_status_m2s_rwd:          0x%x\n", stats->rx_fsm_status_m2s_rwd);
-	fprintf(stderr, "rx_status_ddr0_ar_req:      0x%x\n", stats->rx_fsm_status_ddr0_ar_req);
-	fprintf(stderr, "rx_status_ddr0_aw_req:      0x%x\n", stats->rx_fsm_status_ddr0_aw_req);
-	fprintf(stderr, "rx_status_ddr0_w_req:       0x%x\n", stats->rx_fsm_status_ddr0_w_req);
-	fprintf(stderr, "rx_status_ddr1_ar_req:      0x%x\n", stats->rx_fsm_status_ddr1_ar_req);
-	fprintf(stderr, "rx_status_ddr1_aw_req:      0x%x\n", stats->rx_fsm_status_ddr1_aw_req);
-	fprintf(stderr, "rx_status_ddr1_w_req:       0x%x\n", stats->rx_fsm_status_ddr1_w_req);
-	fprintf(stderr, "tx_status_tx_deinit:        0x%x\n", stats->tx_fsm_status_tx_deinit);
-	fprintf(stderr, "tx_status_s2m_ndr:          0x%x\n", stats->tx_fsm_status_s2m_ndr);
-	fprintf(stderr, "tx_status_s2m_drc:          0x%x\n", stats->tx_fsm_status_s2m_drc);
-	fprintf(stderr, "qos_tel_dev_load_read:      %u\n", stats->stat_qos_tel_dev_load_read);
-	fprintf(stderr, "qos_tel_dev_load_type2_read:%u\n", stats->stat_qos_tel_dev_load_type2_read);
-	fprintf(stderr, "qos_tel_dev_load_write:     %u\n", stats->stat_qos_tel_dev_load_write);
+        stats = (void *)cmd->send_cmd->out.payload;
+        // print membridge statistics info
+        fprintf(stderr, "m2s_req_count:              %lu\n", stats->m2s_req_count);
+        fprintf(stderr, "m2s_rwd_count:              %lu\n", stats->m2s_rwd_count);
+        fprintf(stderr, "s2m_drs_count:              %lu\n", stats->s2m_drs_count);
+        fprintf(stderr, "s2m_ndr_count:              %lu\n", stats->s2m_ndr_count);
+        fprintf(stderr, "rwd_first_poison_hpa:       0x%lx\n", stats->rwd_first_poison_hpa_log);
+        fprintf(stderr, "rwd_latest_poison_hpa:      0x%lx\n", stats->rwd_latest_poison_hpa_log);
+        fprintf(stderr, "req_first_hpa_log:          0x%lx\n", stats->req_first_hpa_log);
+        fprintf(stderr, "rwd_first_hpa_log:          0x%lx\n", (u64)stats->rwd_first_hpa_log);
+        fprintf(stderr, "m2s_req_corr_err_count:     %u\n", stats->mst_m2s_req_corr_err_count);
+        fprintf(stderr, "m2s_rwd_corr_err_count:     %u\n", stats->mst_m2s_rwd_corr_err_count);
+        fprintf(stderr, "fifo_full_status:           0x%x\n", stats->fifo_full_status);
+        fprintf(stderr, "fifo_empty_status:          0x%x\n", stats->fifo_empty_status);
+        fprintf(stderr, "m2s_rwd_credit_count:       %u\n", stats->m2s_rwd_credit_count);
+        fprintf(stderr, "m2s_req_credit_count:       %u\n", stats->m2s_req_credit_count);
+        fprintf(stderr, "s2m_ndr_credit_count:       %u\n", stats->s2m_ndr_credit_count);
+        fprintf(stderr, "s2m_drc_credit_count:       %u\n", stats->s2m_drc_credit_count);
+        fprintf(stderr, "rx_status_rx_deinit:        0x%x\n", stats->rx_fsm_status_rx_deinit);
+        fprintf(stderr, "rx_status_m2s_req:          0x%x\n", stats->rx_fsm_status_m2s_req);
+        fprintf(stderr, "rx_status_m2s_rwd:          0x%x\n", stats->rx_fsm_status_m2s_rwd);
+        fprintf(stderr, "rx_status_ddr0_ar_req:      0x%x\n", stats->rx_fsm_status_ddr0_ar_req);
+        fprintf(stderr, "rx_status_ddr0_aw_req:      0x%x\n", stats->rx_fsm_status_ddr0_aw_req);
+        fprintf(stderr, "rx_status_ddr0_w_req:       0x%x\n", stats->rx_fsm_status_ddr0_w_req);
+        fprintf(stderr, "rx_status_ddr1_ar_req:      0x%x\n", stats->rx_fsm_status_ddr1_ar_req);
+        fprintf(stderr, "rx_status_ddr1_aw_req:      0x%x\n", stats->rx_fsm_status_ddr1_aw_req);
+        fprintf(stderr, "rx_status_ddr1_w_req:       0x%x\n", stats->rx_fsm_status_ddr1_w_req);
+        fprintf(stderr, "tx_status_tx_deinit:        0x%x\n", stats->tx_fsm_status_tx_deinit);
+        fprintf(stderr, "tx_status_s2m_ndr:          0x%x\n", stats->tx_fsm_status_s2m_ndr);
+        fprintf(stderr, "tx_status_s2m_drc:          0x%x\n", stats->tx_fsm_status_s2m_drc);
+        fprintf(stderr, "qos_tel_dev_load_read:      %u\n", stats->stat_qos_tel_dev_load_read);
+        fprintf(stderr, "qos_tel_dev_load_type2_read:%u\n", stats->stat_qos_tel_dev_load_type2_read);
+        fprintf(stderr, "qos_tel_dev_load_write:     %u\n", stats->stat_qos_tel_dev_load_write);
 
 out:
-	cxl_cmd_unref(cmd);
-	return rc;
+        cxl_cmd_unref(cmd);
+        return rc;
 }
