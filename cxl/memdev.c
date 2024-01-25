@@ -5262,7 +5262,7 @@ int cmd_ddr_init_status(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_init_status, cmd_ddr_init_status_options,
       "cxl ddr-init-status <mem0> [<mem1>..<memN>] [<options>]");
-      return rc >= 0 ? 0 : EXIT_FAILURE;
+  return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
 int cmd_get_cxl_membridge_stats(int argc, const char **argv, struct cxl_ctx *ctx)
