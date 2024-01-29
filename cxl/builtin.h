@@ -138,4 +138,5 @@ int cmd_get_ddr_ecc_err_info(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_start_ddr_ecc_scrub(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_ecc_scrub_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_init_status(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_cxl_membridge_stats(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
