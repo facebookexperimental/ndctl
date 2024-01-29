@@ -12574,3 +12574,44 @@ out:
         cxl_cmd_unref(cmd);
         return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_TRIGGER_COREDUMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_TRIGGER_COREDUMP_OPCODE 0xFB1A
+
+CXL_EXPORT int cxl_memdev_trigger_coredump(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_TRIGGER_COREDUMP_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+			cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_TRIGGER_COREDUMP) {
+                fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                                CXL_MEM_COMMAND_ID_TRIGGER_COREDUMP);
+                return -EINVAL;
+        }
+
+out:
+        cxl_cmd_unref(cmd);
+        return rc;
+}
