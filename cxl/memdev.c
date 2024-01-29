@@ -2135,6 +2135,22 @@ static const struct option cmd_trigger_coredump_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_err_inj_en_params {
+	u32 ddr_id;
+	u32 err_type;
+	bool verbose;
+} ddr_err_inj_en_params;
+
+#define DDR_ERR_INJ_EN_OPTIONS() \
+OPT_UINTEGER('d', "ddr_id", &ddr_err_inj_en_params.ddr_id, "ddr id <0-DDR_CTRL0,1-DDR_CTRL1>"), \
+OPT_UINTEGER('t', "err_type", &ddr_err_inj_en_params.err_type, "error type\n\t\t\t0: AXI bus parity READ ADDR\n\t\t\t1: AXI bus parity WRITE ADDR\n\t\t\t2: AXI bus parity WRITE DATA\n\t\t\t3: CA bus parity\n\t\t\t4: ECC correctable\n\t\t\t5: ECC uncorrectable")
+
+static const struct option cmd_ddr_err_inj_en_options[] = {
+  BASE_OPTIONS(),
+  DDR_ERR_INJ_EN_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4041,6 +4057,18 @@ static int action_cmd_trigger_coredump(struct cxl_memdev *memdev,
         return cxl_memdev_trigger_coredump(memdev);
 }
 
+static int action_cmd_ddr_err_inj_en(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr-ecc-err-inj-en\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_err_inj_en(memdev, ddr_err_inj_en_params.ddr_id, ddr_err_inj_en_params.err_type);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5293,6 +5321,14 @@ int cmd_trigger_coredump(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_trigger_coredump, cmd_trigger_coredump_options,
       "cxl trigger-coredump <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_err_inj_en(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_err_inj_en, cmd_ddr_err_inj_en_options,
+      "cxl ddr-ecc-err-inj_en <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
