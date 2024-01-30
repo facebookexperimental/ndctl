@@ -4061,7 +4061,7 @@ static int action_cmd_ddr_err_inj_en(struct cxl_memdev *memdev,
 				      struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
-		fprintf(stderr, "%s: memdev active, abort ddr-ecc-err-inj-en\n",
+		fprintf(stderr, "%s: memdev active, abort ddr-err-inj-en\n",
 			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
 	}
@@ -5328,7 +5328,7 @@ int cmd_trigger_coredump(int argc, const char **argv, struct cxl_ctx *ctx)
 int cmd_ddr_err_inj_en(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_err_inj_en, cmd_ddr_err_inj_en_options,
-      "cxl ddr-ecc-err-inj_en <mem0> [<mem1>..<memN>] [<options>]");
+      "cxl ddr-err-inj-en <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
