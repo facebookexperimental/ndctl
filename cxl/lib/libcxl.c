@@ -12623,10 +12623,11 @@ out:
 struct cxl_ddr_err_inj_en_in {
 	uint32_t ddr_id;
 	uint32_t err_type;
+	uint64_t ecc_fwc_mask;
 } __attribute__((packed));
 
 
-CXL_EXPORT int cxl_memdev_ddr_err_inj_en(struct cxl_memdev *memdev, u32 ddr_id, u32 err_type)
+CXL_EXPORT int cxl_memdev_ddr_err_inj_en(struct cxl_memdev *memdev, u32 ddr_id, u32 err_type, u64 ecc_fwc_mask)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -12657,6 +12658,7 @@ CXL_EXPORT int cxl_memdev_ddr_err_inj_en(struct cxl_memdev *memdev, u32 ddr_id, 
 	ddr_err_inj_en_in = (void *) cmd->send_cmd->in.payload;
 	ddr_err_inj_en_in->ddr_id = ddr_id;
 	ddr_err_inj_en_in->err_type = err_type;
+	ddr_err_inj_en_in->ecc_fwc_mask = ecc_fwc_mask;
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
