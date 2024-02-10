@@ -668,10 +668,10 @@ int cmd_get_supported_logs(int argc, const char **argv, struct cxl_ctx *ctx)
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_get_cel_log(int argc, const char **argv, struct cxl_ctx *ctx)
+int cmd_get_log(int argc, const char **argv, struct cxl_ctx *ctx)
 {
-	int rc = memdev_action(argc, argv, ctx, action_cmd_get_cel_log, cmd_get_cel_log_options,
-			"cxl get-cel-log <mem0> [<mem1>..<memN>] [<options>]");
+	int rc = memdev_action(argc, argv, ctx, action_cmd_get_log, cmd_get_log_options,
+			"cxl get-log <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

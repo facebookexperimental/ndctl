@@ -70,7 +70,7 @@ global:
 	cxl_memdev_get_lsa;
 	cxl_memdev_cmd_identify;
 	cxl_memdev_get_supported_logs;
-	cxl_memdev_get_cel_log;
+	cxl_memdev_get_log;
 	cxl_memdev_get_event_interrupt_policy;
 	cxl_memdev_set_event_interrupt_policy;
 	cxl_memdev_get_timestamp;
