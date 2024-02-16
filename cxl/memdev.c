@@ -96,9 +96,17 @@ static struct _log_uuid {
 OPT_STRING('l', "log_uuid", &log_uuid.uuid, "log-uuid", \
   "CEL Log UUID")
 
-static const struct option cmd_get_cel_log_options[] = {
+static struct _log_size {
+	u32 size;
+} log_size;
+
+#define LOG_SIZE_OPTIONS() \
+OPT_UINTEGER('s', "log_size", &log_size.size, "log-size")
+
+static const struct option cmd_get_log_options[] = {
   BASE_OPTIONS(),
   LOG_UUID_OPTIONS(),
+  LOG_SIZE_OPTIONS(),
   OPT_END(),
 };
 
@@ -2498,15 +2506,15 @@ static int action_cmd_set_event_interrupt_policy(struct cxl_memdev *memdev, stru
   return cxl_memdev_set_event_interrupt_policy(memdev, interrupt_policy_params.policy);
 }
 
-static int action_cmd_get_cel_log(struct cxl_memdev *memdev, struct action_context *actx)
+static int action_cmd_get_log(struct cxl_memdev *memdev, struct action_context *actx)
 {
   if (cxl_memdev_is_active(memdev)) {
-    fprintf(stderr, "%s: memdev active, get_cel_log\n",
+    fprintf(stderr, "%s: memdev active, get_log\n",
       cxl_memdev_get_devname(memdev));
     return -EBUSY;
   }
 
-  return cxl_memdev_get_cel_log(memdev, log_uuid.uuid);
+  return cxl_memdev_get_log(memdev, log_uuid.uuid, log_size.size);
 }
 
 static int action_cmd_get_supported_logs(struct cxl_memdev *memdev, struct action_context *actx)
@@ -4315,10 +4323,10 @@ int cmd_get_supported_logs(int argc, const char **argv, struct cxl_ctx *ctx)
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_get_cel_log(int argc, const char **argv, struct cxl_ctx *ctx)
+int cmd_get_log(int argc, const char **argv, struct cxl_ctx *ctx)
 {
-  int rc = memdev_action(argc, argv, ctx, action_cmd_get_cel_log, cmd_get_cel_log_options,
-      "cxl get-cel-log <mem0> [<mem1>..<memN>] [<options>]");
+  int rc = memdev_action(argc, argv, ctx, action_cmd_get_log, cmd_get_log_options,
+      "cxl get-log <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

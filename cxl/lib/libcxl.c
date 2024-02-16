@@ -1471,6 +1471,7 @@ out:
 }
 
 #define CEL_UUID "0da9c0b5-bf41-4b78-8f79-96b1623b3f17"
+#define VENDOR_LOG_UUID "5e1819d9-11a9-400c-811f-d60719403d86"
 
 struct cxl_mbox_get_log {
 	uuid_t uuid;
@@ -1483,13 +1484,15 @@ struct cel_entry {
 	__le16 effect;
 } __attribute__((packed));
 
-CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev, const char* uuid)
+CXL_EXPORT int cxl_memdev_get_log(struct cxl_memdev *memdev, const char* uuid, const unsigned int data_size)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_get_log *get_log_input;
 	struct cel_entry *cel_entries;
 	int no_cel_entries;
 	int rc = 0;
+	int remaining_bytes = data_size;
+	unsigned int bytes_read = 0;
 
 	if (!uuid) {
 		fprintf(stderr, "%s: Please specify log uuid argument\n",
@@ -1497,49 +1500,63 @@ CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev, const char* uui
 		return -EINVAL;
 	}
 
-	cmd = cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_LOG);
-	if (!cmd) {
-		fprintf(stderr, "%s: cxl_memdev_get_cel_log returned Null output\n",
-				cxl_memdev_get_devname(memdev));
-		return -ENOMEM;
-	}
+	do {
+		cmd = cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_LOG);
+		if (!cmd) {
+			fprintf(stderr, "%s: cxl_memdev_get_log returned Null output\n",
+					cxl_memdev_get_devname(memdev));
+			return -ENOMEM;
+		}
 
-	get_log_input = (void *) cmd->send_cmd->in.payload;
-	uuid_parse(uuid, get_log_input->uuid);
-	get_log_input->offset = 0;
-	get_log_input->length = cmd->memdev->payload_max;
+		get_log_input = (void *) cmd->send_cmd->in.payload;
+		uuid_parse(uuid, get_log_input->uuid);
+		get_log_input->offset = bytes_read;
+		get_log_input->length = cmd->memdev->payload_max;
+		rc = cxl_cmd_submit(cmd);
+		if (rc < 0) {
+			fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+					cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+			goto out;
+		}
 
-	rc = cxl_cmd_submit(cmd);
-	if (rc < 0) {
-		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
-				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
-		goto out;
-	}
+		rc = cxl_cmd_get_mbox_status(cmd);
+		if (rc != 0) {
+			fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+					cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+			rc = -ENXIO;
+			goto out;
+		}
 
-	rc = cxl_cmd_get_mbox_status(cmd);
-	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
-				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
-		rc = -ENXIO;
-		goto out;
-	}
+		if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_LOG) {
+			fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+					cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_LOG);
+			return -EINVAL;
+		}
 
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_LOG) {
-		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
-				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_LOG);
-		return -EINVAL;
-	}
+		fprintf(stdout, "payload info\n");
+		fprintf(stdout, "    out size: 0x%x\n", cmd->send_cmd->out.size);
 
-	fprintf(stdout, "payload info\n");
-	fprintf(stdout, "    out size: 0x%x\n", cmd->send_cmd->out.size);
-	cel_entries = (void *)cmd->send_cmd->out.payload;
-	no_cel_entries = (cmd->send_cmd->out.size)/sizeof(struct cel_entry);
-	fprintf(stdout, "    no_cel_entries size: %d\n", no_cel_entries);
-	for (int e = 0; e < no_cel_entries; ++e) {
-		fprintf(stdout, "    cel_entry[%d] opcode: 0x%x, effect: 0x%x\n", e,
-				le16_to_cpu(cel_entries[e].opcode),
-				le16_to_cpu(cel_entries[e].effect));
-	}
+		if (!strcmp(uuid, CEL_UUID)) {
+			cel_entries = (void *)cmd->send_cmd->out.payload;
+			no_cel_entries = (cmd->send_cmd->out.size)/sizeof(struct cel_entry);
+			fprintf(stdout, "    no_cel_entries size: %d\n", no_cel_entries);
+			for (int e = 0; e < no_cel_entries; ++e) {
+				fprintf(stdout, "    cel_entry[%d] opcode: 0x%x, effect: 0x%x\n", e,
+						le16_to_cpu(cel_entries[e].opcode),
+						le16_to_cpu(cel_entries[e].effect));
+			}
+		} else if (!strcmp(uuid, VENDOR_LOG_UUID)) {
+			fprintf(stdout, " number of received bytes = %d\n", cmd->send_cmd->out.size);
+			fprintf(stdout, "%s", (char *)cmd->send_cmd->out.payload);
+		}
+
+		/* keep getting the data in chunks of payload max */
+		bytes_read += cmd->send_cmd->out.size;
+		if (remaining_bytes >= cmd->send_cmd->out.size)
+			remaining_bytes -= cmd->send_cmd->out.size;
+		else
+			remaining_bytes = 0;
+	} while(remaining_bytes);
 out:
 	cxl_cmd_unref(cmd);
 	return rc;

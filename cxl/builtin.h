@@ -17,7 +17,7 @@ int cmd_init_labels(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_check_labels(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_identify(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_supported_logs(int argc, const char **argv, struct cxl_ctx *ctx);
-int cmd_get_cel_log(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_log(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_event_interrupt_policy(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_set_event_interrupt_policy(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_timestamp(int argc, const char **argv, struct cxl_ctx *ctx);
