@@ -10465,6 +10465,512 @@ out:
 	return rc;
 }
 
+/* DDR STATS START */
+#define CXL_MEM_COMMAND_ID_DDR_STATS_RUN CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_STATS_RUN_OPCODE 0xFB1B
+#define CXL_MEM_COMMAND_ID_DDR_STATS_RUN_PAYLOAD_IN_SIZE 9
+
+struct cxl_mbox_ddr_stats_run_in {
+  uint8_t ddr_id;
+  uint32_t monitor_time;
+  uint32_t loop_count;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_stats_run(struct cxl_memdev *memdev,
+	u8 ddr_id, uint32_t monitor_time, uint32_t loop_count)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_ddr_stats_run_in *ddr_stats_run_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_STATS_RUN_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_STATS_RUN_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	ddr_stats_run_in = (void *) cmd->send_cmd->in.payload;
+
+	ddr_stats_run_in->ddr_id = ddr_id;
+	ddr_stats_run_in->monitor_time = monitor_time;
+	ddr_stats_run_in->loop_count = loop_count;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_STATS_RUN) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				 cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				 CXL_MEM_COMMAND_ID_DDR_STATS_RUN);
+		return -EINVAL;
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_DDR_STATS_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_STATS_STATUS_OPCODE 0xFB1C
+
+struct cxl_ddr_stats_status_out {
+	int run_status;
+	uint32_t loop_count;
+}  __attribute__((packed));
+
+/* DDR STATS STATUS */
+CXL_EXPORT int cxl_memdev_ddr_stats_status(struct cxl_memdev *memdev, int* run_status, uint32_t* loop_count)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_stats_status_out *ddr_stats_status_out;
+
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_STATS_STATUS_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_STATS_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_DDR_STATS_STATUS);
+		return -EINVAL;
+	}
+	ddr_stats_status_out = (void *)cmd->send_cmd->out.payload;
+	*run_status = ddr_stats_status_out->run_status;
+	*loop_count = ddr_stats_status_out->loop_count;
+
+	fprintf(stdout, "%s\n", ddr_stats_status_out->run_status ?
+			"DDR STATS IS BUSY" : "DDR STATS IS NOT RUNNING/FINISHED");
+
+	fprintf(stdout, "Loop Count = %d\n", ddr_stats_status_out->loop_count);
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+#define CXL_MEM_COMMAND_ID_DDR_STATS_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_STATS_GET_OPCODE 0xFB1D
+
+#define NUM_BANK 16
+#define NUM_CS 4
+
+struct dfi_cs_pm {
+  uint32_t mrw_cnt;
+  uint32_t refresh_cnt;
+  uint32_t act_cnt;
+  uint32_t write_cnt;
+  uint32_t read_cnt;
+  uint32_t pre_cnt;
+  uint32_t rr_cnt;
+  uint32_t ww_cnt;
+  uint32_t rw_cnt;
+} __attribute__((packed));
+
+struct dfi_cs_bank_pm {
+  uint32_t bank_act_cnt;
+  uint32_t bank_wr_cnt;
+  uint32_t bank_rd_cnt;
+  uint32_t bank_pre_cnt;
+} __attribute__((packed));
+
+struct dfi_mc_pm {
+  uint32_t cmd_queue_full_events;
+  uint32_t info_fifo_full_events;
+  uint32_t wrdata_hold_fifo_full_events;
+  uint32_t port_cmd_fifo0_full_events;
+  uint32_t port_wrresp_fifo0_full_events;
+  uint32_t port_wr_fifo0_full_events;
+  uint32_t port_rd_fifo0_full_events;
+  uint32_t port_cmd_fifo1_full_events;
+  uint32_t port_wrresp_fifo1_full_events;
+  uint32_t port_wr_fifo1_full_events;
+  uint32_t port_rd_fifo1_full_events;
+  uint32_t ecc_dataout_corrected;
+  uint32_t ecc_dataout_uncorrected;
+  uint32_t pd_ex;
+  uint32_t pd_en;
+  uint32_t srex;
+  uint32_t sren;
+  uint32_t write;
+  uint32_t read;
+  uint32_t rmw;
+  uint32_t bank_act;
+  uint32_t precharge;
+  uint32_t precharge_all;
+  uint32_t mrw;
+  uint32_t auto_ref;
+  uint32_t rw_auto_pre;
+  uint32_t zq_cal_short;
+  uint32_t zq_cal_long;
+  uint32_t same_addr_ww_collision;
+  uint32_t same_addr_wr_collision;
+  uint32_t same_addr_rw_collision;
+  uint32_t same_addr_rr_collision;
+} __attribute__((packed));
+
+struct ddr_pmon_data {
+  uint64_t fr_cnt;
+  uint32_t idle_cnt;
+  uint32_t rd_ot_cnt;
+  uint32_t wr_ot_cnt;
+  uint32_t wrd_ot_cnt;
+  uint32_t rd_cmd_cnt;
+  uint32_t rd_cmd_busy_cnt;
+  uint32_t wr_cmd_cnt;
+  uint32_t wr_cmd_busy_cnt;
+  uint32_t rd_data_cnt;
+  uint32_t rd_data_busy_cnt;
+  uint32_t wr_data_cnt;
+  uint32_t wr_data_busy_cnt;
+  uint64_t rd_avg_lat;
+  uint64_t wr_avg_lat;
+  uint32_t rd_trans_smpl_cnt;
+  uint32_t wr_trans_smpl_cnt;
+} __attribute__((packed));
+
+struct ddr_data {
+  struct ddr_pmon_data pmon;
+  struct dfi_cs_pm cs_pm[NUM_CS];
+  struct dfi_cs_bank_pm cs_bank_pm[NUM_CS][NUM_BANK];
+  struct dfi_mc_pm mc_pm;
+} __attribute__((packed));
+
+struct ddr_stats_data {
+  struct ddr_data stats;
+} __attribute__((packed));
+
+typedef struct ddr_stats_data ddr_stats_data_t;
+
+#define MAX_CXL_TRANSFER_SZ (16 * 1024)
+
+static void display_pmon_stats(ddr_stats_data_t* disp_stats, uint32_t loop_count) {
+  uint32_t loop;
+  fprintf(stderr,"PMON STATS:\n");
+  fprintf(stderr,
+      "iteration, fr_cnt, idle_cnt, rd_ot_cnt, wr_ot_cnt, wrd_ot_cnt, "
+      "rd_cmd_cnt, rd_cmd_busy_cnt, wr_cmd_cnt, wr_cmd_busy_cnt, rd_data_cnt, "
+      "rd_data_busy_cnt, wr_data_cnt, wr_data_busy_cnt, "
+      "rd_avg_lat, wr_avg_lat, rd_trans_smpl_cnt, wr_trans_smpl_cnt\n");
+  for (loop = 0; loop < loop_count; loop++) {
+    fprintf(stderr,
+        "[%d], %lu, %u, %u, %u, %u, "
+        "%u, %u, %u, %u, %u, "
+        "%u, %u, %u, "
+        "%lu, %lu, %u, %u\n",
+        loop,
+        disp_stats->stats.pmon.fr_cnt,
+        disp_stats->stats.pmon.idle_cnt,
+        disp_stats->stats.pmon.rd_ot_cnt,
+        disp_stats->stats.pmon.wr_ot_cnt,
+        disp_stats->stats.pmon.wrd_ot_cnt,
+        disp_stats->stats.pmon.rd_cmd_cnt,
+        disp_stats->stats.pmon.rd_cmd_busy_cnt,
+        disp_stats->stats.pmon.wr_cmd_cnt,
+        disp_stats->stats.pmon.wr_cmd_busy_cnt,
+        disp_stats->stats.pmon.rd_data_cnt,
+        disp_stats->stats.pmon.rd_data_busy_cnt,
+        disp_stats->stats.pmon.wr_data_cnt,
+        disp_stats->stats.pmon.wr_data_busy_cnt,
+        disp_stats->stats.pmon.rd_avg_lat,
+        disp_stats->stats.pmon.wr_avg_lat,
+        disp_stats->stats.pmon.rd_trans_smpl_cnt,
+        disp_stats->stats.pmon.wr_trans_smpl_cnt);
+    disp_stats++;
+  }
+  fprintf(stderr,"\n");
+}
+
+static void display_cs_pm_stats(ddr_stats_data_t* disp_stats, uint32_t loop_count) {
+  uint32_t rank, loop;
+
+  fprintf(stderr, "CS PM STATS:\n");
+  fprintf(stderr,
+      "iteration, rank, mrw_cnt, refresh_cnt, act_cnt, write_cnt, "
+      "read_cnt, pre_cnt, rr_cnt, ww_cnt, rw_cnt\n ");
+
+  for (loop = 0; loop < loop_count; loop++) {
+    for (rank = 0; rank < NUM_CS; rank++) {
+      fprintf(stderr,
+          "[%d], %d, %u, %u, %u, %u, "
+          "%u, %u, %u, %u, %u\n",
+          loop,
+          rank,
+          disp_stats->stats.cs_pm[rank].mrw_cnt,
+          disp_stats->stats.cs_pm[rank].refresh_cnt,
+          disp_stats->stats.cs_pm[rank].act_cnt,
+          disp_stats->stats.cs_pm[rank].write_cnt,
+          disp_stats->stats.cs_pm[rank].read_cnt,
+          disp_stats->stats.cs_pm[rank].pre_cnt,
+          disp_stats->stats.cs_pm[rank].rr_cnt,
+          disp_stats->stats.cs_pm[rank].ww_cnt,
+          disp_stats->stats.cs_pm[rank].rw_cnt);
+    }
+    disp_stats++;
+  }
+  fprintf(stderr, "\n");
+}
+
+static void display_cs_bank_pm_stats(ddr_stats_data_t* disp_stats, uint32_t loop_count) {
+  uint32_t rank, bank, loop;
+
+  fprintf(stderr, "CS BANK STATS:\n");
+  fprintf(stderr,
+      "iteration, rank, bank, bank_act_cnt, bank_wr_cnt, bank_rd_cnt, bank_pre_cnt\n");
+  for (loop = 0; loop < loop_count; loop++) {
+    for (rank = 0; rank < NUM_CS; rank++) {
+      for (bank = 0; bank < NUM_BANK; bank++) {
+        fprintf(stderr,
+            "[%d], %d, %d, %u, %u, %u, %u\n",
+            loop,
+            rank,
+            bank,
+            disp_stats->stats.cs_bank_pm[rank][bank].bank_act_cnt,
+            disp_stats->stats.cs_bank_pm[rank][bank].bank_wr_cnt,
+            disp_stats->stats.cs_bank_pm[rank][bank].bank_rd_cnt,
+            disp_stats->stats.cs_bank_pm[rank][bank].bank_pre_cnt);
+      }
+    }
+    disp_stats++;
+  }
+  fprintf(stderr, "\n");
+}
+
+static void display_mc_pm_stats(ddr_stats_data_t* disp_stats, uint32_t loop_count) {
+  uint32_t loop;
+
+  fprintf(stderr, "PM STATS:\n");
+  fprintf(stderr,
+      "iteration, cmd_queue_full_events, info_fifo_full_events, "
+      "wrdata_hold_fifo_full_events, port_cmd_fifo0_full_events, "
+      "port_wrresp_fifo0_full_events, port_wr_fifo0_full_events, "
+      "port_rd_fifo0_full_events, port_cmd_fifo1_full_events, "
+      "port_wrresp_fifo1_full_events, port_wr_fifo1_full_events, "
+      "port_rd_fifo1_full_events, ecc_dataout_corrected, "
+      "ecc_dataout_uncorrected, pd_ex, pd_en, srex, sren, "
+      "write, read, rmw, bank_act, precharge, precharge_all, "
+      "mrw, auto_ref, rw_auto_pre, zq_cal_short, zq_cal_long, "
+      "same_addr_ww_collision, same_addr_wr_collision, "
+      "same_addr_rw_collision, same_addr_rr_collision\n");
+
+  for (loop = 0; loop < loop_count; loop++) {
+    fprintf(stderr,
+        "[%d], %u, %u, "
+        "%u, %u, "
+        "%u, %u, "
+        "%u, %u, "
+        "%u, %u, "
+        "%u, %u, "
+        "%u, %u, %u, %u, %u,"
+        "%u, %u, %u, %u, %u, %u,"
+        "%u, %u, %u, %u, %u,"
+        "%u, %u, "
+        "%u, %u\n",
+        loop,
+        disp_stats->stats.mc_pm.cmd_queue_full_events,
+        disp_stats->stats.mc_pm.info_fifo_full_events,
+        disp_stats->stats.mc_pm.wrdata_hold_fifo_full_events,
+        disp_stats->stats.mc_pm.port_cmd_fifo0_full_events,
+        disp_stats->stats.mc_pm.port_wrresp_fifo0_full_events,
+        disp_stats->stats.mc_pm.port_wr_fifo0_full_events,
+        disp_stats->stats.mc_pm.port_rd_fifo0_full_events,
+        disp_stats->stats.mc_pm.port_cmd_fifo1_full_events,
+        disp_stats->stats.mc_pm.port_wrresp_fifo1_full_events,
+        disp_stats->stats.mc_pm.port_wr_fifo1_full_events,
+        disp_stats->stats.mc_pm.port_rd_fifo1_full_events,
+        disp_stats->stats.mc_pm.ecc_dataout_corrected,
+        disp_stats->stats.mc_pm.ecc_dataout_uncorrected,
+        disp_stats->stats.mc_pm.pd_ex,
+        disp_stats->stats.mc_pm.pd_en,
+        disp_stats->stats.mc_pm.srex,
+        disp_stats->stats.mc_pm.sren,
+        disp_stats->stats.mc_pm.write,
+        disp_stats->stats.mc_pm.read,
+        disp_stats->stats.mc_pm.rmw,
+        disp_stats->stats.mc_pm.bank_act,
+        disp_stats->stats.mc_pm.precharge,
+        disp_stats->stats.mc_pm.precharge_all,
+        disp_stats->stats.mc_pm.mrw,
+        disp_stats->stats.mc_pm.auto_ref,
+        disp_stats->stats.mc_pm.rw_auto_pre,
+        disp_stats->stats.mc_pm.zq_cal_short,
+        disp_stats->stats.mc_pm.zq_cal_long,
+        disp_stats->stats.mc_pm.same_addr_ww_collision,
+        disp_stats->stats.mc_pm.same_addr_wr_collision,
+        disp_stats->stats.mc_pm.same_addr_rw_collision,
+        disp_stats->stats.mc_pm.same_addr_rr_collision);
+    disp_stats++;
+  }
+  fprintf(stderr, "\n");
+}
+
+struct cxl_ddr_stats_get_in {
+	uint32_t offset;
+	uint32_t transfer_sz;
+}  __attribute__((packed));
+
+#define CXL_MEM_COMMAND_ID_DDR_STATS_GET_PAYLOAD_IN_SIZE 8
+
+static int cxl_ddr_stats_get(struct cxl_memdev *memdev, unsigned char *dst, int offset, int bytes_to_cpy)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_stats_get_in *ddr_stats_get_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_STATS_GET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_STATS_GET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	ddr_stats_get_in = (void *) cmd->send_cmd->in.payload;
+	ddr_stats_get_in->offset = offset;
+	ddr_stats_get_in->transfer_sz = bytes_to_cpy;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_STATS_GET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_DDR_STATS_GET);
+		return -EINVAL;
+	}
+
+	memcpy(dst, (unsigned char*) cmd->send_cmd->out.payload, cmd->send_cmd->out.size);
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+/* DDR GET STATS */
+CXL_EXPORT int cxl_memdev_ddr_stats_get(struct cxl_memdev *memdev)
+{
+	unsigned char *buf;
+	int total_bytes = 0, bytes_to_cpy = 0, bytes_copied = 0;
+	ddr_stats_data_t* ddr_stats_start;
+	int rc = 0;
+	int run_status;
+	uint32_t loop_count;
+
+	rc = cxl_memdev_ddr_stats_status(memdev, &run_status, &loop_count);
+	if (rc < 0)
+		return rc;
+
+	if (run_status)
+		return -EBUSY;
+
+	total_bytes = sizeof(ddr_stats_data_t) * loop_count;
+
+	buf =(unsigned char *)malloc(total_bytes);
+	ddr_stats_start = (ddr_stats_data_t*)buf;
+
+	while(bytes_copied < total_bytes)
+	{
+		bytes_to_cpy = (total_bytes - bytes_copied) < MAX_CXL_TRANSFER_SZ ?
+			       (total_bytes - bytes_copied) : MAX_CXL_TRANSFER_SZ;
+		rc = cxl_ddr_stats_get(memdev, buf + bytes_copied, bytes_copied, bytes_to_cpy);
+		bytes_copied = bytes_copied + bytes_to_cpy;
+		if (rc < 0)
+			goto out;
+	}
+
+	display_pmon_stats(ddr_stats_start, loop_count);
+	display_cs_pm_stats(ddr_stats_start, loop_count);
+	display_cs_bank_pm_stats(ddr_stats_start, loop_count);
+	display_mc_pm_stats(ddr_stats_start, loop_count);
+out:
+	free(buf);
+	return rc;
+}
+
 /* REBOOT MODE SET */
 #define CXL_MEM_COMMAND_ID_REBOOT_MODE_SET CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_REBOOT_MODE_SET_OPCODE 0xFB0D
