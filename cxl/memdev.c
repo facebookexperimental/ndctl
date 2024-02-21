@@ -1963,6 +1963,29 @@ static const struct option cmd_ddr_margin_get_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_stats_run_params {
+	u32 ddr_id;
+	u32 monitor_time;
+	u32 loop_count;
+	bool verbose;
+} ddr_stats_run_params;
+
+#define DDR_STATS_RUN_OPTIONS() \
+OPT_UINTEGER('i', "ddr_id", &ddr_stats_run_params.ddr_id, "DDR ID"), \
+OPT_UINTEGER('m', "monitor_time", &ddr_stats_run_params.monitor_time, "MOINTOR TIME MSEC"), \
+OPT_UINTEGER('n', "loop_count", &ddr_stats_run_params.loop_count, "NUM ITERATION")
+
+static const struct option cmd_ddr_stats_run_options[] = {
+  BASE_OPTIONS(),
+  DDR_STATS_RUN_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_stats_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _reboot_mode_set_params {
 	u32 reboot_mode;
 	bool verbose;
@@ -3781,6 +3804,43 @@ abort:
   return rc;
 }
 
+static int action_cmd_ddr_stats_run(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_stats_run\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_stats_run(memdev, ddr_stats_run_params.ddr_id,
+									ddr_stats_run_params.monitor_time,
+									ddr_stats_run_params.loop_count);
+}
+
+static int action_cmd_ddr_stats_get(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	int rc = 0;
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_stats_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	rc = cxl_memdev_ddr_stats_get(memdev);
+	if(rc)
+	{
+		fprintf(stderr,
+			"ddr_stats_get read failed");
+		goto abort;
+	}
+
+abort:
+  return rc;
+}
+
 static int action_cmd_reboot_mode_set(struct cxl_memdev *memdev,
                                    struct action_context *actx)
 {
@@ -5173,6 +5233,22 @@ int cmd_ddr_margin_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_margin_get, cmd_ddr_margin_get_options,
       "cxl ddr-margin-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_stats_run(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_stats_run, cmd_ddr_stats_run_options,
+      "cxl ddr-stats-run <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_stats_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_stats_get, cmd_ddr_stats_get_options,
+      "cxl ddr-stats-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

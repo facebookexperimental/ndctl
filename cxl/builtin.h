@@ -120,6 +120,8 @@ int cmd_pmic_vtmon_info(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_margin_run(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_margin_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_margin_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_stats_run(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_stats_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_reboot_mode_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_curr_cxl_boot_mode_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_pcie_eye_run(int argc, const char **argv, struct cxl_ctx *ctx);
