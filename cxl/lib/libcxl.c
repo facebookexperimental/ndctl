@@ -6330,8 +6330,8 @@ struct cxl_mbox_health_counters_get_out {
 	__le32 cxl_mem_link_crc_errors;
 	__le32 cxl_io_link_lcrc_errors;
 	__le32 cxl_io_link_ecrc_errors;
-	__le32 num_ddr_single_ecc_errors;
-	__le32 num_ddr_double_ecc_errors;
+	__le32 num_ddr_correctable_ecc_errors;
+	__le32 num_ddr_uncorrectable_ecc_errors;
 	__le32 link_recovery_events;
 	__le32 time_in_throttled;
 	__le32 over_temperature_warning_level_exceeded;
@@ -6340,6 +6340,16 @@ struct cxl_mbox_health_counters_get_out {
 	__le32 rx_retry_request;
 	__le32 rcmd_qs0_hi_threshold_detect;
 	__le32 rcmd_qs1_hi_threshold_detect;
+	__le32 num_pscan_correctable_ecc_errors;
+	__le32 num_pscan_uncorrectable_ecc_errors;
+	__le32 num_ddr_dimm0_correctable_ecc_errors;
+	__le32 num_ddr_dimm0_uncorrectable_ecc_errors;
+	__le32 num_ddr_dimm1_correctable_ecc_errors;
+	__le32 num_ddr_dimm1_uncorrectable_ecc_errors;
+	__le32 num_ddr_dimm2_correctable_ecc_errors;
+	__le32 num_ddr_dimm2_uncorrectable_ecc_errors;
+	__le32 num_ddr_dimm3_correctable_ecc_errors;
+	__le32 num_ddr_dimm3_uncorrectable_ecc_errors;
 }  __attribute__((packed));
 
 CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
@@ -6387,14 +6397,23 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 	fprintf(stdout, "6: CXL_MEM_LINK_CRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
 	fprintf(stdout, "7: CXL_IO_LINK_LCRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
 	fprintf(stdout, "8: CXL_IO_LINK_ECRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
-	fprintf(stdout, "9: NUM_DDR_SINGLE_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_single_ecc_errors));
-	fprintf(stdout, "10: NUM_DDR_DOUBLE_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_double_ecc_errors));
+	fprintf(stdout, "9: NUM_DDR_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_correctable_ecc_errors));
+	fprintf(stdout, "10: NUM_DDR_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_uncorrectable_ecc_errors));
 	fprintf(stdout, "11: LINK_RECOVERY_EVENTS = %d\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
 	fprintf(stdout, "12: TIME_IN_THROTTLED = %d\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
 	fprintf(stdout, "13: RX_RETRY_REQUEST = %d\n", le32_to_cpu(health_counters_get_out->rx_retry_request));
 	fprintf(stdout, "14: RCMD_QS0_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs0_hi_threshold_detect));
 	fprintf(stdout, "15: RCMD_QS1_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs1_hi_threshold_detect));
-
+	fprintf(stdout, "16: NUM_PSCAN_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_pscan_correctable_ecc_errors));
+	fprintf(stdout, "17: NUM_PSCAN_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_pscan_uncorrectable_ecc_errors));
+	fprintf(stdout, "18: NUM_DDR_DIMM0_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_correctable_ecc_errors));
+	fprintf(stdout, "19: NUM_DDR_DIMM0_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_uncorrectable_ecc_errors));
+	fprintf(stdout, "20: NUM_DDR_DIMM1_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_correctable_ecc_errors));
+	fprintf(stdout, "21: NUM_DDR_DIMM1_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_uncorrectable_ecc_errors));
+	fprintf(stdout, "22: NUM_DDR_DIMM2_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_correctable_ecc_errors));
+	fprintf(stdout, "23: NUM_DDR_DIMM2_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_uncorrectable_ecc_errors));
+	fprintf(stdout, "24: NUM_DDR_DIMM3_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_correctable_ecc_errors));
+	fprintf(stdout, "25: NUM_DDR_DIMM3_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_uncorrectable_ecc_errors));
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
