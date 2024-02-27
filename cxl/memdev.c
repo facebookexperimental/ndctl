@@ -2184,6 +2184,11 @@ static const struct option cmd_ddr_err_inj_en_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_ddr_dimm_level_training_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4139,6 +4144,18 @@ static int action_cmd_ddr_err_inj_en(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_err_inj_en(memdev, ddr_err_inj_en_params.ddr_id, ddr_err_inj_en_params.err_type, ddr_err_inj_en_params.ecc_fwc_mask);
 }
 
+static int action_cmd_ddr_dimm_level_training_status(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr-dimm-level-training-status\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_dimm_level_training_status(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5415,6 +5432,14 @@ int cmd_ddr_err_inj_en(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_err_inj_en, cmd_ddr_err_inj_en_options,
       "cxl ddr-err-inj-en <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_dimm_level_training_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_dimm_level_training_status, cmd_ddr_dimm_level_training_options,
+      "cxl ddr-dimm-level-training-status <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

@@ -143,4 +143,5 @@ int cmd_ddr_init_status(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_get_cxl_membridge_stats(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_trigger_coredump(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_err_inj_en(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_dimm_level_training_status(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
