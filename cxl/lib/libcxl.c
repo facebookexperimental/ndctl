@@ -13209,3 +13209,451 @@ out:
         cxl_cmd_unref(cmd);
         return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_DDR_DIMM_LEVEL_TRAINING_STATUS CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_DIMM_LEVEL_TRAINING_STATUS_OPCODE 0xFB20
+
+#define DDR_MAX_CS 4
+#define DDR_CS_DEVICE_MAX 18
+#define DDR_REG_MAX_NIBBLE 9
+#define DDR_MAX_SLICE 9
+#define DDR_MAX_SLICE_BIT 8
+
+struct ddr_phy_pll_status {
+	uint32_t bs0_status;
+	uint32_t bs1_status;
+};
+
+struct ddr_wr_levelling_status {
+	uint32_t lower_nibble_err[DDR_REG_MAX_NIBBLE];
+	uint32_t upper_nibble_err[DDR_REG_MAX_NIBBLE];
+};
+
+struct ddr_read_gate_training_status {
+	uint32_t lower_nibble_min_err[DDR_REG_MAX_NIBBLE];
+	uint32_t lower_nibble_max_err[DDR_REG_MAX_NIBBLE];
+	uint32_t upper_nibble_min_err[DDR_REG_MAX_NIBBLE];
+	uint32_t upper_nibble_max_err[DDR_REG_MAX_NIBBLE];
+};
+
+struct ddr_margin_vref_data {
+	float  lower_nibble_vref_low_volt[DDR_REG_MAX_NIBBLE];
+	float  lower_nibble_vref_high_volt[DDR_REG_MAX_NIBBLE];
+	float  upper_nibble_vref_low_volt[DDR_REG_MAX_NIBBLE];
+	float  upper_nibble_vref_high_volt[DDR_REG_MAX_NIBBLE];
+};
+
+struct ddr_margin_write_dq_vref_data {
+	float  vref_low_volt[DDR_CS_DEVICE_MAX];
+	float  vref_high_volt[DDR_CS_DEVICE_MAX];
+};
+
+struct ddr_margin_write_dq_vref_data_cs {
+	float  vref_low_volt_cs[DDR_MAX_CS][DDR_CS_DEVICE_MAX];
+	float  vref_high_volt_cs[DDR_MAX_CS][DDR_CS_DEVICE_MAX];
+};
+
+struct ddr_margin_rdlvl_delay_dqs_rise_data {
+	uint32_t te_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	uint32_t le_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float te_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float le_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+};
+
+struct ddr_margin_rdlvl_delay_dqs_fall_data {
+	uint32_t te_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	uint32_t le_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float te_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float le_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+};
+
+struct ddr_margin_wrdqlvl_delay_data {
+	uint32_t te_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	uint32_t le_delay_data[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float te_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+	float le_delay_time[DDR_MAX_SLICE][DDR_MAX_SLICE_BIT];
+};
+
+struct ddr_dimm_training_status {
+	struct ddr_phy_pll_status phy_pll_status;
+	struct ddr_wr_levelling_status wr_levl_status;
+	struct ddr_read_gate_training_status rd_gate_tr_status;
+	struct ddr_margin_vref_data vref_data;
+	struct ddr_margin_write_dq_vref_data wdq_vref_data;
+	struct ddr_margin_write_dq_vref_data_cs wdq_vref_data_cs;
+	struct ddr_margin_rdlvl_delay_dqs_rise_data rddqslvl_rise_data;
+	struct ddr_margin_rdlvl_delay_dqs_fall_data rddqslvl_fall_data;
+	struct ddr_margin_wrdqlvl_delay_data wrdqlvl_delay_data;
+	uint32_t err_status;
+};
+
+struct cxl_ddr_dimm_level_training_status_out {
+	struct ddr_dimm_training_status dimm_training_status[2];
+} __attribute__((packed));
+
+void print_ddr_training_status(uint32_t instance, struct ddr_dimm_training_status *dimm_tr_status);
+void print_read_gate_training_status(uint32_t instance, struct ddr_read_gate_training_status* rd_gate_tr_status);
+void print_write_levelling_status(uint32_t instance, struct ddr_wr_levelling_status* wr_levl_status);
+void print_ddr_phy_pll_status(uint32_t instance, struct ddr_phy_pll_status* phy_pll_status);
+void print_ddr_training_status(uint32_t instance, struct ddr_dimm_training_status *dimm_tr_status);
+void print_margin_vref_low_high(uint32_t instance, struct ddr_dimm_training_status *dimm_tr_status);
+void print_margin_rdlvl_delay_window(int instance, struct ddr_dimm_training_status *dimm_tr_status);
+void print_margin_wrdqlvl_delay_window(int instance, struct ddr_dimm_training_status *dimm_tr_status);
+void print_err_status(int instance, struct ddr_dimm_training_status *dimm_tr_status);
+
+/* DDR phy pll status */
+void print_ddr_phy_pll_status(uint32_t instance, struct ddr_phy_pll_status* phy_pll_status) {
+	uint32_t read_data;
+
+	read_data = phy_pll_status->bs0_status;
+	fprintf(stdout, "DDR%d PHY PLL Status: \n", instance);
+	fprintf(stdout, "\tOBS0: \n");
+	fprintf(stdout, "\t\tPLL Lock Status   = %d \n", (read_data & 1));
+	fprintf(stdout, "\t\tReady			 = %d \n", ((read_data & 0x2) >> 1));
+	fprintf(stdout, "\t\tLock assert count = 0x%x \n", ((read_data & 0x7F8) >> 3));
+
+	read_data = phy_pll_status->bs1_status;
+	fprintf(stdout, "\tOBS1: \n");
+	fprintf(stdout, "\t\tPLL Lock Status   = %d \n", (read_data & 1));
+	fprintf(stdout, "\t\tReady			 = %d \n", ((read_data & 0x2) >> 1));
+	fprintf(stdout, "\t\tLock assert count = 0x%x \n\n", ((read_data & 0x7F8) >> 3));
+}
+
+void print_write_levelling_status(uint32_t instance, struct ddr_wr_levelling_status* wr_levl_status) {
+	uint32_t read_data = 0;
+	int i = 0;
+
+	fprintf(stdout, "\t\tBYTE# \t\t\t\t 0 \t 1 \t 2 \t 3 \t 4 \t 5 \t 6 \t 7 \t 8\n");
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t\tLOWER NIBBLE ERROR FLAG \t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x1000)>> 12);
+	read_data = wr_levl_status->lower_nibble_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x1000)>> 12);
+
+	i = 0;
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t\tUPPER NIBBLE ERROR FLAG \t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x4000)>> 14);
+	read_data = wr_levl_status->upper_nibble_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x4000)>> 14);
+}
+
+void print_read_gate_training_status(uint32_t instance, struct ddr_read_gate_training_status* rd_gate_tr_status)
+{
+	uint32_t read_data = 0;
+	int i = 0;
+
+	fprintf(stdout, "\t\tBYTE# \t\t\t\t 0 \t 1 \t 2 \t 3 \t 4 \t 5 \t 6 \t 7 \t 8\n");
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t\tLOWER NIBBLE MIN ERROR \t\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x80)>> 7);
+	read_data = rd_gate_tr_status->lower_nibble_min_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x80)>> 7);
+
+	i = 0;
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t\tLOWER NIBBLE MAX ERROR \t\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x100)>> 8);
+	read_data = rd_gate_tr_status->lower_nibble_max_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x100)>> 8);
+
+	i = 0;
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t\tUPPER NIBBLE MIN ERROR \t\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x200)>> 9);
+	read_data = rd_gate_tr_status->upper_nibble_min_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x200)>> 9);
+
+	i = 0;
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t\tUPPER NIBBLE MAX ERROR \t\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d", (read_data & 0x400)>> 10);
+	read_data = rd_gate_tr_status->upper_nibble_max_err[i++];
+	fprintf(stdout, "\t %d\n", (read_data & 0x400)>> 10);
+}
+
+void print_ddr_training_status(uint32_t instance, struct ddr_dimm_training_status *dimm_tr_status) {
+	fprintf(stdout, "DDR%d TRAINING STATUS: \n", instance);
+	fprintf(stdout, "\tWRITE LEVELLING STATUS: \n");
+	print_write_levelling_status(instance, &dimm_tr_status->wr_levl_status);
+	fprintf(stdout, "\n\tREAD GATE TRAINING STATUS: \n");
+	print_read_gate_training_status(instance, &dimm_tr_status->rd_gate_tr_status);
+}
+
+void print_margin_vref_low_high(uint32_t instance, struct ddr_dimm_training_status *dimm_tr_status)
+{
+	int i = 0, j = 0;
+	float vref_low_volt, vref_high_volt;
+
+	fprintf(stdout, "DDR%d MARGIN VALUES:\n", instance);
+	fprintf(stdout, "\tREAD LEVEL VREF: \n");
+	fprintf(stdout, "\t\t					 VREF_LOW   VREF_LOW_VOLT(mV)   VREF_HIGH   VREF_HIGH_VOLT(mV)   VREF_MARGIN(mV)\n");
+	for(i=0; i<9; i++)
+	{
+		fprintf(stdout, "\t\tSlice%d Lower Nibble:   ", i);
+		vref_low_volt = dimm_tr_status->vref_data.lower_nibble_vref_low_volt[i];
+		fprintf(stdout, "%04.2f			  ", vref_low_volt);
+		vref_high_volt = dimm_tr_status->vref_data.lower_nibble_vref_high_volt[i];
+		fprintf(stdout, "%04.2f			", vref_high_volt);
+		fprintf(stdout, "%0.2f\n", (vref_high_volt - vref_low_volt));
+
+		fprintf(stdout, "\t\tSlice%d Upper Nibble:   ", i);
+		vref_low_volt = dimm_tr_status->vref_data.upper_nibble_vref_low_volt[i];
+		fprintf(stdout, "%04.2f			  ", vref_low_volt);
+		vref_high_volt = dimm_tr_status->vref_data.upper_nibble_vref_high_volt[i];
+		fprintf(stdout, "%04.2f			", vref_high_volt);
+		fprintf(stdout, "%0.2f\n\n", (vref_high_volt - vref_low_volt));
+	}
+	fprintf(stdout, "\tWRITE DQ LEVEL VREF: \n");
+	fprintf(stdout, "\t\t					 VREF_LOW   VREF_LOW_VOLT(mV)   VREF_HIGH   VREF_HIGH_VOLT(mV)   VREF_MARGIN(mV)\n");
+	for(i=0; i<18; i++)
+	{
+		fprintf(stdout, "\t\tCS0 Device%d :\t", i);
+		vref_low_volt = dimm_tr_status->wdq_vref_data.vref_low_volt[i];
+		fprintf(stdout, "%04.1f			", vref_low_volt);
+		vref_high_volt = dimm_tr_status->wdq_vref_data.vref_high_volt[i];
+		fprintf(stdout, "%04.1f			  ", vref_high_volt);
+		fprintf(stdout, "%0.1f		  \n", (vref_high_volt - vref_low_volt));
+	}
+	for(j=1; j<4; j++)
+	{
+		for(i=0; i<18; i++)
+		{
+			fprintf(stdout, "\t\tCS%d Device%d :\t", j, i);
+			vref_low_volt = dimm_tr_status->wdq_vref_data_cs.vref_low_volt_cs[j][i];
+			fprintf(stdout, "%04.1f			", vref_low_volt);
+			vref_high_volt = dimm_tr_status->wdq_vref_data_cs.vref_high_volt_cs[j][i];
+			fprintf(stdout, "%04.1f			  ", vref_high_volt);
+			fprintf(stdout, "%0.1f		   \n", (vref_high_volt - vref_low_volt));
+		}
+		fprintf(stdout, "\n");
+	}
+}
+
+void print_margin_rdlvl_delay_window(int instance, struct ddr_dimm_training_status *dimm_tr_status)
+{
+	uint32_t te_delay_data = 0, le_delay_data = 0;
+	int i = 0, j = 0;
+	float te_delay_time, le_delay_time;
+
+	printf("DDR%d Margin Delays: \n", instance);
+	printf("\tREAD DQSLEVEL RISE DELAY WINDOW: \n");
+	printf("\t\t		   TE_DATA   TE_DELAY(ns)   LE_DATA   LE_DELAY(ns)   RD_RISE_DELAY(ns)\n");
+	for(j=0; j<9; j++)
+	{
+		for(i=0; i<8; i++)
+		{
+			printf("\t\tSLICE%d BIT%d   ", j, i);
+					te_delay_data = dimm_tr_status->rddqslvl_rise_data.te_delay_data[j][i];
+			printf("%d	  ", te_delay_data);
+					te_delay_time = dimm_tr_status->rddqslvl_rise_data.te_delay_time[j][i];
+			printf("%0.03f		  ", te_delay_time);
+					le_delay_data = dimm_tr_status->rddqslvl_rise_data.le_delay_data[j][i];
+			printf("%02d		", le_delay_data);
+					le_delay_time = dimm_tr_status->rddqslvl_rise_data.le_delay_time[j][i];
+			printf("%0.03f			", le_delay_time);
+			printf("%0.03f\n", (te_delay_time - le_delay_time));
+		}
+		printf("\n");
+	}
+	printf("\tREAD DQSLEVEL FALL DELAY WINDOW: \n");
+	printf("\t\t		   TE_DATA   TE_DELAY(ns)   LE_DATA   LE_DELAY(ns)   RD_FALL_DELAY(ns)\n");
+	for(j=0; j<9; j++)
+	{
+		for(i=0; i<8; i++)
+		{
+			printf("\t\tSLICE%d BIT%d   ", j, i);
+			te_delay_data = dimm_tr_status->rddqslvl_fall_data.te_delay_data[j][i];
+			printf("%d	  ", te_delay_data);
+			te_delay_time = dimm_tr_status->rddqslvl_fall_data.te_delay_time[j][i];
+			printf("%0.03f		  ", te_delay_time);
+			le_delay_data = dimm_tr_status->rddqslvl_fall_data.le_delay_data[j][i];
+			printf("%02d		", le_delay_data);
+			le_delay_time = dimm_tr_status->rddqslvl_fall_data.le_delay_time[j][i];
+			printf("%0.03f			", le_delay_time);
+			printf("%0.03f\n", (te_delay_time - le_delay_time));
+		}
+		printf("\n");
+	}
+}
+
+void print_margin_wrdqlvl_delay_window(int instance, struct ddr_dimm_training_status *dimm_tr_status)
+{
+	uint32_t te_delay_data = 0, le_delay_data = 0;
+	int i = 0, j = 0;
+	float te_delay_time, le_delay_time;
+
+	printf("\tWRITE DQLEVEL DELAY WINDOW: \n");
+	printf("\t\t		   TE_DATA   TE_DELAY(ns)   LE_DATA   LE_DELAY(ns)   WRDQLVL_DELAY(ns)\n");
+	for(j=0; j<9; j++)
+	{
+		for(i=0; i<8; i++)
+		{
+			printf("\t\tSLICE%d BIT%d   ", j, i);
+			te_delay_data = dimm_tr_status->wrdqlvl_delay_data.te_delay_data[j][i];
+			printf("%d	  ", te_delay_data);
+			te_delay_time = dimm_tr_status->wrdqlvl_delay_data.te_delay_time[j][i];
+			printf("%0.03f		  ", te_delay_time);
+			le_delay_data = dimm_tr_status->wrdqlvl_delay_data.le_delay_data[j][i];
+			printf("%02d		", le_delay_data);
+			le_delay_time = dimm_tr_status->wrdqlvl_delay_data.le_delay_time[j][i];
+			printf("%0.03f			", le_delay_time);
+			printf("%0.03f\n", (te_delay_time - le_delay_time));
+		}
+		printf("\n");
+	}
+}
+
+void print_err_status(int instance, struct ddr_dimm_training_status *dimm_tr_status)
+{
+	uint32_t read_data = dimm_tr_status->err_status;
+
+    fprintf(stdout, "DIMM %d Tranining status\n", instance);
+    fprintf(stdout, "\tWRLVL_ERR	 = %d\n", (read_data>>4)&0x1);
+    fprintf(stdout, "\tGTLVL_ERR	 = %d\n", (read_data>>3)&0x1);
+    fprintf(stdout, "\tRDLVL_ERR	 = %d\n", (read_data>>2)&0x1);
+    fprintf(stdout, "\tWDQLVL_ERR	= %d\n", (read_data>>5)&0x1);
+    fprintf(stdout, "\tCA PARTIY ERR = %d\n", (read_data>>1)&0x1);
+}
+
+CXL_EXPORT int cxl_memdev_ddr_dimm_level_training_status(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_dimm_level_training_status_out *dimm_tr_status;
+	int rc = 0;
+	int i;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_DIMM_LEVEL_TRAINING_STATUS_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_DIMM_LEVEL_TRAINING_STATUS) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_DDR_DIMM_LEVEL_TRAINING_STATUS);
+		return -EINVAL;
+	}
+	dimm_tr_status = (void *)cmd->send_cmd->out.payload;
+	for (i = DDR_CTRL0; i < DDR_MAX_SUBSYS; i++) {
+	    fprintf(stdout, "dimm:%d level training status\n", i);
+		print_ddr_phy_pll_status(i, &dimm_tr_status->dimm_training_status[i].phy_pll_status);
+		print_ddr_training_status(i, &dimm_tr_status->dimm_training_status[i]);
+		print_margin_vref_low_high(i, &dimm_tr_status->dimm_training_status[i]);
+		print_margin_rdlvl_delay_window(i, &dimm_tr_status->dimm_training_status[i]);
+		print_margin_wrdqlvl_delay_window(i, &dimm_tr_status->dimm_training_status[i]);
+		print_err_status(i, &dimm_tr_status->dimm_training_status[i]);
+	}
+out:
+		cxl_cmd_unref(cmd);
+		return rc;
+}
