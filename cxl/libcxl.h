@@ -269,6 +269,11 @@ int cxl_memdev_get_cxl_membridge_stats(struct cxl_memdev *memdev);
 int cxl_memdev_trigger_coredump(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_err_inj_en(struct cxl_memdev *memdev, u32 ddr_id, u32 err_type, u64 ecc_fwc_mask);
 int cxl_memdev_ddr_dimm_level_training_status(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_param_set(struct cxl_memdev *memdev, u32 ddr_interleave_sz,
+	u32 ddr_interleave_ctrl_choice);
+int cxl_memdev_ddr_param_get(struct cxl_memdev *memdev);
+int cxl_memdev_core_volt_set(struct cxl_memdev *memdev, float core_volt);
+int cxl_memdev_core_volt_get(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

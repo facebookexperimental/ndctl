@@ -13676,3 +13676,282 @@ out:
 		cxl_cmd_unref(cmd);
 		return rc;
 }
+
+/* DDR PARAM SET */
+#define CXL_MEM_COMMAND_ID_DDR_PARAM_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_PARAM_SET_OPCODE 0xFB1E
+#define CXL_MEM_COMMAND_ID_DDR_PARAM_SET_PAYLOAD_IN_SIZE 4
+
+struct ddr_interleave_options {
+  uint8_t ddr_interleave_sz;
+  uint8_t ddr_interleave_ctrl_choice;
+} __attribute__((packed));
+
+
+struct cxl_mbox_ddr_param_set_in {
+	struct ddr_interleave_options ddr_inter;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_param_set(struct cxl_memdev *memdev, u32 ddr_interleave_sz,
+            u32 ddr_interleave_ctrl_choice)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_ddr_param_set_in *ddr_param_set_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_PARAM_SET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_PARAM_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	ddr_param_set_in = (void *) cmd->send_cmd->in.payload;
+
+	ddr_param_set_in->ddr_inter.ddr_interleave_sz = ddr_interleave_sz;
+	ddr_param_set_in->ddr_inter.ddr_interleave_ctrl_choice = ddr_interleave_ctrl_choice;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_PARAM_SET) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				 cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				 CXL_MEM_COMMAND_ID_DDR_PARAM_SET);
+		return -EINVAL;
+	}
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+/* DDR PARAM GET */
+#define CXL_MEM_COMMAND_ID_CXL_DDR_PARAM_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_DDR_PARAM_GET_OPCODE 0xFB1F
+
+struct cxl_ddr_param_get_out
+{
+  struct ddr_interleave_options ddr_inter;
+} __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_ddr_param_get(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_ddr_param_get_out *ddr_param_get_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_DDR_PARAM_GET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_PARAM_GET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_CXL_DDR_PARAM_GET);
+		return -EINVAL;
+	}
+
+	ddr_param_get_out = (struct cxl_ddr_param_get_out *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "ddr_interleave_sz: %d\n", ddr_param_get_out->ddr_inter.ddr_interleave_sz);
+	fprintf(stdout, "ddr_interleave_ctrl_choice: %d\n", ddr_param_get_out->ddr_inter.ddr_interleave_ctrl_choice);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+/* CORE VOLTAGE SET */
+#define CXL_MEM_COMMAND_ID_CORE_VOLT_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CORE_VOLT_SET_OPCODE 0xFB26
+#define CXL_MEM_COMMAND_ID_CORE_VOLT_SET_PAYLOAD_IN_SIZE 4
+
+struct cxl_mbox_core_volt_set_in {
+	float core_volt;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_core_volt_set(struct cxl_memdev *memdev, float core_volt)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_core_volt_set_in *core_volt_set_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CORE_VOLT_SET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_CORE_VOLT_SET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	core_volt_set_in = (void *) cmd->send_cmd->in.payload;
+
+	core_volt_set_in->core_volt = core_volt;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CORE_VOLT_SET) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				 cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				 CXL_MEM_COMMAND_ID_CORE_VOLT_SET);
+		return -EINVAL;
+	}
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}
+
+/* CORE VOLTAGE GET */
+#define CXL_MEM_COMMAND_ID_CXL_CORE_VOLT_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_CORE_VOLT_GET_OPCODE 0xFB27
+
+struct cxl_core_volt_get_out
+{
+  float core_volt;
+} __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_core_volt_get(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_core_volt_get_out *core_volt_get_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_CORE_VOLT_GET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* used to force correct payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_CORE_VOLT_GET) {
+		fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+				CXL_MEM_COMMAND_ID_CXL_CORE_VOLT_GET);
+		return -EINVAL;
+	}
+
+	core_volt_get_out = (struct cxl_core_volt_get_out *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "Core Voltage: %f V\n", core_volt_get_out->core_volt);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+}

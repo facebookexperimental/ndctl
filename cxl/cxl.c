@@ -200,6 +200,10 @@ static struct cmd_struct commands[] = {
 	{ "trigger-coredump", .c_fn = cmd_trigger_coredump },
 	{ "ddr-err-inj-en", .c_fn = cmd_ddr_err_inj_en },
 	{ "ddr-dimm-level-training-status", .c_fn = cmd_ddr_dimm_level_training_status },
+	{ "ddr-param-set", .c_fn = cmd_ddr_param_set },
+	{ "ddr-param-get", .c_fn = cmd_ddr_param_get },
+	{ "core-volt-set", .c_fn = cmd_core_volt_set },
+	{ "core-volt-get", .c_fn = cmd_core_volt_get },
 };
 
 int main(int argc, const char **argv)

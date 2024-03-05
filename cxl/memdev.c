@@ -2189,6 +2189,48 @@ static const struct option cmd_ddr_dimm_level_training_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_set_params {
+        u32 ddr_interleave_sz;
+        u32 ddr_interleave_ctrl_choice;
+} ddr_set_params;
+
+#define DDR_PARAM_SET_OPTIONS() \
+	OPT_UINTEGER('m', "ddr_interleave_sz", &ddr_set_params.ddr_interleave_sz, "Intereleave SZ is: 2 pow m. Input the value of m as the Size"), \
+	OPT_UINTEGER('n', "ddr_interleave_ctrl_choice", &ddr_set_params.ddr_interleave_ctrl_choice, "CTRL Choice: 1=DDR0 2=DDR1 3= DDR0 and DDR1")
+
+static const struct option cmd_ddr_param_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_PARAM_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_param_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _ddr_core_volt_set_params {
+	u32 val1;
+	u32 val2;
+	u32 val3;
+} ddr_core_volt_set_params;
+
+#define CORE_VOLT_SET_OPTIONS() \
+OPT_UINTEGER('i', "core_volt_val1", &ddr_core_volt_set_params.val1, "CORE Voltage val1.val2 val3"), \
+OPT_UINTEGER('m', "core_volt_val2", &ddr_core_volt_set_params.val2, "CORE Voltage val1.val2 val3"), \
+OPT_UINTEGER('n', "core_volt_val3", &ddr_core_volt_set_params.val3, "CORE Voltage val1.val2 val3")
+
+static const struct option cmd_core_volt_set_options[] = {
+  BASE_OPTIONS(),
+  CORE_VOLT_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_core_volt_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4156,6 +4198,60 @@ static int action_cmd_ddr_dimm_level_training_status(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_dimm_level_training_status(memdev);
 }
 
+static int action_cmd_ddr_param_set(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_param_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_param_set(memdev, ddr_set_params.ddr_interleave_sz,
+                                  ddr_set_params.ddr_interleave_ctrl_choice);
+}
+
+static int action_cmd_ddr_param_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_param_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_param_get(memdev);
+}
+
+static int action_cmd_core_volt_set(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+  float volt;
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort core_volt_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+  volt = ddr_core_volt_set_params.val1 + (ddr_core_volt_set_params.val2 / 10.0) +
+         (ddr_core_volt_set_params.val3 / 100.0);
+
+	return cxl_memdev_core_volt_set(memdev, volt);
+}
+
+static int action_cmd_core_volt_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort core_volt_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_core_volt_get(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5440,6 +5536,38 @@ int cmd_ddr_dimm_level_training_status(int argc, const char **argv, struct cxl_c
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_dimm_level_training_status, cmd_ddr_dimm_level_training_options,
       "cxl ddr-dimm-level-training-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_param_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_param_set, cmd_ddr_param_set_options,
+      "cxl ddr_param_set <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_param_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_param_get, cmd_ddr_param_get_options,
+      "cxl ddr_param_get  <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_core_volt_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_core_volt_set, cmd_core_volt_set_options,
+      "cxl core_volt_set <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_core_volt_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_core_volt_get, cmd_core_volt_get_options,
+      "cxl core_volt_get  <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
