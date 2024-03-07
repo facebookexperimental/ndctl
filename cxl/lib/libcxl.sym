@@ -201,4 +201,8 @@ global:
     cxl_memdev_ddr_err_inj_en;
     cxl_memdev_ddr_err_inj_en;
     cxl_memdev_ddr_dimm_level_training_status;
+    cxl_memdev_ddr_param_set;
+    cxl_memdev_ddr_param_get;
+    cxl_memdev_core_volt_set;
+    cxl_memdev_core_volt_get;
 } LIBCXL_3;
