@@ -264,6 +264,8 @@ int cxl_memdev_i2c_write(struct cxl_memdev *memdev, u16 slave_addr, u8 reg_addr,
 int cxl_memdev_get_ddr_ecc_err_info(struct cxl_memdev *memdev);
 int cxl_memdev_start_ddr_ecc_scrub(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_ecc_scrub_status(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_cont_scrub_status(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_cont_scrub_set(struct cxl_memdev *memdev, u32 cont_scrub_status);
 int cxl_memdev_ddr_init_status(struct cxl_memdev *memdev);
 int cxl_memdev_get_cxl_membridge_stats(struct cxl_memdev *memdev);
 int cxl_memdev_trigger_coredump(struct cxl_memdev *memdev);

@@ -2151,6 +2151,25 @@ static const struct option cmd_ddr_ecc_scrub_status_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_ddr_cont_scrub_status_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _ddr_cont_scrub_set_params {
+	u32 cont_scrub_status;
+} ddr_cont_scrub_set_params;
+
+#define DDR_CONT_SCRUB_SET_OPTIONS() \
+OPT_UINTEGER('i', "cont_scrub_status", &ddr_cont_scrub_set_params.cont_scrub_status, "Continuous Scrub ON:1 OFF: 0")
+
+static const struct option cmd_ddr_cont_scrub_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_CONT_SCRUB_SET_OPTIONS(),
+  OPT_END(),
+};
+
+
 static const struct option cmd_ddr_init_status_options[] = {
   BASE_OPTIONS(),
   OPT_END(),
@@ -4140,6 +4159,31 @@ static int action_cmd_ddr_ecc_scrub_status(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_ecc_scrub_status(memdev);
 }
 
+static int action_cmd_ddr_cont_scrub_status(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr-cont-scrub-status\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_cont_scrub_status(memdev);
+}
+
+static int action_cmd_ddr_cont_scrub_set(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr-cont-scrub-set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_cont_scrub_set(memdev,
+			ddr_cont_scrub_set_params.cont_scrub_status);
+}
+
 static int action_cmd_ddr_init_status(struct cxl_memdev *memdev,
 				      struct action_context *actx)
 {
@@ -5498,6 +5542,22 @@ int cmd_ddr_ecc_scrub_status(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_ecc_scrub_status, cmd_ddr_ecc_scrub_status_options,
       "cxl ddr-ecc-scrub-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_cont_scrub_status(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_cont_scrub_status, cmd_ddr_cont_scrub_status_options,
+      "cxl ddr-cont-scrub-status <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_cont_scrub_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_cont_scrub_set, cmd_ddr_cont_scrub_set_options,
+      "cxl core_volt_set <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
