@@ -150,4 +150,5 @@ int cmd_ddr_param_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_param_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_core_volt_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_core_volt_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_oem_err_inj_viral(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

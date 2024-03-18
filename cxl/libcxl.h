@@ -276,6 +276,7 @@ int cxl_memdev_ddr_param_set(struct cxl_memdev *memdev, u32 ddr_interleave_sz,
 int cxl_memdev_ddr_param_get(struct cxl_memdev *memdev);
 int cxl_memdev_core_volt_set(struct cxl_memdev *memdev, float core_volt);
 int cxl_memdev_core_volt_get(struct cxl_memdev *memdev);
+int cxl_memdev_oem_err_inj_viral(struct cxl_memdev *memdev, u32 viral_type);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
