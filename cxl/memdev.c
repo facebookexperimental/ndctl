@@ -2250,6 +2250,20 @@ static const struct option cmd_core_volt_get_options[] = {
   OPT_END(),
 };
 
+static struct _oem_err_inj_viral_params {
+  u32 viral_type;
+  bool verbose;
+} oem_err_inj_viral_params;
+
+#define OEM_ERR_INJ_VIRAL_OPTIONS() \
+OPT_UINTEGER('l', "viral_type", &oem_err_inj_viral_params.viral_type, "viral_type")
+
+static const struct option cmd_oem_err_inj_viral_options[] = {
+  BASE_OPTIONS(),
+  OEM_ERR_INJ_VIRAL_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4296,6 +4310,17 @@ static int action_cmd_core_volt_get(struct cxl_memdev *memdev,
 	return cxl_memdev_core_volt_get(memdev);
 }
 
+static int action_cmd_oem_err_inj_viral(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, abort oem_err_inj_viral\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_oem_err_inj_viral(memdev, oem_err_inj_viral_params.viral_type);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5628,6 +5653,14 @@ int cmd_core_volt_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_core_volt_get, cmd_core_volt_get_options,
       "cxl core_volt_get  <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_oem_err_inj_viral(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_oem_err_inj_viral, cmd_oem_err_inj_viral_options,
+      "cxl oem_err_inj_viral <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

@@ -14090,3 +14090,72 @@ out:
 	cxl_cmd_unref(cmd);
 	return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL_OPCODE 0xFB21
+#define CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL_PAYLOAD_IN_SIZE 4
+
+struct cxl_mbox_oem_err_inj_viral_in {
+	u32 viral_type;
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_oem_err_inj_viral(struct cxl_memdev *memdev,
+	u32 viral_type)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_oem_err_inj_viral_in *err_inj_viral_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	err_inj_viral_in = (void *) cmd->send_cmd->in.payload;
+
+	err_inj_viral_in->viral_type = viral_type;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_OEM_ERR_INJ_VIRAL);
+		return -EINVAL;
+	}
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
