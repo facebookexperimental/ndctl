@@ -2264,6 +2264,22 @@ static const struct option cmd_oem_err_inj_viral_options[] = {
   OPT_END(),
 };
 
+static struct _err_inj_ll_poison_params {
+  u32 en_dis;
+  u32 ll_err_type;
+  bool verbose;
+} err_inj_ll_poison_params;
+
+#define ERR_INJ_LL_POISON_OPTIONS() \
+OPT_UINTEGER('e', "en_dis", &err_inj_ll_poison_params.en_dis, "enable_disable 0=dis,1=en"), \
+OPT_UINTEGER('l', "ll_err_type", &err_inj_ll_poison_params.ll_err_type, "link level err type 0=mem-poison")
+
+static const struct option cmd_err_inj_ll_poison_options[] = {
+  BASE_OPTIONS(),
+  ERR_INJ_LL_POISON_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4321,6 +4337,18 @@ static int action_cmd_oem_err_inj_viral(struct cxl_memdev *memdev, struct action
   return cxl_memdev_oem_err_inj_viral(memdev, oem_err_inj_viral_params.viral_type);
 }
 
+static int action_cmd_err_inj_ll_poison(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, abort err_inj_ll_poison\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_err_inj_ll_poison(memdev, err_inj_ll_poison_params.en_dis,
+				      err_inj_ll_poison_params.ll_err_type);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5661,6 +5689,14 @@ int cmd_oem_err_inj_viral(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_oem_err_inj_viral, cmd_oem_err_inj_viral_options,
       "cxl oem_err_inj_viral <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_err_inj_ll_poison(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_ll_poison, cmd_err_inj_ll_poison_options,
+      "cxl err_inj_ll_poison <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

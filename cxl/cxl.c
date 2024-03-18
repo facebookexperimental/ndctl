@@ -207,6 +207,7 @@ static struct cmd_struct commands[] = {
 	{ "core-volt-set", .c_fn = cmd_core_volt_set },
 	{ "core-volt-get", .c_fn = cmd_core_volt_get },
 	{ "oem-err-inj-viral", .c_fn = cmd_oem_err_inj_viral },
+	{ "err-inj-ll-poison", .c_fn = cmd_err_inj_ll_poison },
 };
 
 int main(int argc, const char **argv)
