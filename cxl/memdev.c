@@ -2280,6 +2280,30 @@ static const struct option cmd_err_inj_ll_poison_options[] = {
   OPT_END(),
 };
 
+static struct _pci_err_in_params {
+  u32 en_dis;
+  u32 err_type;
+  u32 err_subtype;
+  u32 count;
+  u32 opt_param1;
+  u32 opt_param2;
+  bool verbose;
+} pci_err_inj_params;
+
+#define PCI_ERR_INJ_OPTIONS() \
+OPT_UINTEGER('e', "en_dis", &pci_err_inj_params.en_dis, "enable_disable:\n\t0=disable inj\n\t1=enable inj"), \
+OPT_UINTEGER('l', "err_type", &pci_err_inj_params.err_type, "err inj type Group:\n\t0:CRC ERR\n\t1:SEQ NUM ERR\n\t2:DLLP ERR\n\t3:SYMBOL ERR\n\t4:FC CREDIT ERR\n\t5:Special TLP ERR\n"), \
+OPT_UINTEGER('s', "err_subtype", &pci_err_inj_params.err_subtype, "err inj sub-type:\n\tGroup-0:<CRC Error>\n\t\t0 = TX_TLP_LCRC_ERR\n\t\t1 = TX_16B_CRC_ERR_ACK_NAK_DLLP\n\t\t2 = TX_16B_CRC_ERR_UPD_FC\n\t\t3 = TX_TLP_ECRC_ERR\n\t\t4 = TX_FCRC_ERR_TLP\n\t\t5 = TX_PARITY_TSOS_ERR\n\t\t6 = TX_PARITY_SKPOS_ERR\n\t\t8 = RX_LCRC_ERR\n\t\t11= RX_ECRC_ERR\n\n\tGroup-1:<SEQ NUM Error>\n\t\t0 = TLP_ERR_SEQNUM\n\t\t1 = ACK_NAK_DLLP_ERR_SEQNUM\n\n\tGroup-2:<DLLP Error>\n\t\t0 = ACK_NACK_DLLP\n\t\t1 = UPD_FC_DLLP\n\t\t2 = NAK_DLLP\n\n\tGroup-3:<Symbol Error>\n\t\t0 = RSVD_OR_INVRT_SYNC_HDR\n\t\t1 = COM_PAD_TS1\n\t\t2 = COM_PAD_TS2\n\t\t3 = COM_FTS\n\t\t4 = COM_IDL\n\t\t5 = END_EDB\n\t\t6 = STP_SDP\n\t\t7 = COM_SKP\n\n\tGroup-4:<FC Credit Error>\n\t\t0 = POSTED_TLP_HDR\n\t\t1 = NON_POSTED_TLP_HDR\n\t\t2 = CMPL_TLP_HDR\n\t\t4 = POSTED_TLP_DATA\n\t\t5 = NON_POSTED_TLP_DATA\n\n\tGroup-5:<Special TLP Error>\n\t\t0 = DUPLICATE_DLLP\n\t\t1 = NULLIFIED_TLP\n"), \
+OPT_UINTEGER('c', "count", &pci_err_inj_params.count, "err inj count:\n\t1-255: count of err to inject\n\t0: continuous inj until disable\n"), \
+OPT_UINTEGER('x', "opt1", &pci_err_inj_params.opt_param1, "opt1: Optional Extra args1\n\tFor Group-1:Bad Sequence Number(2s compliment in hex): Min:0x1001, Max:0xfff\n\tFor Group-4:Bad update-FC credit val(2s compliment in hex): Min:0x1001, Max:0xfff\n\tFor other Groups: Pass value '0'\n"), \
+OPT_UINTEGER('y', "opt2", &pci_err_inj_params.opt_param2, "opt2: Optional Extra args2\n\tGroup-4:<FC Credit Error>:Target VC_NUMBER: Min:0, Max:7\n\tFor other Groups:Pass value '0'\n")
+
+static const struct option cmd_pci_err_inj_options[] = {
+  BASE_OPTIONS(),
+  PCI_ERR_INJ_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4349,6 +4373,22 @@ static int action_cmd_err_inj_ll_poison(struct cxl_memdev *memdev, struct action
 				      err_inj_ll_poison_params.ll_err_type);
 }
 
+static int action_cmd_pci_err_inj(struct cxl_memdev *memdev, struct action_context *actx)
+{
+  if (cxl_memdev_is_active(memdev)) {
+    fprintf(stderr, "%s: memdev active, abort err_inj_ll_poison\n",
+      cxl_memdev_get_devname(memdev));
+    return -EBUSY;
+  }
+
+  return cxl_memdev_pci_err_inj(memdev, pci_err_inj_params.en_dis,
+				      pci_err_inj_params.err_type,
+				      pci_err_inj_params.err_subtype,
+				      pci_err_inj_params.count,
+				      pci_err_inj_params.opt_param1,
+				      pci_err_inj_params.opt_param2);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5697,6 +5737,14 @@ int cmd_err_inj_ll_poison(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_err_inj_ll_poison, cmd_err_inj_ll_poison_options,
       "cxl err_inj_ll_poison <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_pci_err_inj(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_pci_err_inj, cmd_pci_err_inj_options,
+      "cxl pci_err_inj <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

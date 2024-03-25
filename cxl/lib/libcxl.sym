@@ -209,4 +209,5 @@ global:
     cxl_memdev_core_volt_get;
     cxl_memdev_oem_err_inj_viral;
     cxl_memdev_err_inj_ll_poison;
+    cxl_memdev_pci_err_inj;
 } LIBCXL_3;
