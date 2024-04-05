@@ -279,6 +279,7 @@ int cxl_memdev_core_volt_get(struct cxl_memdev *memdev);
 int cxl_memdev_oem_err_inj_viral(struct cxl_memdev *memdev, u32 viral_type);
 int cxl_memdev_err_inj_ll_poison(struct cxl_memdev *memdev, u32 en_dis, u32 ll_err_type);
 int cxl_memdev_pci_err_inj(struct cxl_memdev *memdev, u32 en_dis, u32 type, u32 err, u32 count, u32 opt1, u32 opt2);
+int cxl_memdev_read_ltssm_states(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
