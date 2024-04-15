@@ -14314,3 +14314,89 @@ out:
 	return rc;
 	return 0;
 }
+
+#define CXL_MEM_COMMAND_ID_READ_LTSSM_STATES CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_READ_LTSSM_STATES_OPCODE 0xFB01
+#define LTSSM_DUMP_SIZE 0x200
+#define LTSSM_EXPECTED_STATE 0x11
+#define LTSSM_STATE_DUMP_COUNT_MAX (LTSSM_DUMP_SIZE / 4)
+
+struct cxl_mbox_read_ltssm_states_out {
+	uint32_t ltssm_states[LTSSM_STATE_DUMP_COUNT_MAX];
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_read_ltssm_states(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_read_ltssm_states_out *read_ltssm_states;
+	uint32_t *ltssm_val;
+	uint32_t offset = 0;
+	uint32_t curr_state;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_READ_LTSSM_STATES_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* update payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_READ_LTSSM_STATES) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_READ_LTSSM_STATES);
+		return -EINVAL;
+	}
+
+	read_ltssm_states = (struct  cxl_mbox_read_ltssm_states_out*)cmd->send_cmd->out.payload;
+	fprintf(stdout, "LTSSM STATE CHANGES\n");
+	ltssm_val = read_ltssm_states->ltssm_states;
+	if ((ltssm_val[offset] == ltssm_val[offset + 1]) && (ltssm_val[offset + 1] == 0x0)) {
+		fprintf(stdout, "ltssm state changes are not collected\n");
+		goto out;
+	}
+	while (offset < LTSSM_STATE_DUMP_COUNT_MAX) {
+		if ((ltssm_val[offset] == ltssm_val[offset + 1]) && (ltssm_val[offset + 1] == 0x0))
+			break;
+		curr_state = ltssm_val[offset++];
+		fprintf(stdout,
+			"ltssm state val = 0x%x, %s\n",
+			curr_state,
+			ltssm_state_name[curr_state]);
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
