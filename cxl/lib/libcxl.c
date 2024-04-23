@@ -14400,3 +14400,144 @@ out:
 	return rc;
 	return 0;
 }
+
+/* DDR PAGE SELECT SET */
+#define CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET_OPCODE 0xFB2A
+#define CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET_PAYLOAD_IN_SIZE 4
+
+struct page_policy_selection {
+    uint8_t page_policy_reg_val;
+} __attribute__((packed)) page_policy_select;
+
+
+struct cxl_mbox_handle_page_selection_in {
+  struct page_policy_selection pp_select;
+} __attribute__((packed));
+
+
+
+CXL_EXPORT int cxl_memdev_ddr_page_select_set(struct cxl_memdev *memdev,
+                 u32 page_select_option)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_page_selection_in *handle_page_selection_in;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_page_selection_in = (void *) cmd->send_cmd->in.payload;
+
+    handle_page_selection_in->pp_select.page_policy_reg_val = page_select_option;
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_PAGE_SELECT_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR PAGE SELECT GET */
+#define CXL_MEM_COMMAND_ID_CXL_DDR_PAGE_SELECT_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_DDR_PAGE_SELECT_GET_OPCODE 0xFB2B
+
+struct cxl_mbox_handle_page_selection_out {
+  struct page_policy_selection pp_select;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_page_select_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_page_selection_out *handle_page_selection_out;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_DDR_PAGE_SELECT_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_PAGE_SELECT_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_DDR_PAGE_SELECT_GET);
+        return -EINVAL;
+    }
+
+    handle_page_selection_out = (struct cxl_mbox_handle_page_selection_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "Page_Policy_Reg_Value is selected for %s\n", (handle_page_selection_out->pp_select.page_policy_reg_val)?"open":"close");
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}

@@ -210,6 +210,8 @@ static struct cmd_struct commands[] = {
 	{ "err-inj-ll-poison", .c_fn = cmd_err_inj_ll_poison },
 	{ "pci-err-inj", .c_fn = cmd_pci_err_inj },
 	{ "read-ltssm-states", .c_fn = cmd_read_ltssm_states },
+	{ "ddr-page-select-set", .c_fn = cmd_ddr_page_select_set },
+	{ "ddr-page-select-get", .c_fn = cmd_ddr_page_select_get },
 };
 
 int main(int argc, const char **argv)

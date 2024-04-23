@@ -154,4 +154,6 @@ int cmd_oem_err_inj_viral(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_err_inj_ll_poison(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_pci_err_inj(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_read_ltssm_states(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_page_select_set(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_page_select_get(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
