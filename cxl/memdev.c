@@ -2309,6 +2309,24 @@ static const struct option cmd_read_ltssm_states_options[] = {
   OPT_END(),
 };
 
+static struct page_policy_selection {
+  int page_policy_reg_val;
+} page_policy_select;
+
+#define DDR_PAGE_SELECT_SET_OPTIONS() \
+	OPT_INTEGER('p', "page_policy_reg_val", &page_policy_select.page_policy_reg_val, "Value for page policy selection")
+
+static const struct option cmd_ddr_page_select_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_PAGE_SELECT_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_page_select_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4405,6 +4423,32 @@ static int action_cmd_read_ltssm_states(struct cxl_memdev *memdev, struct action
   return cxl_memdev_read_ltssm_states(memdev);
 }
 
+
+static int action_cmd_ddr_page_select_set(struct cxl_memdev *memdev,
+				   struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_param_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_page_select_set(memdev, page_policy_select.page_policy_reg_val);
+}
+
+static int action_cmd_ddr_page_select_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_param_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_page_select_get(memdev);
+}
+
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -5769,6 +5813,22 @@ int cmd_read_ltssm_states(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_read_ltssm_states, cmd_read_ltssm_states_options,
       "cxl read-ltssm-state-changes <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_page_select_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_page_select_set, cmd_ddr_page_select_set_options,
+      "cxl ddr-page-select-set <<mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_page_select_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_page_select_get, cmd_ddr_page_select_get_options,
+      "cxl ddr-page-select-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
