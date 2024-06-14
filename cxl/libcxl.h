@@ -288,6 +288,8 @@ int cxl_memdev_ddr_hppr_addr_info_set(struct cxl_memdev *memdev, u8 ddr_id, u8 c
 int cxl_memdev_ddr_hppr_addr_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_hppr_addr_info_clear(struct cxl_memdev *memdev, u8 ddr_id, u8 channel_id);
 int cxl_memdev_ddr_ppr_status_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_refresh_mode_set(struct cxl_memdev *memdev, u8 refresh_select_option);
+int cxl_memdev_ddr_refresh_mode_get(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
