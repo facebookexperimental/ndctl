@@ -212,6 +212,8 @@ static struct cmd_struct commands[] = {
 	{ "read-ltssm-states", .c_fn = cmd_read_ltssm_states },
 	{ "ddr-page-select-set", .c_fn = cmd_ddr_page_select_set },
 	{ "ddr-page-select-get", .c_fn = cmd_ddr_page_select_get },
+	{ "ddr-refresh-mode-set", .c_fn = cmd_ddr_refresh_mode_set },
+	{ "ddr-refresh-mode-get", .c_fn = cmd_ddr_refresh_mode_get },
 };
 
 int main(int argc, const char **argv)

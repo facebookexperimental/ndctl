@@ -282,6 +282,8 @@ int cxl_memdev_pci_err_inj(struct cxl_memdev *memdev, u32 en_dis, u32 type, u32 
 int cxl_memdev_read_ltssm_states(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_page_select_set(struct cxl_memdev *memdev, u32 page_select_option);
 int cxl_memdev_ddr_page_select_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_refresh_mode_set(struct cxl_memdev *memdev, u32 refresh_select_option);
+int cxl_memdev_ddr_refresh_mode_get(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
