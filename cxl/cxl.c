@@ -218,6 +218,8 @@ static struct cmd_struct commands[] = {
 	{ "ddr-hppr-addr-info-get", .c_fn = cmd_ddr_hppr_addr_info_get },
 	{ "ddr-hppr-addr-info-clear", .c_fn = cmd_ddr_hppr_addr_info_clear },
 	{ "ddr-ppr-status-get", .c_fn = cmd_ddr_ppr_status_get },
+	{ "ddr-refresh-mode-set", .c_fn = cmd_ddr_refresh_mode_set },
+	{ "ddr-refresh-mode-get", .c_fn = cmd_ddr_refresh_mode_get },
 };
 
 int main(int argc, const char **argv)

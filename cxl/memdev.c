@@ -2405,6 +2405,24 @@ static const struct option cmd_ddr_ppr_status_get_options[] = {
   OPT_END(),
 };
 
+static struct ddr_refresh_mode {
+  u32 ddr_refresh_val;
+} refresh_select;
+
+#define DDR_REFRESH_MODE_SELECT_SET_OPTIONS() \
+	OPT_UINTEGER('r', "ddr_refresh_val", &refresh_select.ddr_refresh_val, "Value for refresh mode selection")
+
+static const struct option cmd_ddr_refresh_mode_select_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_REFRESH_MODE_SELECT_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_refresh_mode_select_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4598,6 +4616,30 @@ static int action_cmd_ddr_ppr_status_get(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_ppr_status_get(memdev);
 }
 
+static int action_cmd_ddr_refresh_mode_set(struct cxl_memdev *memdev,
+                                      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_refresh_mode_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_refresh_mode_set(memdev, refresh_select.ddr_refresh_val);
+}
+
+static int action_cmd_ddr_refresh_mode_get(struct cxl_memdev *memdev,
+                                      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_refresh_mode_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_refresh_mode_get(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -6026,6 +6068,22 @@ int cmd_ddr_ppr_status_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_ppr_status_get, cmd_ddr_ppr_status_get_options,
       "cxl ddr-ppr-status-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_refresh_mode_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_refresh_mode_set, cmd_ddr_refresh_mode_select_set_options,
+      "cxl ddr-refresh-mode-set <<mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_refresh_mode_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_refresh_mode_get, cmd_ddr_refresh_mode_select_get_options,
+      "cxl ddr-refresh-mode-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }
