@@ -213,4 +213,6 @@ global:
     cxl_memdev_read_ltssm_states;
     cxl_memdev_ddr_page_select_set;
     cxl_memdev_ddr_page_select_get;
+    cxl_memdev_ddr_refresh_mode_set;
+    cxl_memdev_ddr_refresh_mode_get;
 } LIBCXL_3;
