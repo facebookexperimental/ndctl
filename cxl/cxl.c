@@ -212,6 +212,12 @@ static struct cmd_struct commands[] = {
 	{ "read-ltssm-states", .c_fn = cmd_read_ltssm_states },
 	{ "ddr-page-select-set", .c_fn = cmd_ddr_page_select_set },
 	{ "ddr-page-select-get", .c_fn = cmd_ddr_page_select_get },
+	{ "ddr-hppr-set", .c_fn = cmd_ddr_hppr_set },
+	{ "ddr-hppr-get", .c_fn = cmd_ddr_hppr_get },
+	{ "ddr-hppr-addr-info-set", .c_fn = cmd_ddr_hppr_addr_info_set },
+	{ "ddr-hppr-addr-info-get", .c_fn = cmd_ddr_hppr_addr_info_get },
+	{ "ddr-hppr-addr-info-clear", .c_fn = cmd_ddr_hppr_addr_info_clear },
+	{ "ddr-ppr-status-get", .c_fn = cmd_ddr_ppr_status_get },
 };
 
 int main(int argc, const char **argv)
