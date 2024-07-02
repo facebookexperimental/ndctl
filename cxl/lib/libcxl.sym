@@ -213,4 +213,10 @@ global:
     cxl_memdev_read_ltssm_states;
     cxl_memdev_ddr_page_select_set;
     cxl_memdev_ddr_page_select_get;
+    cxl_memdev_ddr_hppr_set;
+    cxl_memdev_ddr_hppr_get;
+    cxl_memdev_ddr_hppr_addr_info_set;
+    cxl_memdev_ddr_hppr_addr_info_get;
+    cxl_memdev_ddr_hppr_addr_info_clear;
+    cxl_memdev_ddr_ppr_status_get;
 } LIBCXL_3;

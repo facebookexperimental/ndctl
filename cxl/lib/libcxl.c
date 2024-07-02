@@ -14541,3 +14541,447 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+/* DDR HPPR Enable/Disable SET */
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_SET_OPCODE 0xFB2C
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_SET_PAYLOAD_IN_SIZE 2
+
+struct cxl_mbox_handle_set_ddr_hppr_in {
+  uint16_t enable;
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_hppr_set(struct cxl_memdev *memdev, u8 hppr_enable_option)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_set_ddr_hppr_in *handle_ddr_hppr_set_in;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_HPPR_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_HPPR_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_ddr_hppr_set_in = (void *) cmd->send_cmd->in.payload;
+
+    handle_ddr_hppr_set_in->enable = hppr_enable_option;
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_HPPR_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_HPPR_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR HPPR Enable/Disable GET */
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_GET_OPCODE 0xFB2D
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_GET_PAYLOAD_OUT_SIZE 2
+
+struct ddr_hppr_options{
+  uint8_t hppr_enable[2];
+} __attribute__ ((packed));
+
+struct cxl_mbox_handle_get_ddr_hppr_out {
+  struct ddr_hppr_options ddr_hppr;
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_hppr_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_get_ddr_hppr_out *handle_get_ddr_hppr_out;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_HPPR_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0;//CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_HPPR_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_HPPR_GET);
+        return -EINVAL;
+    }
+
+    handle_get_ddr_hppr_out = (struct cxl_mbox_handle_get_ddr_hppr_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "DDR[0] HPPR is %s\n", (handle_get_ddr_hppr_out->ddr_hppr.hppr_enable[0] == 1)?"Enabled":"Disabled");
+    fprintf(stdout, "DDR[1] HPPR is %s\n", (handle_get_ddr_hppr_out->ddr_hppr.hppr_enable[1] == 1)?"Enabled":"Disabled");
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR HPPR address info SET */
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET_OPCODE 0xFB2E
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET_PAYLOAD_IN_SIZE 8
+
+struct _ddr_addr_info_in {
+  uint8_t ddr_id;
+  uint8_t chip_select; /* 2bit chip select info of faulty row*/
+  uint8_t bank; /* 2bits bank info*/
+  uint8_t bank_group; /* 2bit bank group info */
+  uint32_t row; /* faulty row address */
+}  __attribute__ ((packed));
+
+struct cxl_mbox_handle_set_ddr_hppr_addr_info_in {
+  struct _ddr_addr_info_in hppr_addr_info;
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_hppr_addr_info_set(struct cxl_memdev *memdev, u8 ddr_id, u8 chip_select, u8 bank_group, u8 bank, u32 row)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_set_ddr_hppr_addr_info_in *handle_ddr_hppr_addr_info_set_in;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_ddr_hppr_addr_info_set_in = (void *) cmd->send_cmd->in.payload;
+
+    handle_ddr_hppr_addr_info_set_in->hppr_addr_info.ddr_id = ddr_id;
+    handle_ddr_hppr_addr_info_set_in->hppr_addr_info.chip_select = chip_select;
+    handle_ddr_hppr_addr_info_set_in->hppr_addr_info.bank_group = bank_group;
+    handle_ddr_hppr_addr_info_set_in->hppr_addr_info.bank = bank;
+    handle_ddr_hppr_addr_info_set_in->hppr_addr_info.row = row;
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR HPPR address info GET */
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET_OPCODE 0xFB2F
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET_PAYLOAD_OUT_SIZE 2
+
+struct _ddr_addr_info_out {
+  uint8_t ddr_id;
+  uint8_t chip_select; /* 2bit chip select info of faulty row*/
+  uint8_t bank; /* 2bits bank info*/
+  uint8_t bank_group; /* 2bit bank group info */
+  uint32_t row; /* faulty row address */
+  uint8_t channel; /* channel 0/1 of DDR controller */
+  uint8_t ppr_state;
+} __attribute__ ((packed));
+
+struct cxl_mbox_handle_get_ddr_hppr_addr_info_out {
+  struct _ddr_addr_info_out hppr_addr_info[2][8];
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_hppr_addr_info_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_get_ddr_hppr_addr_info_out *handle_get_ddr_hppr_addr_info_out;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0;//CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_GET);
+        return -EINVAL;
+    }
+
+    handle_get_ddr_hppr_addr_info_out = (struct cxl_mbox_handle_get_ddr_hppr_addr_info_out *)cmd->send_cmd->out.payload;
+    for (int i = 0; i < 2; i++)
+    {
+        for (int j = 0; j < 8; j++)
+        {
+            fprintf(stdout, "DDR[%d],id[%d],ch=%d,cs=%d,bg=0x%02x,b=0x%02x,r=0x%08x,ppr_state=%d\n", \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].ddr_id, j, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].channel, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].chip_select, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].bank_group, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].bank, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].row, \
+              handle_get_ddr_hppr_addr_info_out->hppr_addr_info[i][j].ppr_state);
+        }
+    }
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR HPPR address info clear */
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR_OPCODE 0xFB30
+#define CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR_PAYLOAD_IN_SIZE 2
+
+struct cxl_mbox_handle_clear_ddr_hppr_addr_info_in {
+  uint8_t ddr_id;
+  uint8_t channel_id;
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_hppr_addr_info_clear(struct cxl_memdev *memdev, u8 ddr_id, u8 channel_id)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_clear_ddr_hppr_addr_info_in *handle_ddr_hppr_addr_info_clear_in;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_ddr_hppr_addr_info_clear_in = (void *) cmd->send_cmd->in.payload;
+
+    handle_ddr_hppr_addr_info_clear_in->ddr_id = ddr_id;
+    handle_ddr_hppr_addr_info_clear_in->channel_id = channel_id;
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_HPPR_ADDR_INFO_CLEAR);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR PPR status GET */
+#define CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET_OPCODE 0xFB31
+#define CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET_PAYLOAD_OUT_SIZE 1
+
+struct cxl_mbox_handle_get_ddr_ppr_status_out {
+  uint8_t status;
+} __attribute__ ((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_ppr_status_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_get_ddr_ppr_status_out *handle_get_ddr_ppr_status_out;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0;//CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_PPR_STATUS_GET);
+        return -EINVAL;
+    }
+
+    handle_get_ddr_ppr_status_out = (struct cxl_mbox_handle_get_ddr_ppr_status_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "DDR PPR Status is %d\n", handle_get_ddr_ppr_status_out->status);
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+

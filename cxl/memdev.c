@@ -2327,6 +2327,84 @@ static const struct option cmd_ddr_page_select_get_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_hppr_set_params {
+  u32 enable;
+} ddr_hppr_set_params;
+
+#define DDR_HPPR_SET_OPTIONS() \
+  OPT_UINTEGER('e', "ddr_hppr_en", &ddr_hppr_set_params.enable, "HPPR Enable/Disable value(1/0)")
+
+static const struct option cmd_ddr_hppr_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_HPPR_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_hppr_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+struct _ddr_hppr_addr_info_set_params {
+  u32 ddr_id;
+  u32 chip_select; /* 2bit chip select info of faulty row*/
+  u32 bank; /* 2bits bank info*/
+  u32 bank_group; /* 2bit bank group info */
+  u32 row; /* faulty row address */
+} ddr_hppr_addr_info_set_params;
+
+struct _ddr_addr_info {
+  u32 ddr_id;
+  u32 chip_select; /* 2bit chip select info of faulty row*/
+  u32 bank; /* 2bits bank info*/
+  u32 bank_group; /* 2bit bank group info */
+  u32 row; /* faulty row address */
+  u32 channel; /* channel 0/1 of DDR controller */
+  u32 ppr_state;
+} ddr_addr_info;
+
+struct _ddr_hppr_addr_info_get_params {
+  struct _ddr_addr_info addr_info[2][8];
+} ddr_hppr_addr_info_get_params;
+
+#define DDR_HPPR_ADDR_INFO_SET_OPTIONS() \
+  OPT_UINTEGER('d', "ddr_id", &ddr_hppr_addr_info_set_params.ddr_id, "HPPR addr info: DDR controller ID value"), \
+  OPT_UINTEGER('c', "chip_select", &ddr_hppr_addr_info_set_params.chip_select, "HPPR addr info: chip select value"), \
+  OPT_UINTEGER('g', "bank_group", &ddr_hppr_addr_info_set_params.bank_group, "HPPR addr info: bank group value"), \
+  OPT_UINTEGER('b', "bank", &ddr_hppr_addr_info_set_params.bank, "HPPR addr info: bank value"), \
+  OPT_UINTEGER('r', "row", &ddr_hppr_addr_info_set_params.row, "HPPR addr info: row value")
+
+static const struct option cmd_ddr_hppr_addr_info_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_HPPR_ADDR_INFO_SET_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_hppr_addr_info_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+struct _ddr_hppr_addr_info_clear_params {
+  u32 ddr_id;
+  u32 channel_id;
+} ddr_hppr_addr_info_clear_params;
+
+#define DDR_HPPR_ADDR_INFO_CLEAR_OPTIONS() \
+  OPT_UINTEGER('d', "ddr_id", &ddr_hppr_addr_info_clear_params.ddr_id, "HPPR addr info: DDR controller ID value"), \
+  OPT_UINTEGER('c', "channel_id", &ddr_hppr_addr_info_clear_params.channel_id, "HPPR addr info: channel ID value")
+
+static const struct option cmd_ddr_hppr_addr_info_clear_options[] = {
+  BASE_OPTIONS(),
+  DDR_HPPR_ADDR_INFO_CLEAR_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_ppr_status_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4448,6 +4526,77 @@ static int action_cmd_ddr_page_select_get(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_page_select_get(memdev);
 }
 
+static int action_cmd_ddr_hppr_set(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_hppr_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_hppr_set(memdev, ddr_hppr_set_params.enable);
+}
+
+static int action_cmd_ddr_hppr_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_hppr_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_hppr_get(memdev);
+}
+
+static int action_cmd_ddr_hppr_addr_info_set(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_hppr_addr_info_set\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_hppr_addr_info_set(memdev, ddr_hppr_addr_info_set_params.ddr_id, ddr_hppr_addr_info_set_params.chip_select, ddr_hppr_addr_info_set_params.bank_group, ddr_hppr_addr_info_set_params.bank, ddr_hppr_addr_info_set_params.row);
+}
+
+static int action_cmd_ddr_hppr_addr_info_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_hppr_addr_info_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_hppr_addr_info_get(memdev);
+}
+
+static int action_cmd_ddr_hppr_addr_info_clear(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_hppr_info_clear\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_hppr_addr_info_clear(memdev, ddr_hppr_addr_info_clear_params.ddr_id, ddr_hppr_addr_info_clear_params.channel_id);
+}
+
+static int action_cmd_ddr_ppr_status_get(struct cxl_memdev *memdev,
+				      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_ppr_status_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_ppr_status_get(memdev);
+}
 
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -5829,6 +5978,54 @@ int cmd_ddr_page_select_get(int argc, const char **argv, struct cxl_ctx *ctx)
 {
   int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_page_select_get, cmd_ddr_page_select_get_options,
       "cxl ddr-page-select-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_hppr_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_hppr_set, cmd_ddr_hppr_set_options,
+      "cxl ddr-hppr-set <<mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_hppr_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_hppr_get, cmd_ddr_hppr_get_options,
+      "cxl ddr-hppr-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_hppr_addr_info_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_hppr_addr_info_set, cmd_ddr_hppr_addr_info_set_options,
+      "cxl ddr-hppr-addr-info-set <<mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_hppr_addr_info_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_hppr_addr_info_get, cmd_ddr_hppr_addr_info_get_options,
+      "cxl ddr-hppr-addr-info-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_hppr_addr_info_clear(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_hppr_addr_info_clear, cmd_ddr_hppr_addr_info_clear_options,
+      "cxl ddr-hppr-addr-info-clear <<mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_ppr_status_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_ppr_status_get, cmd_ddr_ppr_status_get_options,
+      "cxl ddr-ppr-status-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
 }

@@ -282,6 +282,12 @@ int cxl_memdev_pci_err_inj(struct cxl_memdev *memdev, u32 en_dis, u32 type, u32 
 int cxl_memdev_read_ltssm_states(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_page_select_set(struct cxl_memdev *memdev, u32 page_select_option);
 int cxl_memdev_ddr_page_select_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_hppr_set(struct cxl_memdev *memdev, u8 hppr_enable_option);
+int cxl_memdev_ddr_hppr_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_hppr_addr_info_set(struct cxl_memdev *memdev, u8 ddr_id, u8 chip_select, u8 bank_group, u8 bank, u32 row);
+int cxl_memdev_ddr_hppr_addr_info_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_hppr_addr_info_clear(struct cxl_memdev *memdev, u8 ddr_id, u8 channel_id);
+int cxl_memdev_ddr_ppr_status_get(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
