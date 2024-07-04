@@ -156,4 +156,10 @@ int cmd_pci_err_inj(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_read_ltssm_states(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_page_select_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_page_select_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_hppr_set(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_hppr_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_hppr_addr_info_set(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_hppr_addr_info_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_hppr_addr_info_clear(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_ddr_ppr_status_get(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
