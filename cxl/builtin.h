@@ -164,4 +164,5 @@ int cmd_ddr_hppr_addr_info_clear(int argc, const char **argv, struct cxl_ctx *ct
 int cmd_ddr_ppr_status_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_refresh_mode_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_refresh_mode_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_cxl_err_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

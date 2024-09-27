@@ -15127,3 +15127,203 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+/* CXL ERROR COUNT GET */
+#define CXL_MEM_COMMAND_ID_CXL_ERROR_CNT_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_ERROR_CNT_GET_OPCODE 0xFB34
+
+// mapped to CXL_CORRECTED_ERROR_IRQ
+// CXL_TOP_CXL_CONT_GENERIC_INTERRUPT_STATUS_04[12:6]
+enum cxl_corr_errors {
+    CORR_CACHE_DATA_ECC = 0,
+    CORR_MEM_DATA_ECC,
+    CORR_CRC_THRESHOLD,
+    CORR_RETRY_THRESHOLD,
+    CACHE_POISON_RVD,
+    MEM_POISON_RVD,
+    PHY_LAYER_ERR,
+    MAX_CORR_ERR_COUNT = 7
+};
+
+// mapped to CXL_UNCORRECTED_ERROR_IRQ
+// CXL_CONT_GENERIC_INTERRUPT_STATUS_03[16:0]
+enum cxl_uncorr_errors {
+    CACHE_DATA_PAR = 0,
+    CACHE_ADD_PAR,
+    CACHE_BE_PAR,
+    CACHE_DATA_ECC,
+    MEM_DATA_PAR,
+    MEM_ADD_PAR,
+    MEM_BE_PAR,
+    MEM_DATA_ECC,
+    REINIT_THRESHOLD,
+    ENCOD_VIOLATION,
+    POISON_RVD,
+    RCVR_OVERFLOW,
+    RSVDP_12,
+    RSVDP_13,
+    CXL_INTERNAL_ERR,
+    CXL_IDE_TX_ER,
+    CXL_IDE_RX_ER,
+    MAX_UNCORR_ERR_COUNT = 17
+};
+
+// mapped to 13 IRQ lines from CXL_ERR_STS_IRQ
+// CXL_TOP_CXL_CONT_GENERIC_INTERRUPT_STATUS_01[28:16]
+enum cxl_err_sts {
+    UNCOR_INTERNAL_ERR_STS = 0,
+    SURPRISE_DOWN_ER_STS,
+    REPLAY_TIMER_TIMEOUT_ERR_STS,
+    REPLAY_NUMBER_ROLLOVER_ERR_STS,
+    RCVR_OVERFLOW_ERR_STS,
+    RCVR_ERR_STS,
+    MLF_TLP_ERR_STS,
+    FC_PROTOCOL_ERR_STS,
+    ECRC_ERR_STS,
+    DL_PROTOCOL_ERR_STS,
+    CORRECTED_INTERNAL_ERR_STS,
+    BAD_TLP_ERR_STS,
+    BAD_DLLP_ERR_STS,
+    MAX_CXL_CFG_ERR_COUNT = 13
+};
+
+// corr errors list
+static char* corr_errors_list[MAX_CORR_ERR_COUNT] = {
+    "CORR_CACHE_DATA_ECC",
+    "CORR_MEM_DATA_ECC",
+    "CORR_CRC_THRESHOLD",
+    "CORR_RETRY_THRESHOLD",
+    "CACHE_POISON_RVD",
+    "MEM_POISON_RVD",
+    "PHY_LAYER_ERR"};
+
+// uncorr errors list
+static char* uncorr_errors_list[MAX_UNCORR_ERR_COUNT] = {
+    "CACHE_DATA_PAR",
+    "CACHE_ADD_PAR",
+    "CACHE_BE_PAR",
+    "CACHE_DATA_ECC",
+    "MEM_DATA_PAR",
+    "MEM_ADD_PAR",
+    "MEM_BE_PAR",
+    "MEM_DATA_ECC",
+    "REINIT_THRESHOLD",
+    "ENCOD_VIOLATION",
+    "POISON_RVD",
+    "RCVR_OVERFLOW",
+    "RSVDP_12",
+    "RSVDP_13",
+    "CXL_INTERNAL_ERR",
+    "CXL_IDE_TX_ER",
+    "CXL_IDE_RX_ER"};
+
+// uncorr errors list
+static char* cxl_cfg_errors_list[MAX_CXL_CFG_ERR_COUNT] = {
+    "UNCOR_INTERNAL_ERR_STS",
+    "SURPRISE_DOWN_ER_STS",
+    "REPLAY_TIMER_TIMEOUT_ERR_STS",
+    "REPLAY_NUMBER_ROLLOVER_ERR_STS",
+    "RCVR_OVERFLOW_ERR_STS",
+    "RCVR_ERR_STS",
+    "MLF_TLP_ERR_STS",
+    "FC_PROTOCOL_ERR_STS",
+    "ECRC_ERR_STS",
+    "DL_PROTOCOL_ERR_STS",
+    "CORRECTED_INTERNAL_ERR_STS",
+    "BAD_TLP_ERR_STS",
+    "BAD_DLLP_ERR_STS"};
+
+struct cxl_mbox_handle_cxl_err_cnt_out {
+    uint64_t total_err_cnt;
+    uint64_t total_corr_err_cnt;
+    uint64_t total_uncorr_err_cnt;
+    uint64_t total_cxl_cfg_err_cnt;
+    uint32_t corr_err[MAX_CORR_ERR_COUNT];
+    uint32_t uncorr_err[MAX_UNCORR_ERR_COUNT];
+    uint32_t cxl_conf_err[MAX_CXL_CFG_ERR_COUNT];
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_cxl_err_cnt_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_cxl_err_cnt_out *handle_cxl_err_cnt_out;
+    int rc = 0;
+    int i = 0;
+    cmd = cxl_cmd_new_raw(memdev,
+                  CXL_MEM_COMMAND_ID_CXL_ERROR_CNT_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+            cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+            cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+            cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_ERROR_CNT_GET) {
+        fprintf(stderr,
+            "%s: invalid command id 0x%x (expecting 0x%x)\n",
+            cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+            CXL_MEM_COMMAND_ID_CXL_ERROR_CNT_GET);
+        return -EINVAL;
+    }
+
+    handle_cxl_err_cnt_out = (struct cxl_mbox_handle_cxl_err_cnt_out *)
+                     cmd->send_cmd->out.payload;
+
+    fprintf(stdout, "Correctable Error : \n");
+    for (i = 0; i < MAX_CORR_ERR_COUNT; i++) {
+        fprintf(stdout, "cxl : %25s  : %4d \n", corr_errors_list[i],
+            handle_cxl_err_cnt_out->corr_err[i]);
+    }
+
+    fprintf(stdout, "UnCorrectable Error : \n");
+    for (i = 0; i < MAX_UNCORR_ERR_COUNT; i++) {
+        fprintf(stdout, "cxl : %25s  : %4d \n", uncorr_errors_list[i],
+            handle_cxl_err_cnt_out->uncorr_err[i]);
+    }
+
+    fprintf(stdout, "Cxl Cfg status Error : \n");
+    for (i = 0; i < MAX_CXL_CFG_ERR_COUNT; i++) {
+        fprintf(stdout, "cxl : %25s  : %4d \n", cxl_cfg_errors_list[i],
+            handle_cxl_err_cnt_out->cxl_conf_err[i]);
+    }
+    fprintf(stdout, "Total count of Correctable errors %ld\n",
+        handle_cxl_err_cnt_out->total_corr_err_cnt);
+    fprintf(stdout, "Total count of Uncorrectable errors %ld\n",
+        handle_cxl_err_cnt_out->total_uncorr_err_cnt);
+    fprintf(stdout, "Total count of cxl_cfg errors %ld\n",
+        handle_cxl_err_cnt_out->total_cxl_cfg_err_cnt);
+    fprintf(stdout, "Total number of errors %ld\n",
+        handle_cxl_err_cnt_out->total_err_cnt);
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
