@@ -2428,6 +2428,11 @@ static const struct option cmd_cxl_err_cnt_get_options[] = {
     OPT_END(),
 };
 
+static const struct option cmd_ddr_frequency_select_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4645,6 +4650,18 @@ static int action_cmd_ddr_refresh_mode_get(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_refresh_mode_get(memdev);
 }
 
+static int action_cmd_ddr_frequency_get(struct cxl_memdev *memdev,
+                                      struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort ddr_refresh_mode_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_ddr_freq_get(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -6113,4 +6130,12 @@ int cmd_cxl_err_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx)
         "cxl cxl-err-cnt-get <mem0> [<mem1>..<memN>] [<options>]");
 
     return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_freq_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+  int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_frequency_get, cmd_ddr_frequency_select_get_options,
+      "cxl ddr-freq-get <mem0> [<mem1>..<memN>] [<options>]");
+
+  return rc >= 0 ? 0 : EXIT_FAILURE;
 }
