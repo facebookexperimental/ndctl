@@ -15396,3 +15396,94 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+/* DDR INIT ERROR INFO GET */
+#define CXL_MEM_COMMAND_ID_CXL_DDR_INIT_ERR_INFO_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_DDR_INIT_ERR_INFO_GET_OPCODE 0xFB36
+
+struct ddr_init_bist_err_info{
+  uint32_t ddr_bist_err_cnt;
+  uint32_t ddr_bist_err_info_col;
+  uint32_t ddr_bist_err_info_row;
+  uint16_t ddr_bist_err_info_bank;
+  uint16_t ddr_bist_err_info_cs;
+} __attribute__((packed));
+
+struct ddr_init_err_info{
+  struct ddr_init_bist_err_info ddr_bist_err_info[2];
+} __attribute__((packed));
+
+
+struct cxl_mbox_handle_ddr_init_err_info_out {
+  struct ddr_init_err_info ddr_init_err;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_init_err_info_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct  cxl_mbox_handle_ddr_init_err_info_out *handle_ddr_init_err_info_out;
+    int rc = 0;
+    int i = 0;
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_DDR_INIT_ERR_INFO_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0; //CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_INIT_ERR_INFO_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_DDR_INIT_ERR_INFO_GET);
+        return -EINVAL;
+    }
+
+    handle_ddr_init_err_info_out = (struct cxl_mbox_handle_ddr_init_err_info_out *)cmd->send_cmd->out.payload;
+
+    for(i = 0; i < 2; i++)
+    {
+	fprintf(stdout, "BIST error details for DDR (%d) \n",i);
+	fprintf(stdout, "DDR BIST error count %d\n",
+            handle_ddr_init_err_info_out->ddr_init_err.ddr_bist_err_info[i].ddr_bist_err_cnt);
+        fprintf(stdout, "DDR BIST error info (col)%d\n",
+            handle_ddr_init_err_info_out->ddr_init_err.ddr_bist_err_info[i].ddr_bist_err_info_col);
+        fprintf(stdout, "DDR BIST error info (row)%d\n",
+            handle_ddr_init_err_info_out->ddr_init_err.ddr_bist_err_info[i].ddr_bist_err_info_row);
+        fprintf(stdout, "DDR BIST error info (bank)%d\n",
+            handle_ddr_init_err_info_out->ddr_init_err.ddr_bist_err_info[i].ddr_bist_err_info_bank);
+        fprintf(stdout, "DDR BIST error info (cs)%d\n",
+            handle_ddr_init_err_info_out->ddr_init_err.ddr_bist_err_info[i].ddr_bist_err_info_cs);
+    }
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}

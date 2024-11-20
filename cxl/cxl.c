@@ -222,6 +222,7 @@ static struct cmd_struct commands[] = {
 	{ "ddr-refresh-mode-get", .c_fn = cmd_ddr_refresh_mode_get },
 	{ "cxl-err-cnt-get", .c_fn = cmd_cxl_err_cnt_get },
 	{ "ddr-freq-get", .c_fn = cmd_ddr_freq_get },
+	{ "ddr-err-bist-info-get", .c_fn = cmd_cxl_ddr_bist_err_info_get },
 };
 
 int main(int argc, const char **argv)
