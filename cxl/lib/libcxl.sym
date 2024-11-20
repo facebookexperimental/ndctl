@@ -223,4 +223,5 @@ global:
     cxl_memdev_ddr_refresh_mode_get;
     cxl_memdev_cxl_err_cnt_get;
     cxl_memdev_ddr_freq_get;
+    cxl_memdev_ddr_init_err_info_get;
 } LIBCXL_3;

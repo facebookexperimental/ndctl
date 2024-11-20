@@ -2433,6 +2433,11 @@ static const struct option cmd_ddr_frequency_select_get_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_cxl_ddr_bist_err_info_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -6138,4 +6143,26 @@ int cmd_ddr_freq_get(int argc, const char **argv, struct cxl_ctx *ctx)
       "cxl ddr-freq-get <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+static int action_cmd_cxl_ddr_bist_err_info_get(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl get Error count \n",
+            cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_ddr_init_err_info_get(memdev);
+}
+
+int cmd_cxl_ddr_bist_err_info_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(
+        argc, argv, ctx, action_cmd_cxl_ddr_bist_err_info_get,
+        cmd_cxl_ddr_bist_err_info_get_options,
+        "cxl cxl-ddr-bist-err-info-get <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
 }
