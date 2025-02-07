@@ -167,4 +167,5 @@ int cmd_ddr_refresh_mode_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_err_cnt_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_freq_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_ddr_bist_err_info_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_cxl_ddr_bist_err_info_clr(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */
