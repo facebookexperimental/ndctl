@@ -294,6 +294,8 @@ int cxl_memdev_cxl_err_cnt_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_freq_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_init_err_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_bist_err_info_clr(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_spd_err_info_get(struct cxl_memdev *memdev);
+int cxl_memdev_ddr_spd_err_info_clr(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
