@@ -224,8 +224,6 @@ static struct cmd_struct commands[] = {
 	{ "ddr-freq-get", .c_fn = cmd_ddr_freq_get },
 	{ "ddr-err-bist-info-get", .c_fn = cmd_cxl_ddr_bist_err_info_get },
 	{ "ddr-err-bist-info-clr", .c_fn = cmd_cxl_ddr_bist_err_info_clr },
-	{ "ddr-err-spd-info-get", .c_fn = cmd_cxl_ddr_spd_err_info_get },
-	{ "ddr-err-spd-info-clr", .c_fn = cmd_cxl_ddr_spd_err_info_clr },
 };
 
 int main(int argc, const char **argv)
