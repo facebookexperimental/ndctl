@@ -2443,6 +2443,28 @@ static const struct option cmd_cxl_ddr_bist_err_info_clr_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_cxl_ddr_spd_err_info_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct _spd_err_clr_param{
+  u32 dimm_id;
+} spd_err_clr_param;
+
+#define CLR_SPD_ERR_FOR_DIMM() \
+  OPT_UINTEGER('i', "dimm_id", &spd_err_clr_param.dimm_id, "Clear DDR SPD error data for dimm_id(valid i values : 0,1,2,3,0xFF). \
+                  \n\t\t\t  (0 - DIMM_A), \
+                  \n\t\t\t  (1 - DIMM_B), \
+                  \n\t\t\t  (2 - DIMM_D), \
+                  \n\t\t\t  (3 - DIMM_C), \
+                  \n\t\t\t  (0xFF - ALL_DIMM)")
+static const struct option cmd_cxl_ddr_spd_err_info_clr_options[] = {
+  BASE_OPTIONS(),
+  CLR_SPD_ERR_FOR_DIMM(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -6159,7 +6181,7 @@ static int action_cmd_cxl_ddr_bist_err_info_get(struct cxl_memdev *memdev,
         return -EBUSY;
     }
 
-    return cxl_memdev_ddr_init_err_info_get(memdev);
+    return cxl_memdev_ddr_bist_err_info_get(memdev);
 }
 
 static int action_cmd_cxl_ddr_bist_err_info_clr(struct cxl_memdev *memdev,
@@ -6190,6 +6212,49 @@ int cmd_cxl_ddr_bist_err_info_clr(int argc, const char **argv, struct cxl_ctx *c
         argc, argv, ctx, action_cmd_cxl_ddr_bist_err_info_clr,
         cmd_cxl_ddr_bist_err_info_clr_options,
         "cxl cxl-ddr-bist-err-info-clr <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+static int action_cmd_cxl_ddr_spd_err_info_get(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl get spd error info\n",
+            cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_ddr_spd_err_info_get(memdev);
+}
+
+int cmd_cxl_ddr_spd_err_info_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(
+        argc, argv, ctx, action_cmd_cxl_ddr_spd_err_info_get,
+        cmd_cxl_ddr_spd_err_info_get_options,
+        "cxl cxl-ddr-spd-err-info-get <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+static int action_cmd_cxl_ddr_spd_err_info_clr(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl clr spd error info\n",
+            cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+    return cxl_memdev_ddr_spd_err_info_clr(memdev, spd_err_clr_param.dimm_id);
+}
+
+int cmd_cxl_ddr_spd_err_info_clr(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(
+        argc, argv, ctx, action_cmd_cxl_ddr_spd_err_info_clr,
+        cmd_cxl_ddr_spd_err_info_clr_options,
+        "cxl cxl-ddr-spd-err-info-clr <mem0> [<mem1>..<memN>] [<options>] ");
 
     return rc >= 0 ? 0 : EXIT_FAILURE;
 }
