@@ -170,4 +170,5 @@ int cmd_cxl_ddr_bist_err_info_get(int argc, const char **argv, struct cxl_ctx *c
 int cmd_cxl_ddr_bist_err_info_clr(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_ddr_spd_err_info_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_ddr_spd_err_info_clr(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_cxl_ddr_set_downscale_val(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

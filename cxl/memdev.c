@@ -2465,6 +2465,22 @@ static const struct option cmd_cxl_ddr_spd_err_info_clr_options[] = {
   OPT_END(),
 };
 
+static struct _ddr_downscale_param{
+  u32 downscaleVal;
+} ddr_downscale_param;
+
+#define SET_DDR_DOWNSCALE_FREQ_VAL() \
+  OPT_UINTEGER('i', "freqVal", &ddr_downscale_param.downscaleVal, "set DDR downscale freq. value (valid i values : 0,1,2,3). \
+                  \n\t\t\t  (0 - 2400), \
+                  \n\t\t\t  (1 - 2200), \
+                  \n\t\t\t  (2 - 1800), \
+                  \n\t\t\t  (3 - 1200)")
+static const struct option cmd_cxl_ddr_set_downscale_val_options[] = {
+  BASE_OPTIONS(),
+  SET_DDR_DOWNSCALE_FREQ_VAL(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -6255,6 +6271,27 @@ int cmd_cxl_ddr_spd_err_info_clr(int argc, const char **argv, struct cxl_ctx *ct
         argc, argv, ctx, action_cmd_cxl_ddr_spd_err_info_clr,
         cmd_cxl_ddr_spd_err_info_clr_options,
         "cxl cxl-ddr-spd-err-info-clr <mem0> [<mem1>..<memN>] [<options>] ");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+static int action_cmd_cxl_ddr_set_downscale_val(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl downscale ddr freq.\n",
+            cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+    return cxl_memdev_ddr_set_downscale_val(memdev, ddr_downscale_param.downscaleVal);
+}
+
+int cmd_cxl_ddr_set_downscale_val(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(
+        argc, argv, ctx, action_cmd_cxl_ddr_set_downscale_val,
+        cmd_cxl_ddr_set_downscale_val_options,
+        "cxl cxl-ddr-set-downscale-val <mem0> [<mem1>..<memN>] [<options>] ");
 
     return rc >= 0 ? 0 : EXIT_FAILURE;
 }

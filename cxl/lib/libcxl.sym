@@ -227,4 +227,5 @@ global:
     cxl_memdev_ddr_bist_err_info_clr;
     cxl_memdev_ddr_spd_err_info_get;
     cxl_memdev_ddr_spd_err_info_clr;
+    cxl_memdev_ddr_set_downscale_val;
 } LIBCXL_3;

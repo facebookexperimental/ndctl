@@ -296,7 +296,8 @@ int cxl_memdev_ddr_bist_err_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_bist_err_info_clr(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_spd_err_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_spd_err_info_clr(struct cxl_memdev *memdev, u8 spd_err_clr_dimm_id_option);
-
+int cxl_memdev_ddr_set_downscale_val(struct cxl_memdev *memdev, u8 ddrDownscaleVal);
+	
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
              memdev != NULL; \
