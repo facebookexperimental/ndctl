@@ -15708,7 +15708,7 @@ out:
 
 /* DDR SPD ERROR INFO CLR */
 #define CXL_MEM_COMMAND_ID_CXL_DDR_SET_DOWNSCALE_VAL CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_CXL_DDR_SET_DOWNSCALE_VAL_OPCODE 0xFB3A
+#define CXL_MEM_COMMAND_ID_CXL_DDR_SET_DOWNSCALE_VAL_OPCODE 0xFB3E
 struct cxl_mbox_handle_ddr_set_downscale_in {
   u8 downscaleVal;
 } __attribute__ ((packed));
