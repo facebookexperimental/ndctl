@@ -15732,3 +15732,482 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+/* CXL DDR IRQ STATUS GET */
+#define CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_STATUS_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_STATUS_GET_OPCODE 0xFB3A
+
+// Define the irq_tracker struct
+struct irq_track {
+    uint8_t cxl_corr_irq;
+    uint8_t cxl_uncorr_irq;
+    uint8_t cxl_cfg_irq;
+    uint8_t ddr_ctrl_irq[DDR_MAX_SUBSYS];
+} __attribute__((packed));
+
+struct cxl_mbox_handle_cxl_ddr_irq_status_out {
+    struct irq_track irq_status;
+} __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_cxl_ddr_irq_status_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_cxl_ddr_irq_status_out *handle_cxl_ddr_irq_status;
+    int rc = 0;
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_STATUS_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0; //CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_STATUS_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_STATUS_GET);
+        return -EINVAL;
+    }
+
+    handle_cxl_ddr_irq_status = (struct cxl_mbox_handle_cxl_ddr_irq_status_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "IRQ Status:\n");
+    fprintf(stdout, "CXL Correctable IRQ is %s\n", handle_cxl_ddr_irq_status->irq_status.cxl_corr_irq ? "disabled" : "enabled");
+    fprintf(stdout, "CXL Uncorrectable IRQ is %s\n", handle_cxl_ddr_irq_status->irq_status.cxl_uncorr_irq ? "disabled" : "enabled");
+    fprintf(stdout, "CXL Configuration IRQ is %s\n", handle_cxl_ddr_irq_status->irq_status.cxl_cfg_irq ? "disabled" : "enabled");
+    fprintf(stdout, "DDR[0] IRQ is %s\n", handle_cxl_ddr_irq_status->irq_status.ddr_ctrl_irq[0] ? "disabled" : "enabled");
+    fprintf(stdout, "DDR[1] IRQ is %s\n", handle_cxl_ddr_irq_status->irq_status.ddr_ctrl_irq[1] ? "disabled" : "enabled");
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* CXL DDR ENABLE IRQ */
+#define CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET_OPCODE 0xFB3B
+#define CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET_PAYLOAD_IN_SIZE 1
+
+struct cxl_ddr_irq_enable {
+    u8 irq_num_option;
+} __attribute__((packed));
+
+struct cxl_mbox_handle_cxl_ddr_irq_select_in {
+  struct cxl_ddr_irq_enable irq_select;
+} __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_cxl_ddr_irq_enable_set(struct cxl_memdev *memdev,
+                 u8 irq_num_option)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_cxl_ddr_irq_select_in *handle_irq_enable;
+    int rc = 0;
+
+    if ( irq_num_option < 1 || irq_num_option > 5) {
+	fprintf(stderr, "Error: Option must be between 1 and 5\n");
+        return -EINVAL;
+    }
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_irq_enable = (void *) cmd->send_cmd->in.payload;
+
+    handle_irq_enable->irq_select.irq_num_option = irq_num_option;
+    fprintf(stderr, "Enable IRQ line %d\n", handle_irq_enable->irq_select.irq_num_option);
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR_THRES_SET */
+#define CXL_MEM_COMMAND_ID_DDR_THRES_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_THRES_SET_OPCODE 0xFB3C
+#define CXL_MEM_COMMAND_ID_DDR_THRES_SET_PAYLOAD_IN_SIZE 8
+
+#define UPPER_THRESHOLD_COUNT 500
+#define UPPER_TIME_LIMIT 5000
+
+// struct to hold threshold count and time limit in minutes
+struct rlc_cfg {
+    u16 corr_err_threshold_cnt;
+    u16 corr_err_time_limit;
+    u16 uncorr_err_threshold_cnt;
+    u16 uncorr_err_time_limit;
+} __attribute__((packed));
+
+struct cxl_mbox_handle_ddr_threshold_set_in {
+    struct rlc_cfg rlc_ddr_cfg;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_threshold_set(struct cxl_memdev *memdev,
+                u16 corr_err_threshold_cnt, u16 corr_err_time_limit, u16 uncorr_err_threshold_cnt, u16 uncorr_err_time_limit)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_ddr_threshold_set_in *handle_ddr_threshold_set;
+    int rc = 0;
+
+    // Validate input ranges
+    if ((corr_err_threshold_cnt < 1 || corr_err_threshold_cnt > UPPER_THRESHOLD_COUNT) ||
+        (corr_err_time_limit < 1 || corr_err_time_limit > UPPER_TIME_LIMIT) ||
+        (uncorr_err_threshold_cnt < 1 || uncorr_err_threshold_cnt > UPPER_THRESHOLD_COUNT) ||
+        (uncorr_err_time_limit < 1 || uncorr_err_time_limit > UPPER_TIME_LIMIT)) {
+        fprintf(stderr,
+            "Error: Threshold count option must be between 1 and %d\n"
+            "Error: Time limit option must be between 1 and %d\n",
+            UPPER_THRESHOLD_COUNT,
+            UPPER_TIME_LIMIT);
+        goto out;
+    }
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_THRES_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_DDR_THRES_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_ddr_threshold_set = (void *) cmd->send_cmd->in.payload;
+    handle_ddr_threshold_set->rlc_ddr_cfg.corr_err_threshold_cnt = corr_err_threshold_cnt;
+    handle_ddr_threshold_set->rlc_ddr_cfg.corr_err_time_limit = corr_err_time_limit;
+    handle_ddr_threshold_set->rlc_ddr_cfg.uncorr_err_threshold_cnt = uncorr_err_threshold_cnt;
+    handle_ddr_threshold_set->rlc_ddr_cfg.uncorr_err_time_limit = uncorr_err_time_limit;
+
+    fprintf(stdout, "Correctable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_ddr_threshold_set->rlc_ddr_cfg.corr_err_threshold_cnt), le16_to_cpu(handle_ddr_threshold_set->rlc_ddr_cfg.corr_err_time_limit));
+    fprintf(stdout, "Uncorrectable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_ddr_threshold_set->rlc_ddr_cfg.uncorr_err_threshold_cnt), le16_to_cpu(handle_ddr_threshold_set->rlc_ddr_cfg.uncorr_err_time_limit));
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_DDR_IRQ_ENABLE_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* DDR THRES GET */
+#define CXL_MEM_COMMAND_ID_DDR_THRES_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DDR_THRES_GET_OPCODE 0xFB3D
+
+struct cxl_mbox_handle_ddr_threshold_get_out {
+    struct rlc_cfg rlc_ddr_cfg;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_ddr_threshold_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct  cxl_mbox_handle_ddr_threshold_get_out *handle_ddr_threshold_get;
+    int rc = 0;
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DDR_THRES_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0; //CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DDR_THRES_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_DDR_THRES_GET);
+        return -EINVAL;
+    }
+
+    handle_ddr_threshold_get = (struct cxl_mbox_handle_ddr_threshold_get_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "Correctable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_ddr_threshold_get->rlc_ddr_cfg.corr_err_threshold_cnt), le16_to_cpu(handle_ddr_threshold_get->rlc_ddr_cfg.corr_err_time_limit));
+    fprintf(stdout, "Uncorrectable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_ddr_threshold_get->rlc_ddr_cfg.uncorr_err_threshold_cnt), le16_to_cpu(handle_ddr_threshold_get->rlc_ddr_cfg.uncorr_err_time_limit));
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* CXL_THRES_SET */
+#define CXL_MEM_COMMAND_ID_CXL_THRES_SET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_THRES_SET_OPCODE 0xFB3E
+#define CXL_MEM_COMMAND_ID_CXL_THRES_SET_PAYLOAD_IN_SIZE 8
+
+struct cxl_mbox_handle_cxl_threshold_set_in {
+    struct rlc_cfg rlc_cxl_cfg;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_cxl_threshold_set(struct cxl_memdev *memdev,
+                u16 corr_err_threshold_cnt, u16 corr_err_time_limit, u16 uncorr_err_threshold_cnt, u16 uncorr_err_time_limit)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct cxl_mbox_handle_cxl_threshold_set_in *handle_cxl_threshold_set;
+    int rc = 0;
+
+    // Validate input ranges
+    if ((corr_err_threshold_cnt < 1 || corr_err_threshold_cnt > UPPER_THRESHOLD_COUNT) ||
+        (corr_err_time_limit < 1 || corr_err_time_limit > UPPER_TIME_LIMIT) ||
+        (uncorr_err_threshold_cnt < 1 || uncorr_err_threshold_cnt > UPPER_THRESHOLD_COUNT) ||
+        (uncorr_err_time_limit < 1 || uncorr_err_time_limit > UPPER_TIME_LIMIT)) {
+        fprintf(stderr,
+            "Error: Threshold count option must be between 1 and %d\n"
+            "Error: Time limit option must be between 1 and %d\n",
+            UPPER_THRESHOLD_COUNT,
+            UPPER_TIME_LIMIT);
+        goto out;
+    }
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_THRES_SET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* update payload size */
+    cinfo->size_in = CXL_MEM_COMMAND_ID_CXL_THRES_SET_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    handle_cxl_threshold_set = (void *) cmd->send_cmd->in.payload;
+    handle_cxl_threshold_set->rlc_cxl_cfg.corr_err_threshold_cnt = corr_err_threshold_cnt;
+    handle_cxl_threshold_set->rlc_cxl_cfg.corr_err_time_limit = corr_err_time_limit;
+    handle_cxl_threshold_set->rlc_cxl_cfg.uncorr_err_threshold_cnt = uncorr_err_threshold_cnt;
+    handle_cxl_threshold_set->rlc_cxl_cfg.uncorr_err_time_limit = uncorr_err_time_limit;
+
+    fprintf(stdout, "Correctable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_cxl_threshold_set->rlc_cxl_cfg.corr_err_threshold_cnt), le16_to_cpu(handle_cxl_threshold_set->rlc_cxl_cfg.corr_err_time_limit));
+    fprintf(stdout, "Uncorrectable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_cxl_threshold_set->rlc_cxl_cfg.uncorr_err_threshold_cnt), le16_to_cpu(handle_cxl_threshold_set->rlc_cxl_cfg.uncorr_err_time_limit));
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_THRES_SET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_THRES_SET);
+        return -EINVAL;
+    }
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}
+
+/* CXL_THRES_GET */
+#define CXL_MEM_COMMAND_ID_CXL_THRES_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_CXL_THRES_GET_OPCODE 0xFB3F
+
+struct cxl_mbox_handle_cxl_threshold_get_out {
+    struct rlc_cfg rlc_cxl_cfg;
+} __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_cxl_threshold_get(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    struct  cxl_mbox_handle_cxl_threshold_get_out *handle_cxl_threshold_get;
+    int rc = 0;
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_CXL_THRES_GET_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* used to force correct payload size */
+    cinfo->size_in = 0; //CXL_MEM_COMMAND_ID_LOG_INFO_PAYLOAD_IN_SIZE;
+    if (cinfo->size_in > 0) {
+        cmd->input_payload = calloc(1, cinfo->size_in);
+        if (!cmd->input_payload)
+            return -ENOMEM;
+        cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+        cmd->send_cmd->in.size = cinfo->size_in;
+    }
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        fprintf(stderr, "%s: firmware status: %d\n",
+                cxl_memdev_get_devname(memdev), rc);
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_CXL_THRES_GET) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_CXL_THRES_GET);
+        return -EINVAL;
+    }
+
+    handle_cxl_threshold_get = (struct cxl_mbox_handle_cxl_threshold_get_out *)cmd->send_cmd->out.payload;
+    fprintf(stdout, "Correctable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_cxl_threshold_get->rlc_cxl_cfg.corr_err_threshold_cnt), le16_to_cpu(handle_cxl_threshold_get->rlc_cxl_cfg.corr_err_time_limit));
+    fprintf(stdout, "Uncorrectable error: threshold count %d, time limit %d\n",
+                    le16_to_cpu(handle_cxl_threshold_get->rlc_cxl_cfg.uncorr_err_threshold_cnt), le16_to_cpu(handle_cxl_threshold_get->rlc_cxl_cfg.uncorr_err_time_limit));
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}

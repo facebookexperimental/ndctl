@@ -296,6 +296,12 @@ int cxl_memdev_ddr_bist_err_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_bist_err_info_clr(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_spd_err_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_ddr_spd_err_info_clr(struct cxl_memdev *memdev, u8 spd_err_clr_dimm_id_option);
+int cxl_memdev_cxl_ddr_irq_status_get(struct cxl_memdev *memdev);
+int cxl_memdev_cxl_ddr_irq_enable_set(struct cxl_memdev *memdev, u8 irq_num_option);
+int cxl_memdev_ddr_threshold_set(struct cxl_memdev *memdev, u16 corr_err_threshold_cnt, u16 corr_err_time_limit, u16 uncorr_err_threshold_cnt, u16 uncorr_err_time_limit);
+int cxl_memdev_ddr_threshold_get(struct cxl_memdev *memdev);
+int cxl_memdev_cxl_threshold_set(struct cxl_memdev *memdev, u16 corr_err_threshold_cnt, u16 corr_err_time_limit, u16 uncorr_err_threshold_cnt, u16 uncorr_err_time_limit);
+int cxl_memdev_cxl_threshold_get(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
