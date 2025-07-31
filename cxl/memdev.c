@@ -2465,6 +2465,60 @@ static const struct option cmd_cxl_ddr_spd_err_info_clr_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_cxl_ddr_irq_status_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static struct cxl_ddr_irq_enable_option {
+   u32  irq_num_option;
+} __attribute__((packed)) enable_irq;
+
+#define DDR_CXL_IRQ_ENABLE_SET_OPTIONS() \
+       OPT_UINTEGER('i', "enable_irq_num_option", &enable_irq.irq_num_option, "Option for irq enable")
+
+static const struct option cmd_cxl_ddr_irq_enable_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_CXL_IRQ_ENABLE_SET_OPTIONS(),
+  OPT_END(),
+};
+
+// struct to hold threshold count and time limit in minutes
+struct _rlc_cfg {
+  u32 corr_err_threshold_cnt;
+  u32 corr_err_time_limit;
+  u32 uncorr_err_threshold_cnt;
+  u32 uncorr_err_time_limit;
+} __attribute__((packed)) rlc_cfg;
+
+#define DDR_CXL_RLC_CFG_OPTIONS() \
+  OPT_UINTEGER('c', "corr_thres", &rlc_cfg.corr_err_threshold_cnt, "Correctable threshold count"), \
+  OPT_UINTEGER('t', "corr_time", &rlc_cfg.corr_err_time_limit, "Correctable time limit"), \
+  OPT_UINTEGER('u', "uncorr_thres", &rlc_cfg.uncorr_err_threshold_cnt, "Uncorrectable threshold count"), \
+  OPT_UINTEGER('l', "uncorr_time", &rlc_cfg.uncorr_err_time_limit, "Uncorrectable time limit")
+
+static const struct option cmd_ddr_threshold_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_CXL_RLC_CFG_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_ddr_threshold_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_cxl_threshold_set_options[] = {
+  BASE_OPTIONS(),
+  DDR_CXL_RLC_CFG_OPTIONS(),
+  OPT_END(),
+};
+
+static const struct option cmd_cxl_threshold_get_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
   u16 record_handle;
@@ -4694,6 +4748,78 @@ static int action_cmd_ddr_frequency_get(struct cxl_memdev *memdev,
 	return cxl_memdev_ddr_freq_get(memdev);
 }
 
+static int action_cmd_cxl_ddr_irq_status_get(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl ddr ira status get\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_cxl_ddr_irq_status_get(memdev);
+}
+
+static int action_cmd_cxl_ddr_irq_enable_set(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl ddr irq enable set\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_cxl_ddr_irq_enable_set(memdev, enable_irq.irq_num_option);
+}
+
+static int action_cmd_ddr_threshold_set(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, ddr thres set\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_ddr_threshold_set(memdev, rlc_cfg.corr_err_threshold_cnt, rlc_cfg.corr_err_time_limit, rlc_cfg.uncorr_err_threshold_cnt, rlc_cfg.uncorr_err_time_limit);
+}
+
+static int action_cmd_ddr_threshold_get(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, ddr thres get\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_ddr_threshold_get(memdev);
+}
+
+static int action_cmd_cxl_threshold_set(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl thres set\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_cxl_threshold_set(memdev, rlc_cfg.corr_err_threshold_cnt, rlc_cfg.corr_err_time_limit, rlc_cfg.uncorr_err_threshold_cnt, rlc_cfg.uncorr_err_time_limit);
+}
+
+static int action_cmd_cxl_threshold_get(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, cxl thres get\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_cxl_threshold_get(memdev);
+}
+
 static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 {
   size_t size = param.len, read_len;
@@ -6255,6 +6381,54 @@ int cmd_cxl_ddr_spd_err_info_clr(int argc, const char **argv, struct cxl_ctx *ct
         argc, argv, ctx, action_cmd_cxl_ddr_spd_err_info_clr,
         cmd_cxl_ddr_spd_err_info_clr_options,
         "cxl cxl-ddr-spd-err-info-clr <mem0> [<mem1>..<memN>] [<options>] ");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_cxl_ddr_irq_status_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_ddr_irq_status_get, cmd_cxl_ddr_irq_status_get_options,
+        "cxl cxl-ddr-irq-status <mem0> [<mem1>..<memN>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_cxl_ddr_irq_enable_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_ddr_irq_enable_set, cmd_cxl_ddr_irq_enable_set_options,
+        "cxl cxl-ddr-irq-enable <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_threshold_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_threshold_set, cmd_ddr_threshold_set_options,
+        "cxl ddr-thres-set <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_ddr_threshold_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_ddr_threshold_get, cmd_ddr_threshold_get_options,
+        "cxl ddr-thres-get <mem0> [<mem1>..<memN>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_cxl_threshold_set(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_threshold_set, cmd_cxl_threshold_set_options,
+        "cxl cxl-thres-set <<mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_cxl_threshold_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_cxl_threshold_get, cmd_cxl_threshold_get_options,
+        "cxl cxl-thres-get <mem0> [<mem1>..<memN>]");
 
     return rc >= 0 ? 0 : EXIT_FAILURE;
 }

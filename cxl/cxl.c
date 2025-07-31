@@ -226,6 +226,12 @@ static struct cmd_struct commands[] = {
 	{ "ddr-err-bist-info-clr", .c_fn = cmd_cxl_ddr_bist_err_info_clr },
 	{ "ddr-err-spd-info-get", .c_fn = cmd_cxl_ddr_spd_err_info_get },
 	{ "ddr-err-spd-info-clr", .c_fn = cmd_cxl_ddr_spd_err_info_clr },
+	{ "cxl-ddr-irq-status-get", .c_fn = cmd_cxl_ddr_irq_status_get },
+	{ "cxl-ddr-irq-enable-set", .c_fn = cmd_cxl_ddr_irq_enable_set },
+	{ "ddr-thres-set", .c_fn = cmd_ddr_threshold_set },
+	{ "ddr-thres-get", .c_fn = cmd_ddr_threshold_get },
+	{ "cxl-thres-set", .c_fn = cmd_cxl_threshold_set },
+	{ "cxl-thres-get", .c_fn = cmd_cxl_threshold_get },
 };
 
 int main(int argc, const char **argv)
