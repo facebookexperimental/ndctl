@@ -6388,32 +6388,32 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 
 	health_counters_get_out = (void *)cmd->send_cmd->out.payload;
 	fprintf(stdout, "============================= get health counters ==============================\n");
-	fprintf(stdout, "0: CRITICAL_OVER_TEMPERATURE_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->critical_over_temperature_exceeded));
-	fprintf(stdout, "1: OVER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->over_temperature_warning_level_exceeded));
-	fprintf(stdout, "2: CRITICAL_UNDER_TEMPERATURE_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->critical_under_temperature_exceeded));
-	fprintf(stdout, "3: UNDER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %d\n", le32_to_cpu(health_counters_get_out->under_temperature_warning_level_exceeded));
-	fprintf(stdout, "4: POWER_ON_EVENTS = %d\n", le32_to_cpu(health_counters_get_out->power_on_events));
-	fprintf(stdout, "5: POWER_ON_HOURS = %d\n", le32_to_cpu(health_counters_get_out->power_on_hours));
-	fprintf(stdout, "6: CXL_MEM_LINK_CRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
-	fprintf(stdout, "7: CXL_IO_LINK_LCRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
-	fprintf(stdout, "8: CXL_IO_LINK_ECRC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
-	fprintf(stdout, "9: NUM_DDR_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_correctable_ecc_errors));
-	fprintf(stdout, "10: NUM_DDR_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_uncorrectable_ecc_errors));
-	fprintf(stdout, "11: LINK_RECOVERY_EVENTS = %d\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
-	fprintf(stdout, "12: TIME_IN_THROTTLED = %d\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
-	fprintf(stdout, "13: RX_RETRY_REQUEST = %d\n", le32_to_cpu(health_counters_get_out->rx_retry_request));
-	fprintf(stdout, "14: RCMD_QS0_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs0_hi_threshold_detect));
-	fprintf(stdout, "15: RCMD_QS1_HI_THRESHOLD_DETECT = %d\n", le32_to_cpu(health_counters_get_out->rcmd_qs1_hi_threshold_detect));
-	fprintf(stdout, "16: NUM_PSCAN_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_pscan_correctable_ecc_errors));
-	fprintf(stdout, "17: NUM_PSCAN_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_pscan_uncorrectable_ecc_errors));
-	fprintf(stdout, "18: NUM_DDR_DIMM0_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_correctable_ecc_errors));
-	fprintf(stdout, "19: NUM_DDR_DIMM0_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_uncorrectable_ecc_errors));
-	fprintf(stdout, "20: NUM_DDR_DIMM1_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_correctable_ecc_errors));
-	fprintf(stdout, "21: NUM_DDR_DIMM1_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_uncorrectable_ecc_errors));
-	fprintf(stdout, "22: NUM_DDR_DIMM2_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_correctable_ecc_errors));
-	fprintf(stdout, "23: NUM_DDR_DIMM2_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_uncorrectable_ecc_errors));
-	fprintf(stdout, "24: NUM_DDR_DIMM3_COR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_correctable_ecc_errors));
-	fprintf(stdout, "25: NUM_DDR_DIMM3_UNCOR_ECC_ERRORS = %d\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_uncorrectable_ecc_errors));
+	fprintf(stdout, "0: CRITICAL_OVER_TEMPERATURE_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->critical_over_temperature_exceeded));
+	fprintf(stdout, "1: OVER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->over_temperature_warning_level_exceeded));
+	fprintf(stdout, "2: CRITICAL_UNDER_TEMPERATURE_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->critical_under_temperature_exceeded));
+	fprintf(stdout, "3: UNDER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->under_temperature_warning_level_exceeded));
+	fprintf(stdout, "4: POWER_ON_EVENTS = %u\n", le32_to_cpu(health_counters_get_out->power_on_events));
+	fprintf(stdout, "5: POWER_ON_HOURS = %u\n", le32_to_cpu(health_counters_get_out->power_on_hours));
+	fprintf(stdout, "6: CXL_MEM_LINK_CRC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->cxl_mem_link_crc_errors));
+	fprintf(stdout, "7: CXL_IO_LINK_LCRC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->cxl_io_link_lcrc_errors));
+	fprintf(stdout, "8: CXL_IO_LINK_ECRC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->cxl_io_link_ecrc_errors));
+	fprintf(stdout, "9: NUM_DDR_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_correctable_ecc_errors));
+	fprintf(stdout, "10: NUM_DDR_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_uncorrectable_ecc_errors));
+	fprintf(stdout, "11: LINK_RECOVERY_EVENTS = %u\n", le32_to_cpu(health_counters_get_out->link_recovery_events));
+	fprintf(stdout, "12: TIME_IN_THROTTLED = %u\n", le32_to_cpu(health_counters_get_out->time_in_throttled));
+	fprintf(stdout, "13: RX_RETRY_REQUEST = %u\n", le32_to_cpu(health_counters_get_out->rx_retry_request));
+	fprintf(stdout, "14: RCMD_QS0_HI_THRESHOLD_DETECT = %u\n", le32_to_cpu(health_counters_get_out->rcmd_qs0_hi_threshold_detect));
+	fprintf(stdout, "15: RCMD_QS1_HI_THRESHOLD_DETECT = %u\n", le32_to_cpu(health_counters_get_out->rcmd_qs1_hi_threshold_detect));
+	fprintf(stdout, "16: NUM_PSCAN_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_pscan_correctable_ecc_errors));
+	fprintf(stdout, "17: NUM_PSCAN_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_pscan_uncorrectable_ecc_errors));
+	fprintf(stdout, "18: NUM_DDR_DIMM0_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_correctable_ecc_errors));
+	fprintf(stdout, "19: NUM_DDR_DIMM0_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm0_uncorrectable_ecc_errors));
+	fprintf(stdout, "20: NUM_DDR_DIMM1_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_correctable_ecc_errors));
+	fprintf(stdout, "21: NUM_DDR_DIMM1_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm1_uncorrectable_ecc_errors));
+	fprintf(stdout, "22: NUM_DDR_DIMM2_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_correctable_ecc_errors));
+	fprintf(stdout, "23: NUM_DDR_DIMM2_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm2_uncorrectable_ecc_errors));
+	fprintf(stdout, "24: NUM_DDR_DIMM3_COR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_correctable_ecc_errors));
+	fprintf(stdout, "25: NUM_DDR_DIMM3_UNCOR_ECC_ERRORS = %u\n", le32_to_cpu(health_counters_get_out->num_ddr_dimm3_uncorrectable_ecc_errors));
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
@@ -13023,6 +13023,9 @@ typedef enum {
   DDR_INIT_FAILED = -1,
   DDR_INIT_FAILED_NO_CH0_DIMM0 = -2,
   DDR_INIT_FAILED_UNKNOWN_DIMM = -3,
+  DDR_INIT_FAILED_DIMM_SPD_ERR = -4,
+  DDR_INIT_FAILED_DIMM_MPN_DISTINCT = -5,
+  DDR_INIT_FAILED_TIMEOUT = -6,
 } ddr_status;
 
 typedef enum {
@@ -13121,6 +13124,30 @@ CXL_EXPORT int cxl_memdev_ddr_init_status(struct cxl_memdev *memdev)
 		case DDR_INIT_FAILED_UNKNOWN_DIMM:
 				fprintf(stdout, "DDR INIT FAILED. UN-SUPPORTED/UNKNOWN DIMM\n");
 				fprintf(stdout, "RECOVERY REMEDY: PLUG IN SUPPORTED DIMMs\n");
+				break;
+		case DDR_INIT_FAILED_DIMM_SPD_ERR:
+				fprintf(stdout, "DDR INIT FAILED. CH:%d DIMM:%c is SPD ERROR\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: REPLACE CH:%d DIMM:%c\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+				break;
+		case DDR_INIT_FAILED_DIMM_MPN_DISTINCT:
+				fprintf(stdout, "DDR INIT FAILED. CH:%d DIMM:%c is MPN MISS MATCH\n",
+					ddr_init_status_out->init_status.failed_channel_id,
+					ddr_init_status_out->init_status.failed_dimm_silk_screen);
+
+				fprintf(stdout, "RECOVERY REMEDY: PLUG IN SAME MPN DIMMS ON CH:%d\n",
+					ddr_init_status_out->init_status.failed_channel_id);
+				break;
+		case DDR_INIT_FAILED_TIMEOUT:
+				fprintf(stdout, "DDR INIT FAILED. CH:%d is MC or PI INIT TIMEOUT\n",
+					ddr_init_status_out->init_status.failed_channel_id);
+
+				fprintf(stdout, "RECOVERY REMEDY: REPLACE DIMMS ON CH:%d\n",
+					ddr_init_status_out->init_status.failed_channel_id);
 				break;
 		default:
 				fprintf(stdout, "DDR INIT STATUS invalid\n");
