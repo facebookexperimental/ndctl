@@ -302,6 +302,7 @@ int cxl_memdev_ddr_threshold_set(struct cxl_memdev *memdev, u16 corr_err_thresho
 int cxl_memdev_ddr_threshold_get(struct cxl_memdev *memdev);
 int cxl_memdev_cxl_threshold_set(struct cxl_memdev *memdev, u16 corr_err_threshold_cnt, u16 corr_err_time_limit, u16 uncorr_err_threshold_cnt, u16 uncorr_err_time_limit);
 int cxl_memdev_cxl_threshold_get(struct cxl_memdev *memdev);
+int cxl_memdev_get_coredump(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

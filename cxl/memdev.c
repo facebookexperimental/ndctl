@@ -2185,6 +2185,11 @@ static const struct option cmd_trigger_coredump_options[] = {
   OPT_END(),
 };
 
+static const struct option cmd_get_coredump_options[] = {
+  BASE_OPTIONS(),
+  OPT_END(),
+};
+
 static struct _ddr_err_inj_en_params {
 	u32 ddr_id;
 	u32 err_type;
@@ -4487,6 +4492,17 @@ static int action_cmd_trigger_coredump(struct cxl_memdev *memdev,
         return cxl_memdev_trigger_coredump(memdev);
 }
 
+static int action_cmd_get_coredump(struct cxl_memdev *memdev,
+                                    struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, abort get_coredump\n",
+                cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_get_coredump(memdev);
+}
 static int action_cmd_ddr_err_inj_en(struct cxl_memdev *memdev,
 				      struct action_context *actx)
 {
@@ -6106,6 +6122,14 @@ int cmd_trigger_coredump(int argc, const char **argv, struct cxl_ctx *ctx)
       "cxl trigger-coredump <mem0> [<mem1>..<memN>] [<options>]");
 
   return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_get_coredump(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_get_coredump, cmd_get_coredump_options,
+        "cxl get-coredump <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
 int cmd_ddr_err_inj_en(int argc, const char **argv, struct cxl_ctx *ctx)

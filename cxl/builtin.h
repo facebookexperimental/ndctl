@@ -176,5 +176,6 @@ int cmd_ddr_threshold_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_ddr_threshold_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_threshold_set(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_cxl_threshold_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_coredump(int argc, const char **argv, struct cxl_ctx *ctx);
 
 #endif /* _CXL_BUILTIN_H_ */

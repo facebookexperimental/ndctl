@@ -16211,3 +16211,77 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+#define CXL_MEM_COMMAND_ID_GET_COREDUMP CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_COREDUMP_OPCODE 0xFB40
+#define MAX_BUFF_LEN 16384
+#define COREDUMP_FILE_NAME_LEN 128
+#define COREDUMP_HDR_SIGNATURE 0xcdcd0100
+#define COREDUMP_FILE_NAME "/tmp/coredump"
+
+CXL_EXPORT int cxl_memdev_get_coredump(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    int rc = 0;
+    unsigned int bytes_read = 0;
+    FILE *coredump_file_ptr = NULL;
+    const char *devname = cxl_memdev_get_devname(memdev);
+    char coredump_file[COREDUMP_FILE_NAME_LEN] = {0,};
+    bool need_file_creation = true;
+    //add memdev as postfix to coredump file name
+    sprintf(coredump_file, "%s_%s.bin", COREDUMP_FILE_NAME, devname);
+
+    do {
+        cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_COREDUMP_OPCODE);
+        if (!cmd) {
+            fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                    cxl_memdev_get_devname(memdev));
+            return -ENOMEM;
+        }
+        rc = cxl_cmd_submit(cmd);
+        if (rc < 0) {
+            fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                    cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+            goto out;
+        }
+        rc = cxl_cmd_get_mbox_status(cmd);
+        if (rc != 0) {
+            fprintf(stderr, "%s: firmware status: %d\n",
+                    cxl_memdev_get_devname(memdev), rc);
+            if (rc == EFAULT) {
+                fprintf(stderr,"%s\n", "There is no newly generated coredump to read");
+            }
+            else {
+                fprintf(stderr,"%s %s\n","Stored coredump verification failed", "or there is no stored coredump.");
+            }
+            goto out;
+        }
+        if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_COREDUMP) {
+            fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                    cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                    CXL_MEM_COMMAND_ID_GET_COREDUMP);
+            return -EINVAL;
+        }
+        if (need_file_creation) {
+            coredump_file_ptr = fopen(coredump_file, "wb");
+            if (coredump_file_ptr == NULL) {
+                fprintf(stderr,"Error opening the %s file.\n", coredump_file);
+                return -ENOENT; // Indicate an error
+            }
+            need_file_creation = false;
+        }
+
+        bytes_read += cmd->send_cmd->out.size;
+        fwrite((char *)cmd->send_cmd->out.payload, sizeof(char),
+                cmd->send_cmd->out.size, coredump_file_ptr);
+    } while(cmd->send_cmd->out.size == MAX_BUFF_LEN);
+
+    fprintf(stdout, "\nSuccessfully collected coredump (size %d Bytes) at %s\n",
+            bytes_read, coredump_file);
+out:
+    if (coredump_file_ptr != NULL) {
+        fclose(coredump_file_ptr);
+    }
+    cxl_cmd_unref(cmd);
+    return rc;
+}
