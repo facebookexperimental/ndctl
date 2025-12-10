@@ -24,6 +24,8 @@
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
 
+#include <json-c/json.h>
+#include <util/json.h>
 #include <util/log.h>
 #include <util/sysfs.h>
 #include <util/bitmap.h>
@@ -6323,36 +6325,7 @@ out:
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_GET_OPCODE 52737
 #define CXL_MEM_COMMAND_ID_HEALTH_COUNTERS_GET_PAYLOAD_OUT_SIZE 40
 
-struct cxl_mbox_health_counters_get_out {
-	__le32 critical_over_temperature_exceeded;
-	__le32 power_on_events;
-	__le32 power_on_hours;
-	__le32 cxl_mem_link_crc_errors;
-	__le32 cxl_io_link_lcrc_errors;
-	__le32 cxl_io_link_ecrc_errors;
-	__le32 num_ddr_correctable_ecc_errors;
-	__le32 num_ddr_uncorrectable_ecc_errors;
-	__le32 link_recovery_events;
-	__le32 time_in_throttled;
-	__le32 over_temperature_warning_level_exceeded;
-	__le32 critical_under_temperature_exceeded;
-	__le32 under_temperature_warning_level_exceeded;
-	__le32 rx_retry_request;
-	__le32 rcmd_qs0_hi_threshold_detect;
-	__le32 rcmd_qs1_hi_threshold_detect;
-	__le32 num_pscan_correctable_ecc_errors;
-	__le32 num_pscan_uncorrectable_ecc_errors;
-	__le32 num_ddr_dimm0_correctable_ecc_errors;
-	__le32 num_ddr_dimm0_uncorrectable_ecc_errors;
-	__le32 num_ddr_dimm1_correctable_ecc_errors;
-	__le32 num_ddr_dimm1_uncorrectable_ecc_errors;
-	__le32 num_ddr_dimm2_correctable_ecc_errors;
-	__le32 num_ddr_dimm2_uncorrectable_ecc_errors;
-	__le32 num_ddr_dimm3_correctable_ecc_errors;
-	__le32 num_ddr_dimm3_uncorrectable_ecc_errors;
-}  __attribute__((packed));
-
-CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
+CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev, bool json_output)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_health_counters_get_out *health_counters_get_out;
@@ -6387,6 +6360,28 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 	}
 
 	health_counters_get_out = (void *)cmd->send_cmd->out.payload;
+
+        if (json_output) {
+                /* JSON output using the new util function */
+                struct json_object *jhealth;
+                const char *devname = cxl_memdev_get_devname(memdev);
+
+                jhealth = util_cxl_memdev_health_counters_to_json(
+                                        devname,
+                                        health_counters_get_out);
+
+                if (jhealth) {
+                        fprintf(stdout, "%s\n",
+                                json_object_to_json_string_ext(jhealth,
+                                        JSON_C_TO_STRING_PRETTY));
+                        json_object_put(jhealth);
+                } else {
+                        fprintf(stderr, "Failed to create JSON object\n");
+                        rc = -ENOMEM;
+                }
+		goto out;
+        }
+
 	fprintf(stdout, "============================= get health counters ==============================\n");
 	fprintf(stdout, "0: CRITICAL_OVER_TEMPERATURE_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->critical_over_temperature_exceeded));
 	fprintf(stdout, "1: OVER_TEMPERATURE_WARNING_LEVEL_EXCEEDED = %u\n", le32_to_cpu(health_counters_get_out->over_temperature_warning_level_exceeded));

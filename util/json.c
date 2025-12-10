@@ -10,9 +10,17 @@
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
 #include <cxl/libcxl.h>
+#include <cxl/lib/private.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
 #include <ndctl.h>
+
+#define JSON_NEW_U32_FROM_LE32(le32_val) \
+  json_object_new_uint64((uint64_t)(uint32_t)le32_to_cpu((le32_val)))
+#define JSON_ADD_U32_FROM_LE32(parent, key, le32_val) do { \
+  struct json_object *_j = JSON_NEW_U32_FROM_LE32((le32_val)); \
+  if (_j) json_object_object_add((parent), (key), _j); \
+} while (0)
 
 /* adapted from mdadm::human_size_brief() */
 static int display_size(struct json_object *jobj, struct printbuf *pbuf,
@@ -1465,4 +1473,56 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		json_object_object_add(jdev, "ram_size", jobj);
 
 	return jdev;
+}
+
+/* Forward declaration of the health counters structure */
+struct cxl_mbox_health_counters_get_out;
+
+struct json_object *util_cxl_memdev_health_counters_to_json(
+		const char *devname,
+		struct cxl_mbox_health_counters_get_out *health_counters)
+{
+	struct json_object *jhealth, *jobj;
+
+	if (!health_counters)
+		return NULL;
+
+	jhealth = json_object_new_object();
+	if (!jhealth)
+		return NULL;
+
+	if (devname) {
+		jobj = json_object_new_string(devname);
+		if (jobj)
+			json_object_object_add(jhealth, "memdev", jobj);
+	}
+
+	JSON_ADD_U32_FROM_LE32(jhealth, "critical_over_temperature_exceeded", health_counters->critical_over_temperature_exceeded);
+	JSON_ADD_U32_FROM_LE32(jhealth, "over_temperature_warning_level_exceeded", health_counters->over_temperature_warning_level_exceeded);
+	JSON_ADD_U32_FROM_LE32(jhealth, "critical_under_temperature_exceeded", health_counters->critical_under_temperature_exceeded);
+	JSON_ADD_U32_FROM_LE32(jhealth, "under_temperature_warning_level_exceeded", health_counters->under_temperature_warning_level_exceeded);
+	JSON_ADD_U32_FROM_LE32(jhealth, "power_on_events", health_counters->power_on_events);
+	JSON_ADD_U32_FROM_LE32(jhealth, "power_on_hours", health_counters->power_on_hours);
+	JSON_ADD_U32_FROM_LE32(jhealth, "cxl_mem_link_crc_errors", health_counters->cxl_mem_link_crc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "cxl_io_link_lcrc_errors", health_counters->cxl_io_link_lcrc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "cxl_io_link_ecrc_errors", health_counters->cxl_io_link_ecrc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_correctable_ecc_errors", health_counters->num_ddr_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_uncorrectable_ecc_errors", health_counters->num_ddr_uncorrectable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "link_recovery_events", health_counters->link_recovery_events);
+	JSON_ADD_U32_FROM_LE32(jhealth, "time_in_throttled", health_counters->time_in_throttled);
+	JSON_ADD_U32_FROM_LE32(jhealth, "rx_retry_request", health_counters->rx_retry_request);
+	JSON_ADD_U32_FROM_LE32(jhealth, "rcmd_qs0_hi_threshold_detect", health_counters->rcmd_qs0_hi_threshold_detect);
+	JSON_ADD_U32_FROM_LE32(jhealth, "rcmd_qs1_hi_threshold_detect", health_counters->rcmd_qs1_hi_threshold_detect);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_pscan_correctable_ecc_errors", health_counters->num_pscan_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_pscan_uncorrectable_ecc_errors", health_counters->num_pscan_uncorrectable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm0_correctable_ecc_errors", health_counters->num_ddr_dimm0_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm0_uncorrectable_ecc_errors", health_counters->num_ddr_dimm0_uncorrectable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm1_correctable_ecc_errors", health_counters->num_ddr_dimm1_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm1_uncorrectable_ecc_errors", health_counters->num_ddr_dimm1_uncorrectable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm2_correctable_ecc_errors", health_counters->num_ddr_dimm2_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm2_uncorrectable_ecc_errors", health_counters->num_ddr_dimm2_uncorrectable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm3_correctable_ecc_errors", health_counters->num_ddr_dimm3_correctable_ecc_errors);
+	JSON_ADD_U32_FROM_LE32(jhealth, "num_ddr_dimm3_uncorrectable_ecc_errors", health_counters->num_ddr_dimm3_uncorrectable_ecc_errors);
+
+	return jhealth;
 }

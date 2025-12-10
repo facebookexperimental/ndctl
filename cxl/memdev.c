@@ -1609,9 +1609,16 @@ static const struct option cmd_health_counters_clear_options[] = {
 };
 
 
+static struct _output_format_params {
+  bool json_output;
+} output_format_params;
+
+#define OUTPUT_FORMAT_OPTIONS() \
+OPT_BOOLEAN('j', "json", &output_format_params.json_output, "output prints in json format")
 
 static const struct option cmd_health_counters_get_options[] = {
   BASE_OPTIONS(),
+  OUTPUT_FORMAT_OPTIONS(),
   OPT_END(),
 };
 
@@ -3572,7 +3579,7 @@ static int action_cmd_health_counters_get(struct cxl_memdev *memdev, struct acti
     return -EBUSY;
   }
 
-  return cxl_memdev_health_counters_get(memdev);
+  return cxl_memdev_health_counters_get(memdev, output_format_params.json_output);
 }
 
 static int action_cmd_hct_get_plat_param(struct cxl_memdev *memdev, struct action_context *actx)

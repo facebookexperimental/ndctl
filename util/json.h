@@ -56,6 +56,10 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);
 struct json_object *util_region_capabilities_to_json(struct ndctl_region *region);
 struct cxl_memdev;
+struct cxl_mbox_health_counters_get_out;
 struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		unsigned long flags);
+struct json_object *util_cxl_memdev_health_counters_to_json(
+		const char *devname,
+		struct cxl_mbox_health_counters_get_out *health_counters);
 #endif /* __NDCTL_JSON_H__ */
