@@ -2491,8 +2491,8 @@ static const struct option cmd_cxl_ddr_irq_enable_set_options[] = {
 // struct to hold threshold count and time limit in minutes
 struct _rlc_cfg {
   u32 corr_err_threshold_cnt;
-  u32 corr_err_time_limit;
   u32 uncorr_err_threshold_cnt;
+  u32 corr_err_time_limit;
   u32 uncorr_err_time_limit;
 } __attribute__((packed)) rlc_cfg;
 

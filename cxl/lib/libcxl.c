@@ -15902,8 +15902,8 @@ out:
 // struct to hold threshold count and time limit in minutes
 struct rlc_cfg {
     u16 corr_err_threshold_cnt;
-    u16 corr_err_time_limit;
     u16 uncorr_err_threshold_cnt;
+    u16 corr_err_time_limit;
     u16 uncorr_err_time_limit;
 } __attribute__((packed));
 
