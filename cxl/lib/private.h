@@ -96,6 +96,35 @@ struct cxl_cmd_get_health_info {
 	le32 pmem_errors;
 } __attribute__((packed));
 
+struct cxl_mbox_health_counters_get_out {
+        __le32 critical_over_temperature_exceeded;
+        __le32 power_on_events;
+        __le32 power_on_hours;
+        __le32 cxl_mem_link_crc_errors;
+        __le32 cxl_io_link_lcrc_errors;
+        __le32 cxl_io_link_ecrc_errors;
+        __le32 num_ddr_correctable_ecc_errors;
+        __le32 num_ddr_uncorrectable_ecc_errors;
+        __le32 link_recovery_events;
+        __le32 time_in_throttled;
+        __le32 over_temperature_warning_level_exceeded;
+        __le32 critical_under_temperature_exceeded;
+        __le32 under_temperature_warning_level_exceeded;
+        __le32 rx_retry_request;
+        __le32 rcmd_qs0_hi_threshold_detect;
+        __le32 rcmd_qs1_hi_threshold_detect;
+        __le32 num_pscan_correctable_ecc_errors;
+        __le32 num_pscan_uncorrectable_ecc_errors;
+        __le32 num_ddr_dimm0_correctable_ecc_errors;
+        __le32 num_ddr_dimm0_uncorrectable_ecc_errors;
+        __le32 num_ddr_dimm1_correctable_ecc_errors;
+        __le32 num_ddr_dimm1_uncorrectable_ecc_errors;
+        __le32 num_ddr_dimm2_correctable_ecc_errors;
+        __le32 num_ddr_dimm2_uncorrectable_ecc_errors;
+        __le32 num_ddr_dimm3_correctable_ecc_errors;
+        __le32 num_ddr_dimm3_uncorrectable_ecc_errors;
+}  __attribute__((packed));
+
 static inline int check_kmod(struct kmod_ctx *kmod_ctx)
 {
 	return kmod_ctx ? 0 : -ENXIO;
