@@ -13,11 +13,16 @@ libcxl_la_SOURCES =\
 	../../util/sysfs.h \
 	../../util/log.c \
 	../../util/log.h \
+	../../util/json.c \
+	../../util/json.h \
 	libcxl.c
 
 libcxl_la_LIBADD =\
+	$(JSONC_LIBS) \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS)
+
+libcxl_la_LIBADD += $(JSON_LIBS)
 
 EXTRA_DIST += libcxl.sym
 
