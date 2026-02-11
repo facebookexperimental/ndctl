@@ -16211,3 +16211,91 @@ out:
     cxl_cmd_unref(cmd);
     return rc;
 }
+
+/* PREPARE_SHUTDOWN - QSPI Write Resilience Command */
+#define CXL_MEM_COMMAND_ID_PREPARE_SHUTDOWN CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_PREPARE_SHUTDOWN_OPCODE 0xFB41
+
+/**
+ * cxl_memdev_prepare_shutdown - Request firmware to prepare for shutdown
+ * @memdev: CXL memory device handle
+ *
+ * This command requests the firmware to complete all pending QSPI write
+ * operations before a shutdown or power cycle. The BMC should send this
+ * command before triggering any shutdown/reset sequence to prevent QSPI
+ * write corruption.
+ *
+ * The firmware will:
+ *   1. Wait for all pending QSPI writes to complete (with timeout)
+ *   2. Suspend new QSPI writes for 10 seconds or until power cycle
+ *   3. Return success if safe to proceed, or busy if timeout waiting
+ *
+ * Return codes:
+ *   CXL_SUCCESS (0x00): Safe to proceed with shutdown
+ *   CXL_BUSY (0x06): Timeout waiting for QSPI writes to complete
+ *
+ * Returns: 0 on success, negative errno on failure
+ */
+CXL_EXPORT int cxl_memdev_prepare_shutdown(struct cxl_memdev *memdev)
+{
+    struct cxl_cmd *cmd;
+    struct cxl_mem_query_commands *query;
+    struct cxl_command_info *cinfo;
+    int rc = 0;
+
+    cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_PREPARE_SHUTDOWN_OPCODE);
+    if (!cmd) {
+        fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+                cxl_memdev_get_devname(memdev));
+        return -ENOMEM;
+    }
+
+    query = cmd->query_cmd;
+    cinfo = &query->commands[cmd->query_idx];
+
+    /* No input payload for this command */
+    cinfo->size_in = 0;
+    cmd->send_cmd->in.size = 0;
+
+    fprintf(stdout, "Sending prepare_shutdown command to memdev %s\n",
+            cxl_memdev_get_devname(memdev));
+    fprintf(stdout, "  - Firmware will wait for pending QSPI writes to complete\n");
+    fprintf(stdout, "  - QSPI writes will be suspended after response\n");
+
+    rc = cxl_cmd_submit(cmd);
+    if (rc < 0) {
+        fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+                cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+        goto out;
+    }
+
+    rc = cxl_cmd_get_mbox_status(cmd);
+    if (rc != 0) {
+        if (rc == 0x06) { /* CXL_BUSY */
+            fprintf(stderr, "%s: firmware busy - QSPI writes still pending after timeout\n",
+                    cxl_memdev_get_devname(memdev));
+            fprintf(stderr, "  WARNING: Proceeding with shutdown may cause data corruption!\n");
+        } else {
+            fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+                    cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
+        }
+        rc = -ENXIO;
+        goto out;
+    }
+
+    if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_PREPARE_SHUTDOWN) {
+        fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+                cxl_memdev_get_devname(memdev), cmd->send_cmd->id,
+                CXL_MEM_COMMAND_ID_PREPARE_SHUTDOWN);
+        rc = -EINVAL;
+        goto out;
+    }
+
+    fprintf(stdout, "=========================== prepare_shutdown response ===========================\n");
+    fprintf(stdout, "Status: SUCCESS - All QSPI writes complete, safe to proceed with shutdown\n");
+    fprintf(stdout, "Note: QSPI writes are now suspended for 10 seconds or until power cycle\n");
+
+out:
+    cxl_cmd_unref(cmd);
+    return rc;
+}

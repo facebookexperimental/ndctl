@@ -232,6 +232,7 @@ static struct cmd_struct commands[] = {
 	{ "ddr-thres-get", .c_fn = cmd_ddr_threshold_get },
 	{ "cxl-thres-set", .c_fn = cmd_cxl_threshold_set },
 	{ "cxl-thres-get", .c_fn = cmd_cxl_threshold_get },
+	{ "prepare-shutdown", .c_fn = cmd_prepare_shutdown },
 };
 
 int main(int argc, const char **argv)

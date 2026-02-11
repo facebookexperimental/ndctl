@@ -6432,3 +6432,29 @@ int cmd_cxl_threshold_get(int argc, const char **argv, struct cxl_ctx *ctx)
 
     return rc >= 0 ? 0 : EXIT_FAILURE;
 }
+
+/* PREPARE_SHUTDOWN - QSPI Write Resilience Command */
+static const struct option cmd_prepare_shutdown_options[] = {
+    BASE_OPTIONS(),
+    OPT_END(),
+};
+
+static int action_cmd_prepare_shutdown(struct cxl_memdev *memdev,
+                      struct action_context *actx)
+{
+    if (cxl_memdev_is_active(memdev)) {
+        fprintf(stderr, "%s: memdev active, prepare shutdown command\n",
+            cxl_memdev_get_devname(memdev));
+        return -EBUSY;
+    }
+
+    return cxl_memdev_prepare_shutdown(memdev);
+}
+
+int cmd_prepare_shutdown(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+    int rc = memdev_action(argc, argv, ctx, action_cmd_prepare_shutdown, cmd_prepare_shutdown_options,
+        "cxl prepare-shutdown <mem0> [<mem1>..<memN>] [<options>]");
+
+    return rc >= 0 ? 0 : EXIT_FAILURE;
+}
