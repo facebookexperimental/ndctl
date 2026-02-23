@@ -2031,6 +2031,8 @@ out:
 
 #define CXL_DRAM_EVENT_GUID "601dcbb3-9c06-4eab-b8af-4e9bfb5c9624"
 #define CXL_MEM_MODULE_EVENT_GUID "fe927475-dd59-4339-a586-79bab113b774"
+#define CXL_PLDM_ENTITY_ID_LEN 6
+#define CXL_PLDM_RES_ID_LEN 4
 
 struct cxl_dram_event_record {
 	__le64 physical_addr;
@@ -2040,15 +2042,23 @@ struct cxl_dram_event_record {
 	__le16 validity_flags;
 	u8 channel;
 	u8 rank;
-	u8 nibble_mask[3];
+	u8 nibble_mask[4];
 	u8 bank_group;
 	u8 bank;
-	u8 row[3];
+	u8 row[4];
 	__le16 column;
 	u8 correction_mask[0x20];
-        u8 component_identifier[0x10];
-        u8 sub_channel;
-	u8 reserved[0x6];
+	u8 component_identifier[0x10];
+	u8 phys_addr_flags;
+	u8 event_sub_type;
+	u8 sub_channel;
+	const char* region;
+	const char* region_uuid;
+	u8 entity_id[CXL_PLDM_ENTITY_ID_LEN];
+	u8 res_id[CXL_PLDM_RES_ID_LEN];
+	u8 cme_threshold_ev_flags;
+	__le32 cvme_count;
+	u8 reserved;
 } __attribute__((packed));
 
 struct cxl_memory_module_record {
@@ -2064,7 +2074,8 @@ struct cxl_event_record {
 	__le16 event_record_handle;
 	__le16 related_event_record_handle;
 	__le64 event_record_ts;
-	u8 reserved[0x10];
+	u8 maintenance_operation_class;
+	u8 reserved[0x0F];
 	union {
 		struct cxl_dram_event_record dram_event_record;
 		struct cxl_memory_module_record memory_module_record;
@@ -2169,6 +2180,7 @@ CXL_EXPORT int cxl_memdev_get_event_records(struct cxl_memdev *memdev, u8 event_
 		fprintf(stdout, "%*srelated_event_record_handle: 0x%x\n", indent+2, "",
 			le16_to_cpu(event_record->related_event_record_handle));
 		fprintf(stdout, "%*sevent_record_ts: 0x%lx\n", indent+2, "", le64_to_cpu(event_record->event_record_ts));
+		fprintf(stdout, "%*sevent_maintenance_operation_class: 0x%x\n", indent+2, "", event_record->maintenance_operation_class);
 
 		if (strcmp(uuid, CXL_DRAM_EVENT_GUID) == 0){
 			struct cxl_dram_event_record *dram_event = &event_record->event_record.dram_event_record;
@@ -2179,13 +2191,14 @@ CXL_EXPORT int cxl_memdev_get_event_records(struct cxl_memdev *memdev, u8 event_
 			fprintf(stdout, "%*svalidity_flags: 0x%x\n", indent+2, "", le16_to_cpu(dram_event->validity_flags));
 			fprintf(stdout, "%*schannel: 0x%x\n", indent+2, "", dram_event->channel);
 			fprintf(stdout, "%*srank: 0x%x\n", indent+2, "", dram_event->rank);
-			fprintf(stdout, "%*snibble_mask: 0x%02x%02x%02x\n", indent+2, "",
+			fprintf(stdout, "%*snibble_mask: 0x%02x%02x%02x%02x\n", indent+2, "",
 				dram_event->nibble_mask[0], dram_event->nibble_mask[1],
-				dram_event->nibble_mask[2]);
+				dram_event->nibble_mask[2], dram_event->nibble_mask[3]);
 			fprintf(stdout, "%*sbank_group: 0x%x\n", indent+2, "", dram_event->bank_group);
 			fprintf(stdout, "%*sbank: 0x%x\n", indent+2, "", dram_event->bank);
-			fprintf(stdout, "%*srow: 0x%02x%02x%02x\n", indent+2, "", dram_event->row[0],
-				dram_event->row[1], dram_event->row[2]);
+			fprintf(stdout, "%*srow: 0x%02x%02x%02x%02x\n", indent+2, "",
+				dram_event->row[0], dram_event->row[1],
+				dram_event->row[2], dram_event->row[3]);
 			fprintf(stdout, "%*scolumn: 0x%x\n", indent+2, "", le16_to_cpu(dram_event->column));
 			for (int i=0; i < 4; i++) {
 				fprintf(stdout, "%*scorrection mask[%d]: 0x", indent+2, "", i);
@@ -2197,6 +2210,18 @@ CXL_EXPORT int cxl_memdev_get_event_records(struct cxl_memdev *memdev, u8 event_
 			fprintf(stdout, "%*scomponent identifier: 0x%02x%02x%02x\n", indent+2, "",
 				dram_event->component_identifier[0], dram_event->component_identifier[1],
 				dram_event->component_identifier[2]);
+			fprintf(stdout, "%*sphys_addr_flags: 0x%x\n", indent+2, "", dram_event->phys_addr_flags);
+			fprintf(stdout, "%*sevent_sub_type: 0x%x\n", indent+2, "", dram_event->event_sub_type);
+			fprintf(stdout, "%*ssub_channel: 0x%x\n", indent+2, "", dram_event->sub_channel);
+			fprintf(stdout, "%*sentity_id: 0x%02x%02x%02x%02x%02x%02x\n", indent+2, "",
+				dram_event->entity_id[0], dram_event->entity_id[1],
+				dram_event->entity_id[2], dram_event->entity_id[3],
+				dram_event->entity_id[4], dram_event->entity_id[5]);
+			fprintf(stdout, "%*sres_id: 0x%02x%02x%02x%02x\n", indent+2, "",
+				dram_event->res_id[0], dram_event->res_id[1],
+				dram_event->res_id[2], dram_event->res_id[3]);
+			fprintf(stdout, "%*scme_threshold_ev_flags: 0x%x\n", indent+2, "", dram_event->cme_threshold_ev_flags);
+			fprintf(stdout, "%*scvme_count: 0x%x\n", indent+2, "", dram_event->cvme_count);
 		}
 	}
 
